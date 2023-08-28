@@ -1,8 +1,11 @@
 import Navbar from "@/components/navbar";
 import { Toaster } from "@/components/ui/toaster";
+import { nextAuthOptions } from "@/lib/auth";
 import { cn } from "@/lib/utils";
 import "@/styles/globals.css";
+import { getServerSession } from "next-auth";
 import { Inter } from "next/font/google";
+import { NextAuthProvider } from "./providers";
 
 export const metadata = {
   title: "VMP",
@@ -11,11 +14,13 @@ export const metadata = {
 
 const inter = Inter({ subsets: ["latin"] });
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  const session = await getServerSession(nextAuthOptions);
+
   return (
     <html
       lang="en"
@@ -25,9 +30,14 @@ export default function RootLayout({
       )}
     >
       <body className="min-h-screen antialiased">
-        <Navbar user={"LoggedIn"} />
-        <main className="container h-full pt-12">{children}</main>
-        <Toaster />
+        <NextAuthProvider>
+          <Navbar loggedIn={!!session} />
+          <main className="container h-full pt-12">
+            <h1>{Math.random().toString()}</h1>
+            {children}
+          </main>
+          <Toaster />
+        </NextAuthProvider>
       </body>
     </html>
   );
