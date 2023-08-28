@@ -4,9 +4,7 @@ import { getBaseUrl } from "@/lib/utils";
 import { headers } from "next/headers";
 
 async function PageServer() {
-  const res = await fetch(`https://vmp-sigma.vercel.app/api/postings`, {
-    headers: headers(),
-  });
+  const res = await fetch(`${getBaseUrl()}/api/postings`);
 
   const data = await res.json();
 
