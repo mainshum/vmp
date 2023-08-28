@@ -32,10 +32,7 @@ export default async function RootLayout({
       <body className="min-h-screen antialiased">
         <NextAuthProvider>
           <Navbar loggedIn={!!session} />
-          <main className="container h-full pt-12">
-            <h1>{Math.random().toString()}</h1>
-            {children}
-          </main>
+          <main className="container h-full pt-12">{children}</main>
           <Toaster />
         </NextAuthProvider>
       </body>
