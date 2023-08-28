@@ -8,5 +8,9 @@ export function cn(...inputs: ClassValue[]) {
 export function getBaseUrl() {
   const vc = process.env.VERCEL_URL;
 
-  return vc ? `https://${vc}` : "http://localhost:3000";
+  const baseUrl = vc ? `https://${vc}` : "http://localhost:3000";
+
+  console.log("base url", baseUrl);
+
+  return baseUrl;
 }
