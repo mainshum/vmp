@@ -10,7 +10,6 @@ import {
   TableHeader,
   TableRow,
 } from "./ui/table";
-import { Popover, PopoverTrigger, PopoverContent } from "./ui/popover";
 
 type Props = {
   postings: Posting[];

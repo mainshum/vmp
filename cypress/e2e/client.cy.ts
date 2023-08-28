@@ -9,7 +9,7 @@ describe("client postings", () => {
     cy.findAllByRole("row").should("have.length", 11);
   });
 
-  it.only("renders error boundary when ERROR occurs", () => {
+  it("renders error boundary when ERROR occurs", () => {
     cy.on("uncaught:exception", () => false);
     cy.visit("http://localhost:3000/client", {
       headers: {
