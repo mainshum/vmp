@@ -5,7 +5,7 @@ import { redirect } from "next/navigation";
 export default async function Home() {
   const session = await getServerSession(nextAuthOptions);
 
-  if (!session) throw Error("impossible state");
+  // if (!session) throw Error("impossible state");
 
   redirect("/client");
 }

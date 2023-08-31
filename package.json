@@ -9,7 +9,7 @@
     "lint": "next lint",
     "postinstall": "prisma generate",
     "test": "pnpm dlx cypress open",
-    "test:e2e:dev": "start-server-and-test dev http://localhost:3000 test"
+    "test:e2e:dev": "start-test dev http://localhost:3000/favicon.ico test"
   },
   "dependencies": {
     "@editorjs/code": "^2.8.0",
@@ -76,6 +76,7 @@
     "@testing-library/cypress": "^9.0.0",
     "@types/editorjs__header": "^2.6.0",
     "@types/lodash.debounce": "^4.0.7",
+    "dotenv": "^16.3.1",
     "eslint-plugin-storybook": "^0.6.13",
     "start-server-and-test": "^2.0.0"
   }
