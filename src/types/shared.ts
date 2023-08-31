@@ -6,3 +6,5 @@ export type Posting = {
   number: string;
   offers: number;
 };
+
+export type UserRole = "client" | "vendor" | "none";

@@ -14,5 +14,9 @@ export const nextAuthOptions: NextAuthOptions = {
       clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
     }),
   ],
-  callbacks: {},
+  callbacks: {
+    jwt({ token }) {
+      return token;
+    },
+  },
 };

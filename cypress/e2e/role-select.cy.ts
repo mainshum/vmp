@@ -1,43 +1,35 @@
-const testRedirect = (initUrl: string) => (finalUrl: string) => {
-  cy.visit(initUrl, { failOnStatusCode: false });
-  cy.url().should("contain", finalUrl);
-};
-
-const setSessionToken = () => {
-  cy.setCookie("next-auth.session-token", Cypress.env("sessionToken"));
-};
+import { UserRole } from "../../src/types/shared";
+import { setSessionToken, testRedirect } from "../support/utils";
 
 const redirectFromRoleSelect = testRedirect("/role-select");
 
 describe("role-select", () => {
-  // beforeEach(() => {
-  //   cy.setCookie("next-auth.session-token", Cypress.env("sessionToken"));
-  // });
   it("redirects to siginin page if user not logged in", () => {
     redirectFromRoleSelect("/sign-in");
   });
 
-  it("redirects to /client/postings if user is registered as client", () => {
+  it("redirects to /client/register if user is registered as client", () => {
+    setSessionToken("client");
     redirectFromRoleSelect("/client/postings");
   });
 
-  it("redirects to /vendor/postings if user is registered as vendor", () => {
+  it("redirects to /vendor/register if user is registered as vendor", () => {
+    setSessionToken("vendor");
     redirectFromRoleSelect("/vendor/postings");
   });
 
   describe("happy state", () => {
-    beforeEach(() => {
-      setSessionToken();
-    });
-    it.only("goes to /vendor/postings if user clicks on Vendor", () => {
+    it("goes to /vendor/register if user clicks on Vendor", () => {
+      setSessionToken("none");
       cy.visit("/role-select");
       cy.findByText("Vendor").should("exist").click();
-      cy.url().should("contain", "/vendor/postings");
+      cy.url().should("contain", "/vendor/register");
     });
-    it.only("goes to /vendor/postings if user clicks on Client", () => {
+    it("goes to /vendor/register if user clicks on Client", () => {
+      setSessionToken("none");
       cy.visit("/role-select");
       cy.findByText("Client").should("exist").click();
-      cy.url().should("contain", "/client/postings");
+      cy.url().should("contain", "/client/register");
     });
   });
 });

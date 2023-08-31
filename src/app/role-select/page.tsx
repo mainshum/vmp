@@ -1,6 +1,4 @@
-import Icons from "@/components/icons";
 import { buttonVariants } from "@/components/ui/Button";
-import { Label } from "@/components/ui/label";
 import { nextAuthOptions } from "@/lib/auth";
 import { ROUTES } from "@/lib/const";
 import { cn } from "@/lib/utils";
@@ -10,13 +8,12 @@ import { HeartHandshake, ShoppingCart } from "lucide-react";
 import { Session, getServerSession } from "next-auth";
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { UserRole } from "@/types/shared";
 
-function useUserRedirects(s: Session | null) {
-  if (s == null) redirect(ROUTES.SIGIN);
-}
+function useUserRedirects(s: Session | null) {}
 
 function CardLink({ type }: { type: "client" | "vendor" }) {
-  const url = type === "client" ? "/client/postings" : "/vendor/postings";
+  const url = type === "client" ? "/client/register" : "/vendor/register";
 
   const Icon = type === "client" ? ShoppingCart : HeartHandshake;
 
@@ -36,10 +33,25 @@ function CardLink({ type }: { type: "client" | "vendor" }) {
   );
 }
 
+const dbMock = {
+  async findUserRole(email: string): Promise<UserRole> {
+    return email.includes("vendor")
+      ? "vendor"
+      : email.includes("client")
+      ? "client"
+      : "none";
+  },
+};
+
 async function Page(searchParams: PageParams) {
   const session = await getServerSession(nextAuthOptions);
 
-  useUserRedirects(session);
+  if (session == null) redirect("/sign-in");
+
+  const role = await dbMock.findUserRole(session.user!.email!);
+
+  if (role === "client") redirect("/client/postings");
+  if (role === "vendor") redirect("/vendor/postings");
 
   return (
     <div className="flex flex-row justify-center gap-8 py-8">

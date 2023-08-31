@@ -1,7 +1,10 @@
+import { setSessionToken } from "../support/utils";
+
 describe("client postings", () => {
   beforeEach(() => {
-    cy.setCookie("next-auth.session-token", Cypress.env("sessionToken"));
+    setSessionToken("client");
   });
+
   it("renders 10 rows of postings (+1 header)", () => {
     cy.visit("/client");
 

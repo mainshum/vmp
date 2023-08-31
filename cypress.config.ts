@@ -8,7 +8,9 @@ dotenv.config();
 
 export default defineConfig({
   env: {
-    sessionToken: process.env.SESSION_JWT_TOKEN!,
+    clientSessionToken: process.env.SESSION_JWT_TOKEN_CLIENT!,
+    vendorSessionToken: process.env.SESSION_JWT_TOKEN_VENDOR!,
+    noroleSessionToken: process.env.SESSION_JWT_TOKEN_NOROLE!,
   },
   e2e: {
     baseUrl: "http://localhost:3000",
