@@ -1,5 +1,8 @@
 import { defineConfig } from "cypress";
+import wp from "@cypress/webpack-preprocessor";
+
 import dotenv from "dotenv";
+import path from "path";
 
 dotenv.config();
 
@@ -8,6 +11,22 @@ export default defineConfig({
     sessionToken: process.env.SESSION_JWT_TOKEN!,
   },
   e2e: {
-    setupNodeEvents(on, config) {},
+    baseUrl: "http://localhost:3000",
+    setupNodeEvents(on, config) {
+      const defaults = wp.defaultOptions;
+
+      const options: Parameters<typeof wp>[0] = {
+        webpackOptions: {
+          resolve: {
+            alias: {
+              "@": path.resolve(__dirname, "./src"),
+            },
+          },
+        },
+      };
+      //on("file:preprocessor", wp({}));
+
+      return config;
+    },
   },
 });

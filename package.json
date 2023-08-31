@@ -73,6 +73,7 @@
     "zod": "^3.21.4"
   },
   "devDependencies": {
+    "@cypress/webpack-preprocessor": "^6.0.0",
     "@testing-library/cypress": "^9.0.0",
     "@types/editorjs__header": "^2.6.0",
     "@types/lodash.debounce": "^4.0.7",

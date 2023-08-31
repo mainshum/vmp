@@ -10,3 +10,9 @@ export function getBaseUrl() {
 
   return vc ? `https://${vc}` : "http://localhost:3000";
 }
+
+export const capitalize = (s: string) => {
+  if (s.length === 0) return "";
+
+  return s[0].toUpperCase() + s.slice(1, s.length);
+};
