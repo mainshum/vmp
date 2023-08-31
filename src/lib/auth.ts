@@ -1,9 +1,21 @@
 import GP from "next-auth/providers/google";
 import { NextAuthOptions } from "next-auth";
+import { UserRole } from "@/types/shared";
+
+const dbMock = {
+  async findUserRole(email: string): Promise<UserRole> {
+    return email.includes("vendor")
+      ? "vendor"
+      : email.includes("client")
+      ? "client"
+      : "none";
+  },
+};
 
 export const nextAuthOptions: NextAuthOptions = {
   pages: {
     signIn: "/sign-in",
+    newUser: "/role-select",
   },
   session: {
     strategy: "jwt",
@@ -17,6 +29,13 @@ export const nextAuthOptions: NextAuthOptions = {
   callbacks: {
     jwt({ token }) {
       return token;
+    },
+    async session({ session, token }) {
+      const role = await dbMock.findUserRole(token!.email!);
+
+      session.user.role = role;
+
+      return session;
     },
   },
 };
