@@ -12,6 +12,11 @@ function CardLink({ type }: { type: "client" | "vendor" }) {
 
   const Icon = type === "client" ? ShoppingCart : HeartHandshake;
 
+  const txt =
+    type === "client"
+      ? "Recipient of goods or services"
+      : "Supplier of goods or services ";
+
   return (
     <Link
       className={cn(
@@ -23,6 +28,7 @@ function CardLink({ type }: { type: "client" | "vendor" }) {
       <h1 className="text-2xl font-extrabold tracking-tight lg:text-4xl">
         {capitalize(type)}
       </h1>
+      <h2>{txt}</h2>
       <Icon className="h-8 w-8" />
     </Link>
   );
