@@ -12,3 +12,9 @@ declare module "next-auth" {
     } & DefaultSession["user"];
   }
 }
+
+declare global {
+  interface Document {
+    startViewTransition: (x: CallableFunction) => {};
+  }
+}

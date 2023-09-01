@@ -19,8 +19,17 @@ describe("register", () => {
       setSessionToken("none");
       cy.visit("/register?role=client");
     });
-    it.only("displays form", () => {
-      cy.findByRole("form").should("exist");
+    it("clicking Next immediately shows 4 validation errors. when values filled with >2 chars Click takes to next form pagee", () => {
+      cy.findByText("Next").click();
+
+      cy.findAllByText("Required").should("have.length", 4);
+
+      cy.findAllByRole("textbox")
+        .should("have.length", 4)
+        .each(($el) => cy.wrap($el).type("siemano"));
+
+      cy.findByText("Next").click();
+      cy.findByText("Buyer representative").should("exist");
     });
   });
 });

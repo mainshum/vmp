@@ -16,10 +16,10 @@ const companyDetails = z.object({
 
 const buyerRepr = z.object({
   name: minToCharsString,
-  //   surname: minToCharsString,
-  //   position: minToCharsString,
-  //   mail: minToCharsString,
-  //   phone: minToCharsString,
+  surname: minToCharsString,
+  position: minToCharsString,
+  mail: minToCharsString,
+  phone: minToCharsString,
 });
 
 import {
@@ -38,21 +38,34 @@ import React, { useState } from "react";
 
 type Page = 0 | 1;
 
+function withTransitionIfExists(fn: CallableFunction) {
+  if (!document.startViewTransition) {
+    fn();
+    return;
+  }
+
+  document.startViewTransition(fn);
+}
+
 export function RegisterForm() {
   const [page, setPage] = useState<Page>(0);
 
   function onCompanyDetailsSubmit(values: z.infer<typeof companyDetails>) {
-    setPage(1);
+    withTransitionIfExists(() => setPage(1));
   }
 
   function onBuyerReprSubmit(values: z.infer<typeof buyerRepr>) {
-    setPage(0);
+    withTransitionIfExists(() => setPage(0));
   }
 
   return (
     <React.Fragment>
-      {page === 0 && <CompanyDetails onSubmit={onCompanyDetailsSubmit} />}
-      {page === 1 && <BuyerRepr onSubmit={onBuyerReprSubmit} />}
+      <div hidden={page !== 0}>
+        <CompanyDetails onSubmit={onCompanyDetailsSubmit} />
+      </div>
+      <div hidden={page !== 1}>
+        <BuyerRepr onSubmit={onBuyerReprSubmit} />
+      </div>
     </React.Fragment>
   );
 }
@@ -67,7 +80,6 @@ function BuyerRepr({
     defaultValues: {},
   });
 
-  console.log(form.formState.isValid);
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
@@ -80,6 +92,58 @@ function BuyerRepr({
               <FormLabel>Name</FormLabel>
               <FormControl>
                 <Input {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <FormField
+          control={form.control}
+          name="surname"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Surname</FormLabel>
+              <FormControl>
+                <Input {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <FormField
+          control={form.control}
+          name="position"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Position</FormLabel>
+              <FormControl>
+                <Input {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <FormField
+          control={form.control}
+          name="phone"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Phone number</FormLabel>
+              <FormControl>
+                <Input type="tel" {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <FormField
+          control={form.control}
+          name="mail"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Email</FormLabel>
+              <FormControl>
+                <Input type="email" {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
