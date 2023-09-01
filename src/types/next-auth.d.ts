@@ -1,6 +1,6 @@
 import { DefaultSession } from "next-auth";
 import { UserRole } from "./shared";
-import { type CompanyDetails } from "../components/register";
+import { CompanyDetails, type BuyerDetails } from "../components/register";
 
 declare module "next-auth" {
   /**
@@ -8,7 +8,6 @@ declare module "next-auth" {
    */
   interface Session {
     user: {
-      /** The user's postal address. */
       role: UserRole;
     } & DefaultSession["user"];
   }
@@ -21,6 +20,7 @@ declare global {
   namespace Cypress {
     interface Cypress {
       mockCompanyDetails?: CompanyDetails;
+      mockBuyerDetails?: BuyerDetails;
     }
   }
 

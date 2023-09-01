@@ -3,6 +3,22 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
+import { Button } from "./ui/Button";
+import { useForm, type DefaultValues, UseFormReturn } from "react-hook-form";
+import { Input } from "./ui/input";
+import { H1 } from "./typography";
+import React, { useState } from "react";
+import { Noop } from "@/types/shared";
+import { ZodType } from "zod";
+
 const minToCharsString = z.string().min(2, {
   message: "At least 2 characters.",
 });
@@ -22,21 +38,6 @@ const buyerRepr = z.object({
   phone: minToCharsString,
 });
 
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form";
-import { Button } from "./ui/Button";
-import { useForm, type DefaultValues } from "react-hook-form";
-import { Input } from "./ui/input";
-import { H1 } from "./typography";
-import React, { useState } from "react";
-import { Noop } from "@/types/shared";
-
 type Page = 0 | 1;
 
 function withTransitionIfExists(fn: CallableFunction) {
@@ -47,9 +48,42 @@ function withTransitionIfExists(fn: CallableFunction) {
 
   document.startViewTransition(fn);
 }
+export type CompanyDetails = z.infer<typeof companyDetails>;
+export type BuyerDetails = z.infer<typeof buyerRepr>;
 
 export function RegisterForm() {
   const [page, setPage] = useState<Page>(0);
+
+  const companyDetailsDefault: CompanyDetails =
+    window.Cypress && window.Cypress.mockCompanyDetails
+      ? window.Cypress.mockCompanyDetails
+      : {
+          companyName: "",
+          address: "",
+          ndaPerson: "",
+          taxId: "",
+        };
+
+  const buyerReprDefault: BuyerDetails =
+    window.Cypress && window.Cypress.mockBuyerDetails
+      ? window.Cypress.mockBuyerDetails
+      : {
+          mail: "",
+          name: "",
+          phone: "",
+          position: "",
+          surname: "",
+        };
+
+  const companyForm = useForm<z.infer<typeof companyDetails>>({
+    resolver: zodResolver(companyDetails),
+    defaultValues: companyDetailsDefault,
+  });
+
+  const buyerForm = useForm<z.infer<typeof buyerRepr>>({
+    resolver: zodResolver(buyerRepr),
+    defaultValues: buyerReprDefault,
+  });
 
   function onCompanyDetailsSubmit(values: z.infer<typeof companyDetails>) {
     withTransitionIfExists(() => setPage(1));
@@ -61,31 +95,32 @@ export function RegisterForm() {
 
   return (
     <React.Fragment>
-      <div hidden={page !== 0}>
-        <CompanyDetails onSubmit={onCompanyDetailsSubmit} />
-      </div>
-      <div hidden={page !== 1}>
+      {page === 0 && (
+        <CompanyDetails form={companyForm} onSubmit={onCompanyDetailsSubmit} />
+      )}
+      {page === 1 && (
         <BuyerRepr
+          form={buyerForm}
           onPrevClick={() => withTransitionIfExists(() => setPage(0))}
           onSubmit={onBuyerReprSubmit}
         />
-      </div>
+      )}
     </React.Fragment>
   );
 }
 
+type SharedProps<T extends ZodType<any, any, any>> = {
+  onSubmit: (vals: z.infer<T>) => void;
+  form: UseFormReturn<z.infer<T>>;
+};
+
 function BuyerRepr({
   onSubmit,
+  form,
   onPrevClick,
 }: {
-  onSubmit: (vals: z.infer<typeof buyerRepr>) => void;
   onPrevClick: Noop;
-}) {
-  const form = useForm<z.infer<typeof buyerRepr>>({
-    resolver: zodResolver(buyerRepr),
-    defaultValues: {},
-  });
-
+} & SharedProps<typeof buyerRepr>) {
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
@@ -166,28 +201,10 @@ function BuyerRepr({
   );
 }
 
-export type CompanyDetails = DefaultValues<z.infer<typeof companyDetails>>;
-
 function CompanyDetails({
+  form,
   onSubmit,
-}: {
-  onSubmit: (vals: z.infer<typeof companyDetails>) => void;
-}) {
-  const defaultValues =
-    window.Cypress && window.Cypress.mockCompanyDetails
-      ? window.Cypress.mockCompanyDetails
-      : {
-          address: "",
-          companyName: "",
-          ndaPerson: "",
-          taxId: "",
-        };
-
-  const form = useForm<z.infer<typeof companyDetails>>({
-    resolver: zodResolver(companyDetails),
-    defaultValues,
-  });
-
+}: SharedProps<typeof companyDetails>) {
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
