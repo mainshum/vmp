@@ -35,6 +35,7 @@ import { useForm } from "react-hook-form";
 import { Input } from "./ui/input";
 import { H1 } from "./typography";
 import React, { useState } from "react";
+import { Noop } from "@/types/shared";
 
 type Page = 0 | 1;
 
@@ -64,7 +65,10 @@ export function RegisterForm() {
         <CompanyDetails onSubmit={onCompanyDetailsSubmit} />
       </div>
       <div hidden={page !== 1}>
-        <BuyerRepr onSubmit={onBuyerReprSubmit} />
+        <BuyerRepr
+          onPrevClick={() => withTransitionIfExists(() => setPage(0))}
+          onSubmit={onBuyerReprSubmit}
+        />
       </div>
     </React.Fragment>
   );
@@ -72,8 +76,10 @@ export function RegisterForm() {
 
 function BuyerRepr({
   onSubmit,
+  onPrevClick,
 }: {
   onSubmit: (vals: z.infer<typeof buyerRepr>) => void;
+  onPrevClick: Noop;
 }) {
   const form = useForm<z.infer<typeof buyerRepr>>({
     resolver: zodResolver(buyerRepr),
@@ -149,7 +155,10 @@ function BuyerRepr({
             </FormItem>
           )}
         />
-        <Button type="submit">Prev</Button>
+        <div className="flex justify-around">
+          <Button type="button" onClick={onPrevClick}>Prev</Button>
+          <Button type="submit">Next</Button>
+        </div>
       </form>
     </Form>
   );
