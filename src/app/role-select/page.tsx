@@ -8,7 +8,8 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 
 function CardLink({ type }: { type: "client" | "vendor" }) {
-  const url = type === "client" ? "/client/register" : "/vendor/register";
+  const url =
+    type === "client" ? "/register?role=client" : "/register?role=vendor";
 
   const Icon = type === "client" ? ShoppingCart : HeartHandshake;
 
@@ -39,8 +40,7 @@ async function Page() {
 
   if (session == null) redirect("/sign-in");
 
-  if (session.user.role === "client") redirect("/client/postings");
-  if (session.user.role === "vendor") redirect("/vendor/postings");
+  if (session.user.role !== "none") redirect("/postings");
 
   return (
     <div className="flex flex-col items-center justify-center gap-8 py-8 sm:flex-row">
