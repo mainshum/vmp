@@ -8,3 +8,5 @@ export type Posting = {
 };
 
 export type UserRole = "client" | "vendor" | "none";
+
+export type Nullalble<T> = T | null;

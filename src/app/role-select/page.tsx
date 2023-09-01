@@ -1,11 +1,11 @@
 import { buttonVariants } from "@/components/ui/Button";
+import { useCommonRedirects } from "@/hooks/use-common-redirects";
 import { nextAuthOptions } from "@/lib/auth";
 import { cn } from "@/lib/utils";
 import { capitalize } from "@/lib/utils";
 import { HeartHandshake, ShoppingCart } from "lucide-react";
 import { getServerSession } from "next-auth";
 import Link from "next/link";
-import { redirect } from "next/navigation";
 
 function CardLink({ type }: { type: "client" | "vendor" }) {
   const url =
@@ -38,9 +38,7 @@ function CardLink({ type }: { type: "client" | "vendor" }) {
 async function Page() {
   const session = await getServerSession(nextAuthOptions);
 
-  if (session == null) redirect("/sign-in");
-
-  if (session.user.role !== "none") redirect("/postings");
+  useCommonRedirects(session);
 
   return (
     <div className="flex flex-col items-center justify-center gap-8 py-8 sm:flex-row">
