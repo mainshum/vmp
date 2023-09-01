@@ -31,7 +31,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Button } from "./ui/Button";
-import { useForm } from "react-hook-form";
+import { useForm, type DefaultValues } from "react-hook-form";
 import { Input } from "./ui/input";
 import { H1 } from "./typography";
 import React, { useState } from "react";
@@ -156,7 +156,9 @@ function BuyerRepr({
           )}
         />
         <div className="flex justify-around">
-          <Button type="button" onClick={onPrevClick}>Prev</Button>
+          <Button type="button" onClick={onPrevClick}>
+            Prev
+          </Button>
           <Button type="submit">Next</Button>
         </div>
       </form>
@@ -164,14 +166,26 @@ function BuyerRepr({
   );
 }
 
+export type CompanyDetails = DefaultValues<z.infer<typeof companyDetails>>;
+
 function CompanyDetails({
   onSubmit,
 }: {
   onSubmit: (vals: z.infer<typeof companyDetails>) => void;
 }) {
+  const defaultValues =
+    window.Cypress && window.Cypress.mockCompanyDetails
+      ? window.Cypress.mockCompanyDetails
+      : {
+          address: "",
+          companyName: "",
+          ndaPerson: "",
+          taxId: "",
+        };
+
   const form = useForm<z.infer<typeof companyDetails>>({
     resolver: zodResolver(companyDetails),
-    defaultValues: {},
+    defaultValues,
   });
 
   return (

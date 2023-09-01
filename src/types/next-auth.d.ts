@@ -1,5 +1,6 @@
-import NextAuth, { DefaultSession } from "next-auth";
+import { DefaultSession } from "next-auth";
 import { UserRole } from "./shared";
+import { type CompanyDetails } from "../components/register";
 
 declare module "next-auth" {
   /**
@@ -15,6 +16,15 @@ declare module "next-auth" {
 
 declare global {
   interface Document {
-    startViewTransition: (x: CallableFunction) => {};
+    startViewTransition: (fn: CallableFunction) => void;
+  }
+  namespace Cypress {
+    interface Cypress {
+      mockCompanyDetails?: CompanyDetails;
+    }
+  }
+
+  interface Window {
+    Cypress?: Cypress.Cypress;
   }
 }
