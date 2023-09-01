@@ -1,3 +1,4 @@
+import { RegisterForm } from "@/components/register";
 import { useCommonRedirects } from "@/hooks/use-common-redirects";
 import { nextAuthOptions } from "@/lib/auth";
 import { PageParams } from "@/types/next";
@@ -17,7 +18,11 @@ async function Page({ searchParams }: PageParams) {
 
   if (searchParams["role"] === "vendor") return <VendorRegister />;
 
-  return <div>Register page</div>;
+  return (
+    <div className="center-absolute">
+      <RegisterForm />
+    </div>
+  );
 }
 
 export default Page;

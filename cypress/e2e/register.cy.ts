@@ -9,10 +9,17 @@ describe("register", () => {
       cy.visit("/register?role=vendor");
     });
 
-    it.only("shows <VendorRegistration/> if search params contains role=vendor", () => {
+    it("shows <VendorRegistration/> if search params contains role=vendor", () => {
       cy.findByText("Vendor registration not implemented").should("exist");
     });
-    it("displays form", () => {
+  });
+
+  describe("happy path:client", () => {
+    beforeEach(() => {
+      setSessionToken("none");
+      cy.visit("/register?role=client");
+    });
+    it.only("displays form", () => {
       cy.findByRole("form").should("exist");
     });
   });
