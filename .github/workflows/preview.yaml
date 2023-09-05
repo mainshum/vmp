@@ -40,4 +40,4 @@ jobs:
 
       - name: Run tests
         run: |
-          pnpm run test:e2e:dev
+          pnpm run test:e2e:ci
