@@ -3,6 +3,7 @@ env:
   SESSION_JWT_TOKEN_CLIENT: ${{ secrets.SESSION_JWT_TOKEN_CLIENT }}
   SESSION_JWT_TOKEN_VENDOR: ${{ secrets.SESSION_JWT_TOKEN_VENDOR }}
   SESSION_JWT_TOKEN_NOROLE: ${{ secrets.SESSION_JWT_TOKEN_NOROLE }}
+  VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
 on:
   push:
     branches-ignore:
@@ -35,6 +36,10 @@ jobs:
           key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
           restore-keys: |
             ${{ runner.os }}-pnpm-store-
+
+      - name: Add env variables from vercel
+        run: |
+          vercel env pull --yes --token=${{ secrets.VERCEL_TOKEN }}
 
       - name: Install dependencies
         run: pnpm install
