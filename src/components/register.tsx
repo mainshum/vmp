@@ -12,13 +12,12 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Button } from "./ui/Button";
-import { useForm, type DefaultValues, UseFormReturn } from "react-hook-form";
+import { useForm, UseFormReturn } from "react-hook-form";
 import { Input } from "./ui/input";
 import * as Typo from "./typography";
 import React, { useState } from "react";
 import { Noop } from "@/types/shared";
 import { ZodType } from "zod";
-import { Label } from "@radix-ui/react-label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 
 const minToCharsString = z.string().min(2, {
@@ -81,8 +80,6 @@ export type BuyerDetails = z.infer<typeof buyerRepr>;
 export function RegisterForm() {
   const [page, setPage] = useState<Page>(0);
 
-  const [isSummary, setIsSummary] = useState<boolean>(false);
-
   const companyDetailsDefault: CompanyDetails =
     window.Cypress && window.Cypress.mockCompanyDetails
       ? window.Cypress.mockCompanyDetails
@@ -132,23 +129,22 @@ export function RegisterForm() {
   }
 
   function onQuestionaireSubmit(values: z.infer<typeof questionaire>) {
-    setIsSummary(true);
-    //withTransitionIfExists(() => setPage(0));
+    alert("Registartion finished.");
   }
 
   return (
     <React.Fragment>
-      {(page === 0 || isSummary) && (
+      {page === 0 && (
         <CompanyDetails form={companyForm} onSubmit={onCompanyDetailsSubmit} />
       )}
-      {(page === 1 || isSummary) && (
+      {page === 1 && (
         <BuyerRepr
           form={buyerForm}
           onPrevClick={() => withTransitionIfExists(() => setPage(0))}
           onSubmit={onBuyerReprSubmit}
         />
       )}
-      {(page === 2 || isSummary) && (
+      {page === 2 && (
         <Questionaire
           form={questionaireForm}
           onPrevClick={() => withTransitionIfExists(() => setPage(1))}
@@ -260,19 +256,28 @@ function Questionaire({
             </FormItem>
           )}
         />
-        <BtnsControls onPrevClick={onPrevClick} />
+        <BtnsControls
+          onPrevClick={onPrevClick}
+          submitBtnText="Finish registration"
+        />
       </form>
     </Form>
   );
 }
 
-function BtnsControls({ onPrevClick }: { onPrevClick: Noop }) {
+function BtnsControls({
+  onPrevClick,
+  submitBtnText = "Next",
+}: {
+  onPrevClick: Noop;
+  submitBtnText: string;
+}) {
   return (
     <div className="flex justify-around">
       <Button variant="subtle" type="button" onClick={onPrevClick}>
         Prev
       </Button>
-      <Button type="submit">Next</Button>
+      <Button type="submit">{submitBtnText}</Button>
     </div>
   );
 }
