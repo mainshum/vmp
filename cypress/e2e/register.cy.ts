@@ -1,5 +1,4 @@
 import { setSessionToken, testCommonRedirects } from "../support/utils";
-import { type FormDetails } from "../../src/components/register";
 
 describe("register", () => {
   testCommonRedirects();
