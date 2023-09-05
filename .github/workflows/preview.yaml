@@ -4,6 +4,8 @@ env:
   SESSION_JWT_TOKEN_VENDOR: ${{ secrets.SESSION_JWT_TOKEN_VENDOR }}
   SESSION_JWT_TOKEN_NOROLE: ${{ secrets.SESSION_JWT_TOKEN_NOROLE }}
   VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+  VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+  VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
 on:
   push:
     branches-ignore:
