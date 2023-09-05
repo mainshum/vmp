@@ -16,3 +16,12 @@ export const capitalize = (s: string) => {
 
   return s[0].toUpperCase() + s.slice(1, s.length);
 };
+
+export const startViewTransitionIfExists = (fn: CallableFunction) => {
+  if (!document.startViewTransition) {
+    fn();
+    return;
+  }
+
+  document.startViewTransition(fn);
+};

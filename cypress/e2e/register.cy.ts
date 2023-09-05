@@ -49,11 +49,6 @@ describe("register", () => {
         companyName: "sdjf",
         ndaPerson: "ksdf",
         taxId: "dss",
-        // mail: "doseit@gmail.com",
-        // name: "steven",
-        // surname: "seagal",
-        // phone: "793",
-        // position: "sdfsdf",
       };
       cy.visit("/register?role=client");
 

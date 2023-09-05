@@ -14,13 +14,40 @@ import {
 import { Button } from "./ui/Button";
 import { useForm, type DefaultValues, UseFormReturn } from "react-hook-form";
 import { Input } from "./ui/input";
-import { H1 } from "./typography";
+import * as Typo from "./typography";
 import React, { useState } from "react";
 import { Noop } from "@/types/shared";
 import { ZodType } from "zod";
+import { Label } from "@radix-ui/react-label";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 
 const minToCharsString = z.string().min(2, {
   message: "At least 2 characters.",
+});
+
+const devProjectType = [
+  "New project",
+  "Current project",
+  "Consulting (expertise)",
+] as const;
+
+const companyType = [
+  "My company (internal support)",
+  "Project for a different company",
+] as const;
+
+const companySize = [
+  "Less than 10",
+  "11-50",
+  "50-250",
+  "250-1000",
+  "1000+",
+] as const;
+
+const questionaire = z.object({
+  devProjectType: z.enum(devProjectType),
+  companyType: z.enum(companyType),
+  companySize: z.enum(companySize),
 });
 
 const companyDetails = z.object({
@@ -38,7 +65,7 @@ const buyerRepr = z.object({
   phone: minToCharsString,
 });
 
-type Page = 0 | 1;
+type Page = 0 | 1 | 2;
 
 function withTransitionIfExists(fn: CallableFunction) {
   if (!document.startViewTransition) {
@@ -53,6 +80,8 @@ export type BuyerDetails = z.infer<typeof buyerRepr>;
 
 export function RegisterForm() {
   const [page, setPage] = useState<Page>(0);
+
+  const [isSummary, setIsSummary] = useState<boolean>(false);
 
   const companyDetailsDefault: CompanyDetails =
     window.Cypress && window.Cypress.mockCompanyDetails
@@ -85,24 +114,45 @@ export function RegisterForm() {
     defaultValues: buyerReprDefault,
   });
 
+  const questionaireForm = useForm<z.infer<typeof questionaire>>({
+    resolver: zodResolver(questionaire),
+    defaultValues: {
+      devProjectType: devProjectType[0],
+      companyType: companyType[0],
+      companySize: companySize[0],
+    },
+  });
+
   function onCompanyDetailsSubmit(values: z.infer<typeof companyDetails>) {
     withTransitionIfExists(() => setPage(1));
   }
 
   function onBuyerReprSubmit(values: z.infer<typeof buyerRepr>) {
-    withTransitionIfExists(() => setPage(0));
+    withTransitionIfExists(() => setPage(2));
+  }
+
+  function onQuestionaireSubmit(values: z.infer<typeof questionaire>) {
+    setIsSummary(true);
+    //withTransitionIfExists(() => setPage(0));
   }
 
   return (
     <React.Fragment>
-      {page === 0 && (
+      {(page === 0 || isSummary) && (
         <CompanyDetails form={companyForm} onSubmit={onCompanyDetailsSubmit} />
       )}
-      {page === 1 && (
+      {(page === 1 || isSummary) && (
         <BuyerRepr
           form={buyerForm}
           onPrevClick={() => withTransitionIfExists(() => setPage(0))}
           onSubmit={onBuyerReprSubmit}
+        />
+      )}
+      {(page === 2 || isSummary) && (
+        <Questionaire
+          form={questionaireForm}
+          onPrevClick={() => withTransitionIfExists(() => setPage(1))}
+          onSubmit={onQuestionaireSubmit}
         />
       )}
     </React.Fragment>
@@ -110,9 +160,122 @@ export function RegisterForm() {
 }
 
 type SharedProps<T extends ZodType<any, any, any>> = {
-  onSubmit: (vals: z.infer<T>) => void;
+  // eslint-disable-next-line no-unused-vars
+  onSubmit: (_vals: z.infer<T>) => void;
   form: UseFormReturn<z.infer<T>>;
 };
+
+function Questionaire({
+  form,
+  onPrevClick,
+  onSubmit,
+}: { onPrevClick: Noop } & SharedProps<typeof questionaire>) {
+  return (
+    <Form {...form}>
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-12">
+        <FormField
+          control={form.control}
+          name="devProjectType"
+          render={({ field }) => (
+            <FormItem className="space-y-4">
+              <Typo.H2>How mature is the project?</Typo.H2>
+              <FormControl>
+                <RadioGroup
+                  onValueChange={field.onChange}
+                  defaultValue={field.value}
+                  className="flex flex-col space-y-1"
+                >
+                  {devProjectType.map((el) => (
+                    <FormItem
+                      key={el}
+                      className="flex items-center space-x-3 space-y-0"
+                    >
+                      <FormControl>
+                        <RadioGroupItem value={el} />
+                      </FormControl>
+                      <FormLabel>{el}</FormLabel>
+                    </FormItem>
+                  ))}
+                </RadioGroup>
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />{" "}
+        <FormField
+          control={form.control}
+          name="companyType"
+          render={({ field }) => (
+            <FormItem className="space-y-4">
+              <Typo.H2>Who is the project for?</Typo.H2>
+              <FormControl>
+                <RadioGroup
+                  onValueChange={field.onChange}
+                  defaultValue={field.value}
+                  className="flex flex-col space-y-1"
+                >
+                  {companyType.map((el) => (
+                    <FormItem
+                      key={el}
+                      className="flex items-center space-x-3 space-y-0"
+                    >
+                      <FormControl>
+                        <RadioGroupItem value={el} />
+                      </FormControl>
+                      <FormLabel>{el}</FormLabel>
+                    </FormItem>
+                  ))}
+                </RadioGroup>
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <FormField
+          control={form.control}
+          name="companySize"
+          render={({ field }) => (
+            <FormItem className="space-y-4">
+              <Typo.H2>How big is the company?</Typo.H2>
+              <FormControl>
+                <RadioGroup
+                  onValueChange={field.onChange}
+                  defaultValue={field.value}
+                  className="flex flex-col space-y-1"
+                >
+                  {companySize.map((el) => (
+                    <FormItem
+                      key={el}
+                      className="flex items-center space-x-3 space-y-0"
+                    >
+                      <FormControl>
+                        <RadioGroupItem value={el} />
+                      </FormControl>
+                      <FormLabel>{el}</FormLabel>
+                    </FormItem>
+                  ))}
+                </RadioGroup>
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <BtnsControls onPrevClick={onPrevClick} />
+      </form>
+    </Form>
+  );
+}
+
+function BtnsControls({ onPrevClick }: { onPrevClick: Noop }) {
+  return (
+    <div className="flex justify-around">
+      <Button variant="subtle" type="button" onClick={onPrevClick}>
+        Prev
+      </Button>
+      <Button type="submit">Next</Button>
+    </div>
+  );
+}
 
 function BuyerRepr({
   onSubmit,
@@ -124,7 +287,7 @@ function BuyerRepr({
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
-        <H1>Buyer representative</H1>
+        <Typo.H1>Buyer representative</Typo.H1>
         <FormField
           control={form.control}
           name="name"
@@ -190,12 +353,7 @@ function BuyerRepr({
             </FormItem>
           )}
         />
-        <div className="flex justify-around">
-          <Button type="button" onClick={onPrevClick}>
-            Prev
-          </Button>
-          <Button type="submit">Next</Button>
-        </div>
+        <BtnsControls onPrevClick={onPrevClick} />
       </form>
     </Form>
   );
@@ -208,7 +366,7 @@ function CompanyDetails({
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
-        <H1>Company details</H1>
+        <Typo.H1>Company details</Typo.H1>
         <FormField
           control={form.control}
           name="companyName"
@@ -261,7 +419,9 @@ function CompanyDetails({
             </FormItem>
           )}
         />
-        <Button type="submit">Next</Button>
+        <div className="flex justify-center">
+          <Button type="submit">Next</Button>
+        </div>
       </form>
     </Form>
   );
