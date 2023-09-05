@@ -1,7 +1,8 @@
 name: Vercel Preview Deployment
-# env:
-#   VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
-#   VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+env:
+  SESSION_JWT_TOKEN_CLIENT: ${{ secrets.SESSION_JWT_TOKEN_CLIENT }}
+  SESSION_JWT_TOKEN_VENDOR: ${{ secrets.SESSION_JWT_TOKEN_VENDOR }}
+  SESSION_JWT_TOKEN_NOROLE: ${{ secrets.SESSION_JWT_TOKEN_NOROLE }}
 on:
   push:
     branches-ignore:
