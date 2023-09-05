@@ -1,5 +1,6 @@
 name: Vercel Preview Deployment
 env:
+  NEXTAUTH_URL: http://localhost:3000
   SESSION_JWT_TOKEN_CLIENT: ${{ secrets.SESSION_JWT_TOKEN_CLIENT }}
   SESSION_JWT_TOKEN_VENDOR: ${{ secrets.SESSION_JWT_TOKEN_VENDOR }}
   SESSION_JWT_TOKEN_NOROLE: ${{ secrets.SESSION_JWT_TOKEN_NOROLE }}
