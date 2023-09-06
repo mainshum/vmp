@@ -6,7 +6,7 @@ generator client {
 }
 
 datasource db {
-  provider     = "mysql"
+  provider     = "postgresql"
   url          = env("DATABASE_URL")
   relationMode = "prisma"
 }
@@ -47,4 +47,43 @@ model User {
   image    String?
   accounts Account[]
   sessions Session[]
+}
+
+enum ProjectType {
+  NEW_PROJECT
+  CURRENT_PROJECT
+  CONSULTING
+}
+
+enum ProjectFor {
+  INTERNAL
+  EXTERNAL
+}
+
+enum CompanySize {
+  BELOW10
+  FROM11TO50
+  FROM50TO250
+  FROM250TO1000
+  ABOVE1000
+}
+
+model Customer {
+  // company stuff
+  id          String @id @default(cuid())
+  companyName String
+  address     String
+  taxId       String
+  ndaPerson   String
+
+  // buyer rep
+  name     String
+  surname  String
+  position String
+  mail     String
+  phone    String
+
+  companySize CompanySize @default(BELOW10)
+  projectType ProjectType @default(NEW_PROJECT)
+  projectFor  ProjectFor  @default(INTERNAL)
 }
