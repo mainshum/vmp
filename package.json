@@ -11,7 +11,7 @@
     "test:open": "pnpm dlx cypress open",
     "test:run": "pnpm dlx cypress run",
     "test:e2e:dev": "start-test dev http://localhost:3000/favicon.ico test:open",
-    "test:e2e:ci": "start-test dev http://localhost:3000/favicon.ico test:run"
+    "test:e2e:ci": "start-test 'pnpm run dev' http://localhost:3000/favicon.ico 'pnpm run test:run'"
   },
   "dependencies": {
     "@editorjs/code": "^2.8.0",
