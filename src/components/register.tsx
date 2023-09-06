@@ -19,50 +19,14 @@ import React, { useState } from "react";
 import { Noop } from "@/types/shared";
 import { ZodType } from "zod";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-
-const minToCharsString = z.string().min(2, {
-  message: "At least 2 characters.",
-});
-
-const devProjectType = [
-  "New project",
-  "Current project",
-  "Consulting (expertise)",
-] as const;
-
-const companyType = [
-  "My company (internal support)",
-  "Project for a different company",
-] as const;
-
-const companySize = [
-  "Less than 10",
-  "11-50",
-  "50-250",
-  "250-1000",
-  "1000+",
-] as const;
-
-const questionaire = z.object({
-  devProjectType: z.enum(devProjectType),
-  companyType: z.enum(companyType),
-  companySize: z.enum(companySize),
-});
-
-const companyDetails = z.object({
-  companyName: minToCharsString,
-  address: minToCharsString,
-  taxId: minToCharsString,
-  ndaPerson: minToCharsString,
-});
-
-const buyerRepr = z.object({
-  name: minToCharsString,
-  surname: minToCharsString,
-  position: minToCharsString,
-  mail: minToCharsString,
-  phone: minToCharsString,
-});
+import {
+  companyDetails,
+  buyerRepr,
+  questionaire,
+  devProjectType,
+  companyType,
+  companySize,
+} from "@/types/data";
 
 type Page = 0 | 1 | 2;
 
@@ -120,15 +84,17 @@ export function RegisterForm() {
     },
   });
 
-  function onCompanyDetailsSubmit(values: z.infer<typeof companyDetails>) {
+  function onCompanyDetailsSubmit() {
     withTransitionIfExists(() => setPage(1));
   }
 
-  function onBuyerReprSubmit(values: z.infer<typeof buyerRepr>) {
+  function onBuyerReprSubmit() {
     withTransitionIfExists(() => setPage(2));
   }
 
-  function onQuestionaireSubmit(values: z.infer<typeof questionaire>) {
+  function onQuestionaireSubmit() {
+    console.log(buyerForm.getValues());
+    console.log(companyForm.getValues());
     alert("Registartion finished.");
   }
 
