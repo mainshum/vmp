@@ -8,8 +8,11 @@ env:
   VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
   VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
 on:
+  pull_request:
+    branches:
+      - main
   push:
-    branches-ignore:
+    branches:
       - main
 jobs:
   Deploy-Preview:
@@ -17,16 +20,10 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
-      # - name: Install Node.js
-      #   uses: actions/setup-node@v3
-      #   with:
-      #     node-version: 16
-
       - uses: pnpm/action-setup@v2
         name: Install pnpm
         with:
           version: 8
-          # run_install: false
 
       - name: Get pnpm store directory
         shell: bash
@@ -50,10 +47,3 @@ jobs:
         with:
           start: pnpm run dev
           wait-on: "http://localhost:3000"
-
-      # - name: Install dependencies
-      #   run: pnpm install
-
-      # - name: Run tests
-      #   run: |
-      #     pnpm run test:e2e:ci
