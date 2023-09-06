@@ -270,7 +270,7 @@ function BtnsControls({
   submitBtnText = "Next",
 }: {
   onPrevClick: Noop;
-  submitBtnText: string;
+  submitBtnText?: string;
 }) {
   return (
     <div className="flex justify-around">
