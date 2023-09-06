@@ -1,0 +1,59 @@
+name: Vercel Preview Deployment
+env:
+  NEXTAUTH_URL: http://localhost:3000
+  SESSION_JWT_TOKEN_CLIENT: ${{ secrets.SESSION_JWT_TOKEN_CLIENT }}
+  SESSION_JWT_TOKEN_VENDOR: ${{ secrets.SESSION_JWT_TOKEN_VENDOR }}
+  SESSION_JWT_TOKEN_NOROLE: ${{ secrets.SESSION_JWT_TOKEN_NOROLE }}
+  VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+  VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+  VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+on:
+  push:
+    branches-ignore:
+      - main
+jobs:
+  Deploy-Preview:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      # - name: Install Node.js
+      #   uses: actions/setup-node@v3
+      #   with:
+      #     node-version: 16
+
+      - uses: pnpm/action-setup@v2
+        name: Install pnpm
+        with:
+          version: 8
+          # run_install: false
+
+      - name: Get pnpm store directory
+        shell: bash
+        run: |
+          echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_ENV
+
+      - uses: actions/cache@v3
+        name: Setup pnpm cache
+        with:
+          path: ${{ env.STORE_PATH }}
+          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-store-
+
+      - name: Add env variables from vercel
+        run: |
+          vercel env pull --yes --token=${{ secrets.VERCEL_TOKEN }}
+
+      - name: Cypress run
+        uses: cypress-io/github-action@v6
+        with:
+          start: pnpm run dev
+          wait-on: "http://localhost:3000"
+
+      # - name: Install dependencies
+      #   run: pnpm install
+
+      # - name: Run tests
+      #   run: |
+      #     pnpm run test:e2e:ci
