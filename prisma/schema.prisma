@@ -68,20 +68,32 @@ enum CompanySize {
 
 model Customer {
   // company stuff
+
+  /// @zod.string.min(3)
   id           String @id @default(cuid())
+  /// @zod.string.min(3)
   companyName  String
+  /// @zod.string.min(3)
   addressLine1 String
+  /// @zod.string.min(3)
   addressLine2 String
+  /// @zod.string.min(3)
   postalCode   String
+  /// @zod.string.min(3)
   city         String
+  /// @zod.string.min(3)
   taxId        String
-  ndaPerson    String
 
   // buyer rep
+  /// @zod.string.min(3)
   name     String
+  /// @zod.string.min(3)
   surname  String
+  /// @zod.string.min(3)
   position String
+  /// @zod.string.min(3)
   mail     String
+  /// @zod.string.min(3)
   phone    String
 
   // questionnaire
