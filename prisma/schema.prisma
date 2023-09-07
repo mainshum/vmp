@@ -5,6 +5,10 @@ generator client {
   provider = "prisma-client-js"
 }
 
+generator zod {
+  provider = "zod-prisma-types"
+}
+
 datasource db {
   provider     = "postgresql"
   url          = env("DATABASE_URL")
@@ -49,12 +53,6 @@ model User {
   sessions Session[]
 }
 
-enum ProjectType {
-  NEW_PROJECT
-  CURRENT_PROJECT
-  CONSULTING
-}
-
 enum ProjectFor {
   INTERNAL
   EXTERNAL
@@ -70,11 +68,14 @@ enum CompanySize {
 
 model Customer {
   // company stuff
-  id          String @id @default(cuid())
-  companyName String
-  address     String
-  taxId       String
-  ndaPerson   String
+  id           String @id @default(cuid())
+  companyName  String
+  addressLine1 String
+  addressLine2 String
+  postalCode   String
+  city         String
+  taxId        String
+  ndaPerson    String
 
   // buyer rep
   name     String
@@ -83,7 +84,7 @@ model Customer {
   mail     String
   phone    String
 
+  // questionnaire
   companySize CompanySize @default(BELOW10)
-  projectType ProjectType @default(NEW_PROJECT)
   projectFor  ProjectFor  @default(INTERNAL)
 }

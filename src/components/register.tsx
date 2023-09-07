@@ -20,15 +20,12 @@ import { Noop } from "@/types/shared";
 import { ZodType } from "zod";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import {
-  companyDetails,
-  buyerRepr,
-  questionaire,
-  devProjectType,
-  companyType,
-  companySize,
-} from "@/types/data";
+  CompanySizeSchema,
+  CustomerSchema,
+  ProjectForSchema,
+} from "../../prisma/generated/zod";
 
-type Page = 0 | 1 | 2;
+type FormPage = 0 | 1 | 2;
 
 function withTransitionIfExists(fn: CallableFunction) {
   if (!document.startViewTransition) {
@@ -38,19 +35,47 @@ function withTransitionIfExists(fn: CallableFunction) {
 
   document.startViewTransition(fn);
 }
-export type CompanyDetails = z.infer<typeof companyDetails>;
-export type BuyerDetails = z.infer<typeof buyerRepr>;
+
+const CompanySchema = CustomerSchema.pick({
+  companyName: true,
+  addressLine1: true,
+  addressLine2: true,
+  postalCode: true,
+  city: true,
+  taxId: true,
+  ndaPerson: true,
+});
+
+const BuyerDetailsSchema = CustomerSchema.pick({
+  name: true,
+  surname: true,
+  mail: true,
+  phone: true,
+  position: true,
+});
+
+const QuestionaireSchema = CustomerSchema.pick({
+  companySize: true,
+  projectFor: true,
+});
+
+type CompanySchemaT = z.infer<typeof CompanySchema>;
+type BuyerDetailsSchemaT = z.infer<typeof BuyerDetailsSchema>;
+type QuestionaireSchemaT = z.infer<typeof QuestionaireSchema>;
 
 export function RegisterForm() {
-  const [page, setPage] = useState<Page>(0);
+  const [page, setPage] = useState<FormPage>(0);
 
-  let companyDetailsDefault: CompanyDetails = {
+  let companyDetailsDefault: CompanySchemaT = {
+    addressLine1: "",
+    addressLine2: "",
+    city: "",
+    postalCode: "",
     companyName: "",
-    address: "",
     ndaPerson: "",
     taxId: "",
   };
-  let buyerReprDefault: BuyerDetails = {
+  let buyerReprDefault: BuyerDetailsSchemaT = {
     mail: "",
     name: "",
     phone: "",
@@ -68,38 +93,42 @@ export function RegisterForm() {
     }
   }
 
-  const companyForm = useForm<CompanyDetails>({
-    resolver: zodResolver(companyDetails),
+  const companyForm = useForm<CompanySchemaT>({
+    resolver: zodResolver(CompanySchema),
     defaultValues: companyDetailsDefault,
   });
 
-  const buyerForm = useForm<BuyerDetails>({
-    resolver: zodResolver(buyerRepr),
+  const buyerForm = useForm<BuyerDetailsSchemaT>({
+    resolver: zodResolver(BuyerDetailsSchema),
     defaultValues: buyerReprDefault,
   });
 
-  const questionaireForm = useForm<z.infer<typeof questionaire>>({
-    resolver: zodResolver(questionaire),
+  const questionaireForm = useForm<QuestionaireSchemaT>({
+    resolver: zodResolver(QuestionaireSchema),
     defaultValues: {
-      devProjectType: devProjectType[0],
-      companyType: companyType[0],
-      companySize: companySize[0],
+      companySize: "BELOW10",
+      projectFor: "INTERNAL",
     },
   });
 
-  function onCompanyDetailsSubmit() {
-    withTransitionIfExists(() => setPage(1));
-  }
+  const hopPage = (no: FormPage) => withTransitionIfExists(() => setPage(no));
 
-  function onBuyerReprSubmit() {
-    withTransitionIfExists(() => setPage(2));
-  }
+  const onCompanyDetailsSubmit = () => hopPage(1);
 
-  function onQuestionaireSubmit() {
-    console.log(buyerForm.getValues());
-    console.log(companyForm.getValues());
-    alert("Registartion finished.");
-  }
+  const onBuyerReprSubmit = () => hopPage(2);
+
+  const onQuestionaireSubmit = async () => {
+    const res = await fetch("/api/client/register", {
+      method: "POST",
+      body: JSON.stringify({
+        ...companyForm.getValues(),
+        ...buyerForm.getValues(),
+        ...questionaireForm.getValues(),
+      }),
+    });
+
+    //const json = await res.json();
+  };
 
   return (
     <React.Fragment>
@@ -134,31 +163,32 @@ function Questionaire({
   form,
   onPrevClick,
   onSubmit,
-}: { onPrevClick: Noop } & SharedProps<typeof questionaire>) {
+}: { onPrevClick: Noop } & SharedProps<typeof QuestionaireSchema>) {
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-12">
+        <Typo.H1>More information</Typo.H1>
         <FormField
           control={form.control}
-          name="devProjectType"
+          name="projectFor"
           render={({ field }) => (
             <FormItem className="space-y-4">
-              <Typo.H2>How mature is the project?</Typo.H2>
+              <Typo.H2>I’m looking for developers for</Typo.H2>
               <FormControl>
                 <RadioGroup
                   onValueChange={field.onChange}
                   defaultValue={field.value}
                   className="flex flex-col space-y-1"
                 >
-                  {devProjectType.map((el) => (
+                  {ProjectForSchema.options.map((opt) => (
                     <FormItem
-                      key={el}
+                      key={opt}
                       className="flex items-center space-x-3 space-y-0"
                     >
                       <FormControl>
-                        <RadioGroupItem value={el} />
+                        <RadioGroupItem value={opt} />
                       </FormControl>
-                      <FormLabel>{el}</FormLabel>
+                      <FormLabel>{opt}</FormLabel>
                     </FormItem>
                   ))}
                 </RadioGroup>
@@ -169,46 +199,17 @@ function Questionaire({
         />{" "}
         <FormField
           control={form.control}
-          name="companyType"
-          render={({ field }) => (
-            <FormItem className="space-y-4">
-              <Typo.H2>Who is the project for?</Typo.H2>
-              <FormControl>
-                <RadioGroup
-                  onValueChange={field.onChange}
-                  defaultValue={field.value}
-                  className="flex flex-col space-y-1"
-                >
-                  {companyType.map((el) => (
-                    <FormItem
-                      key={el}
-                      className="flex items-center space-x-3 space-y-0"
-                    >
-                      <FormControl>
-                        <RadioGroupItem value={el} />
-                      </FormControl>
-                      <FormLabel>{el}</FormLabel>
-                    </FormItem>
-                  ))}
-                </RadioGroup>
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <FormField
-          control={form.control}
           name="companySize"
           render={({ field }) => (
             <FormItem className="space-y-4">
-              <Typo.H2>How big is the company?</Typo.H2>
+              <Typo.H2>My company employs</Typo.H2>
               <FormControl>
                 <RadioGroup
                   onValueChange={field.onChange}
                   defaultValue={field.value}
                   className="flex flex-col space-y-1"
                 >
-                  {companySize.map((el) => (
+                  {CompanySizeSchema.options.map((el) => (
                     <FormItem
                       key={el}
                       className="flex items-center space-x-3 space-y-0"
@@ -257,7 +258,7 @@ function BuyerRepr({
   onPrevClick,
 }: {
   onPrevClick: Noop;
-} & SharedProps<typeof buyerRepr>) {
+} & SharedProps<typeof BuyerDetailsSchema>) {
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
@@ -333,10 +334,7 @@ function BuyerRepr({
   );
 }
 
-function CompanyDetails({
-  form,
-  onSubmit,
-}: SharedProps<typeof companyDetails>) {
+function CompanyDetails({ form, onSubmit }: SharedProps<typeof CompanySchema>) {
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
@@ -356,10 +354,36 @@ function CompanyDetails({
         />
         <FormField
           control={form.control}
-          name="address"
+          name="addressLine1"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Address</FormLabel>
+              <FormLabel>Address line 1</FormLabel>
+              <FormControl>
+                <Input {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <FormField
+          control={form.control}
+          name="addressLine2"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Address line 2</FormLabel>
+              <FormControl>
+                <Input {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <FormField
+          control={form.control}
+          name="postalCode"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Post code</FormLabel>
               <FormControl>
                 <Input {...field} />
               </FormControl>
@@ -400,37 +424,3 @@ function CompanyDetails({
     </Form>
   );
 }
-
-// import { useForm, SubmitHandler } from "react-hook-form";
-
-// type Inputs = {
-//   example: string;
-//   exampleRequired: string;
-// };
-
-// export function Form() {
-//   const {
-//     register,
-//     handleSubmit,
-//     watch,
-//     formState: { errors },
-//   } = useForm<Inputs>();
-//   const onSubmit: SubmitHandler<Inputs> = (data) => console.log(data);
-
-//   console.log(watch("example")); // watch input value by passing the name of it
-
-//   return (
-//     /* "handleSubmit" will validate your inputs before invoking "onSubmit" */
-//     <form onSubmit={handleSubmit(onSubmit)}>
-//       {/* register your input into the hook by invoking the "register" function */}
-//       <input defaultValue="test" {...register("example")} />
-
-//       {/* include validation with required or other standard HTML validation rules */}
-//       <input {...register("exampleRequired", { required: true })} />
-//       {/* errors will return when field validation fails  */}
-//       {errors.exampleRequired && <span>This field is required</span>}
-
-//       <input type="submit" />
-//     </form>
-//   );
-// }

@@ -1,4 +1,4 @@
-import { validCustomer } from "@/types/data";
+import { CustomerSchema } from "../../prisma/generated/zod";
 import { PrismaClient } from "@prisma/client";
 import "server-only";
 
@@ -23,7 +23,7 @@ export const db = prisma.$extends({
       create({ args, query }) {
         // validate
 
-        args.data = validCustomer.parse(args.data);
+        args.data = CustomerSchema.omit({ id: true }).parse(args.data);
 
         return query(args);
       },
