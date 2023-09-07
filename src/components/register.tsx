@@ -44,33 +44,36 @@ export type BuyerDetails = z.infer<typeof buyerRepr>;
 export function RegisterForm() {
   const [page, setPage] = useState<Page>(0);
 
-  const companyDetailsDefault: CompanyDetails =
-    window.Cypress && window.Cypress.mockCompanyDetails
-      ? window.Cypress.mockCompanyDetails
-      : {
-          companyName: "",
-          address: "",
-          ndaPerson: "",
-          taxId: "",
-        };
+  let companyDetailsDefault: CompanyDetails = {
+    companyName: "",
+    address: "",
+    ndaPerson: "",
+    taxId: "",
+  };
+  let buyerReprDefault: BuyerDetails = {
+    mail: "",
+    name: "",
+    phone: "",
+    position: "",
+    surname: "",
+  };
 
-  const buyerReprDefault: BuyerDetails =
-    window.Cypress && window.Cypress.mockBuyerDetails
-      ? window.Cypress.mockBuyerDetails
-      : {
-          mail: "",
-          name: "",
-          phone: "",
-          position: "",
-          surname: "",
-        };
+  if (typeof window !== "undefined" && window.Cypress) {
+    if (window.Cypress.mockCompanyDetails) {
+      companyDetailsDefault = window.Cypress.mockCompanyDetails;
+    }
 
-  const companyForm = useForm<z.infer<typeof companyDetails>>({
+    if (window.Cypress.mockBuyerDetails) {
+      buyerReprDefault = window.Cypress.mockBuyerDetails;
+    }
+  }
+
+  const companyForm = useForm<CompanyDetails>({
     resolver: zodResolver(companyDetails),
     defaultValues: companyDetailsDefault,
   });
 
-  const buyerForm = useForm<z.infer<typeof buyerRepr>>({
+  const buyerForm = useForm<BuyerDetails>({
     resolver: zodResolver(buyerRepr),
     defaultValues: buyerReprDefault,
   });
