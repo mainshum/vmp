@@ -7,5 +7,5 @@ export default async function Home() {
 
   // if (!session) throw Error("impossible state");
 
-  redirect("/client");
+  redirect("/client/postings");
 }

@@ -1,9 +1,11 @@
 import Image from "next/image";
 import * as Typo from "@/components/typography";
-import { Button } from "@/components/ui/Button";
+import { Button, buttonVariants } from "@/components/ui/Button";
 import { PageParams } from "@/types/next";
 import { match } from "ts-pattern";
 import React from "react";
+import Link from "next/link";
+import { cn } from "@/lib/utils";
 
 export default async function Home({ searchParams }: PageParams) {
   const type = searchParams["type"];
@@ -19,15 +21,15 @@ export default async function Home({ searchParams }: PageParams) {
                 You are now registered as VMP customer and ready to submit your
                 first job posting.
               </Typo.H2>
-              <Button>Get started</Button>
+              <Link className={cn(buttonVariants())} href="/client/postings">
+                Get started
+              </Link>
             </React.Fragment>
           ))
           .otherwise(() => (
             <React.Fragment>
               <Typo.H1>Success!</Typo.H1>
-              <Typo.H2>
-                Hard to say what kind of though... Are you here by mistake?
-              </Typo.H2>
+              <Typo.H2>Are you here by mistake?</Typo.H2>
             </React.Fragment>
           ))}
       </section>

@@ -1,6 +1,7 @@
 import GP from "next-auth/providers/google";
 import { NextAuthOptions } from "next-auth";
 import { UserRole } from "@/types/shared";
+import { db } from "./db";
 
 const dbMock = {
   async findUserRole(email: string): Promise<UserRole> {
