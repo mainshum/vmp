@@ -1,5 +1,6 @@
 "use client";
 
+import { match } from "ts-pattern";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 
@@ -24,8 +25,11 @@ import {
   CustomerSchema,
   ProjectForSchema,
 } from "../../prisma/generated/zod";
+import { Dialog, DialogContent } from "./ui/dialog";
+import { Loader2 } from "lucide-react";
+import { useRouter } from "next/navigation";
 
-type FormPage = 0 | 1 | 2;
+type FormStep = 0 | 1 | 2 | "submitting" | "submitted" | "error";
 
 function withTransitionIfExists(fn: CallableFunction) {
   if (!document.startViewTransition) {
@@ -62,8 +66,26 @@ type CompanySchemaT = z.infer<typeof CompanySchema>;
 type BuyerDetailsSchemaT = z.infer<typeof BuyerDetailsSchema>;
 type QuestionaireSchemaT = z.infer<typeof QuestionaireSchema>;
 
+function SavingModal({
+  children,
+  isOpen,
+}: {
+  children: React.ReactNode;
+  isOpen: boolean;
+}) {
+  return (
+    <Dialog open={isOpen}>
+      <DialogContent className="flex items-center justify-between">
+        {children}
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 export function RegisterForm() {
-  const [page, setPage] = useState<FormPage>(0);
+  const [formStep, setPage] = useState<FormStep>(0);
+
+  const router = useRouter();
 
   let companyDetailsDefault: CompanySchemaT = {
     addressLine1: "",
@@ -109,44 +131,73 @@ export function RegisterForm() {
     },
   });
 
-  const hopPage = (no: FormPage) => withTransitionIfExists(() => setPage(no));
+  const hopPage = (no: FormStep) => withTransitionIfExists(() => setPage(no));
 
   const onCompanyDetailsSubmit = () => hopPage(1);
 
   const onBuyerReprSubmit = () => hopPage(2);
 
   const onQuestionaireSubmit = async () => {
-    const res = await fetch("/api/client/register", {
-      method: "POST",
-      body: JSON.stringify({
-        ...companyForm.getValues(),
-        ...buyerForm.getValues(),
-        ...questionaireForm.getValues(),
-      }),
-    });
+    setPage("submitting");
+    try {
+      const res = await fetch("/api/client/register", {
+        method: "POST",
+        body: JSON.stringify({
+          ...companyForm.getValues(),
+          ...buyerForm.getValues(),
+          ...questionaireForm.getValues(),
+        }),
+      });
 
-    //const json = await res.json();
+      setPage("submitted");
+
+      router.push("/");
+    } catch (err) {
+    } finally {
+    }
   };
 
   return (
     <React.Fragment>
-      {page === 0 && (
-        <CompanyDetails form={companyForm} onSubmit={onCompanyDetailsSubmit} />
-      )}
-      {page === 1 && (
-        <BuyerRepr
-          form={buyerForm}
-          onPrevClick={() => withTransitionIfExists(() => setPage(0))}
-          onSubmit={onBuyerReprSubmit}
-        />
-      )}
-      {page === 2 && (
-        <Questionaire
-          form={questionaireForm}
-          onPrevClick={() => withTransitionIfExists(() => setPage(1))}
-          onSubmit={onQuestionaireSubmit}
-        />
-      )}
+      {match(formStep)
+        .with(0, () => (
+          <CompanyDetails
+            form={companyForm}
+            onSubmit={onCompanyDetailsSubmit}
+          />
+        ))
+        .with(1, () => (
+          <BuyerRepr
+            form={buyerForm}
+            onPrevClick={() => withTransitionIfExists(() => setPage(0))}
+            onSubmit={onBuyerReprSubmit}
+          />
+        ))
+        .with(2, () => (
+          <Questionaire
+            form={questionaireForm}
+            onPrevClick={() => withTransitionIfExists(() => setPage(1))}
+            onSubmit={onQuestionaireSubmit}
+          />
+        ))
+        .with("submitting", () => (
+          <SavingModal isOpen={true}>
+            <Typo.H2>Saving the user</Typo.H2>
+            <Loader2 className="animate-spin"></Loader2>
+          </SavingModal>
+        ))
+        .with("submitted", () => (
+          <SavingModal isOpen={true}>
+            <Typo.H2>User submitted successfully</Typo.H2>
+          </SavingModal>
+        ))
+        .with("error", () => (
+          <SavingModal isOpen={true}>
+            <Typo.H2>Saving the user</Typo.H2>
+            <Loader2 className="animate-spin"></Loader2>
+          </SavingModal>
+        ))
+        .exhaustive()}
     </React.Fragment>
   );
 }
@@ -186,7 +237,19 @@ function Questionaire({
                       <FormControl>
                         <RadioGroupItem value={opt} />
                       </FormControl>
-                      <FormLabel>{opt}</FormLabel>
+                      <FormLabel>
+                        {match(opt)
+                          .with(
+                            "INTERNAL",
+                            () => "My company (internal support)",
+                          )
+                          .with(
+                            "EXTERNAL",
+                            () =>
+                              "project for a different company (re-sell of services",
+                          )
+                          .exhaustive()}
+                      </FormLabel>
                     </FormItem>
                   ))}
                 </RadioGroup>
@@ -215,7 +278,15 @@ function Questionaire({
                       <FormControl>
                         <RadioGroupItem value={el} />
                       </FormControl>
-                      <FormLabel>{el}</FormLabel>
+                      <FormLabel>
+                        {match(el)
+                          .with("BELOW10", () => "Less than 10")
+                          .with("FROM11TO50", () => "11-50")
+                          .with("FROM50TO250", () => "50-250")
+                          .with("FROM250TO1000", () => "250-1000")
+                          .with("ABOVE1000", () => "1000+")
+                          .exhaustive()}
+                      </FormLabel>
                     </FormItem>
                   ))}
                 </RadioGroup>
