@@ -43,7 +43,6 @@ const CompanySchema = CustomerSchema.pick({
   postalCode: true,
   city: true,
   taxId: true,
-  ndaPerson: true,
 });
 
 const BuyerDetailsSchema = CustomerSchema.pick({
@@ -72,7 +71,6 @@ export function RegisterForm() {
     city: "",
     postalCode: "",
     companyName: "",
-    ndaPerson: "",
     taxId: "",
   };
   let buyerReprDefault: BuyerDetailsSchemaT = {
@@ -338,13 +336,13 @@ function CompanyDetails({ form, onSubmit }: SharedProps<typeof CompanySchema>) {
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
-        <Typo.H1>Company details</Typo.H1>
+        <Typo.H1>Company Information</Typo.H1>
         <FormField
           control={form.control}
           name="companyName"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Company name</FormLabel>
+              <FormLabel className="font-extrabold">Company name</FormLabel>
               <FormControl>
                 <Input {...field} />
               </FormControl>
@@ -352,6 +350,20 @@ function CompanyDetails({ form, onSubmit }: SharedProps<typeof CompanySchema>) {
             </FormItem>
           )}
         />
+        <FormField
+          control={form.control}
+          name="taxId"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel className="font-extrabold">Tax ID</FormLabel>
+              <FormControl>
+                <Input {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <Typo.H2>Address</Typo.H2>
         <FormField
           control={form.control}
           name="addressLine1"
@@ -383,7 +395,7 @@ function CompanyDetails({ form, onSubmit }: SharedProps<typeof CompanySchema>) {
           name="postalCode"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Post code</FormLabel>
+              <FormLabel>Postal code</FormLabel>
               <FormControl>
                 <Input {...field} />
               </FormControl>
@@ -393,23 +405,10 @@ function CompanyDetails({ form, onSubmit }: SharedProps<typeof CompanySchema>) {
         />
         <FormField
           control={form.control}
-          name="taxId"
+          name="city"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Tax ID</FormLabel>
-              <FormControl>
-                <Input {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <FormField
-          control={form.control}
-          name="ndaPerson"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Name and position of the person to sign NDA</FormLabel>
+              <FormLabel>City</FormLabel>
               <FormControl>
                 <Input {...field} />
               </FormControl>

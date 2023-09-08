@@ -19,7 +19,7 @@ async function Page({ searchParams }: PageParams) {
   if (searchParams["role"] === "vendor") return <VendorRegister />;
 
   return (
-    <div className="center-absolute">
+    <div className="py-8">
       <RegisterForm />
     </div>
   );
