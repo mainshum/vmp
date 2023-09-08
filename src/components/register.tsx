@@ -29,7 +29,7 @@ import { Dialog, DialogContent } from "./ui/dialog";
 import { Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 
-type FormStep = 0 | 1 | 2 | "submitting" | "submitted" | "error";
+type FormStep = 0 | 1 | 2 | "submitting";
 
 function withTransitionIfExists(fn: CallableFunction) {
   if (!document.startViewTransition) {
@@ -140,7 +140,7 @@ export function RegisterForm() {
   const onQuestionaireSubmit = async () => {
     setPage("submitting");
     try {
-      const res = await fetch("/api/client/register", {
+      await fetch("/api/client/register", {
         method: "POST",
         body: JSON.stringify({
           ...companyForm.getValues(),
@@ -149,12 +149,8 @@ export function RegisterForm() {
         }),
       });
 
-      setPage("submitted");
-
-      router.push("/");
-    } catch (err) {
-    } finally {
-    }
+      router.push("/success?type=customer_registered");
+    } catch (err) {}
   };
 
   return (
@@ -181,17 +177,6 @@ export function RegisterForm() {
           />
         ))
         .with("submitting", () => (
-          <SavingModal isOpen={true}>
-            <Typo.H2>Saving the user</Typo.H2>
-            <Loader2 className="animate-spin"></Loader2>
-          </SavingModal>
-        ))
-        .with("submitted", () => (
-          <SavingModal isOpen={true}>
-            <Typo.H2>User submitted successfully</Typo.H2>
-          </SavingModal>
-        ))
-        .with("error", () => (
           <SavingModal isOpen={true}>
             <Typo.H2>Saving the user</Typo.H2>
             <Loader2 className="animate-spin"></Loader2>
