@@ -1,9 +1,10 @@
-import { UserRole } from "../../src/types/shared";
+import { VMPRoleType } from "../../prisma/generated/zod";
 
-const roleToToken: Record<UserRole, string> = {
-  client: Cypress.env("clientSessionToken"),
-  vendor: Cypress.env("vendorSessionToken"),
-  none: Cypress.env("noroleSessionToken"),
+const roleToToken: Record<VMPRoleType, string> = {
+  CLIENT: Cypress.env("clientSessionToken"),
+  VENDOR: Cypress.env("vendorSessionToken"),
+  NONE: Cypress.env("noroleSessionToken"),
+  ADMIN: Cypress.env("noroleSessionToken"),
 };
 
 export const testRedirect = (initUrl: string) => (finalUrl: string) => {
@@ -11,7 +12,7 @@ export const testRedirect = (initUrl: string) => (finalUrl: string) => {
   cy.url().should("contain", finalUrl);
 };
 
-export const setSessionToken = (role: UserRole) =>
+export const setSessionToken = (role: VMPRoleType) =>
   cy.setCookie("next-auth.session-token", roleToToken[role]);
 
 export const testCommonRedirects = () => {
@@ -24,12 +25,12 @@ export const testCommonRedirects = () => {
     });
 
     it("redirects to /postings if user is registered as client", () => {
-      setSessionToken("client");
+      setSessionToken("CLIENT");
       toPostings();
     });
 
     it("redirects to /postings if user is registered as vendor", () => {
-      setSessionToken("vendor");
+      setSessionToken("CLIENT");
       toPostings();
     });
   });

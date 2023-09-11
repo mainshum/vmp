@@ -17,18 +17,18 @@ if (process.env.NODE_ENV === "production") {
   prisma = global.cachedPrisma;
 }
 
-prisma.$extends({
-  query: {
-    customer: {
-      create({ args, query }) {
-        // validate
+// prisma.$extends({
+//   query: {
+//     customer: {
+//       create({ args, query }) {
+//         // validate
 
-        args.data = CustomerSchema.omit({ id: true }).parse(args.data);
+//         args.data = CustomerSchema.omit({ id: true }).parse(args.data);
 
-        return query(args);
-      },
-    },
-  },
-});
+//         return query(args);
+//       },
+//     },
+//   },
+// });
 
 export const db = prisma;

@@ -1,4 +1,4 @@
-import { ROUTES } from "@/lib/const";
+import { ROUTES } from "../../src/lib/const";
 import { setSessionToken } from "../support/utils";
 
 describe("/role-select", () => {
@@ -24,13 +24,13 @@ describe("/role-select", () => {
 
   describe("happy path", () => {
     it("goes to /register?role=vendor if user clicks on Vendor", () => {
-      setSessionToken("none");
+      setSessionToken("NONE");
       cy.visit("/role-select");
       cy.findByText("Vendor").should("exist").click();
       cy.url().should("contain", "/register?role=vendor");
     });
     it("goes to /register?role=client if user clicks on Client", () => {
-      setSessionToken("none");
+      setSessionToken("NONE");
       cy.visit("/role-select");
       cy.findByText("Client").should("exist").click();
       cy.url().should("contain", "/register?role=client");

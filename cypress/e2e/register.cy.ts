@@ -5,7 +5,7 @@ describe("register", () => {
 
   describe("happy path:vendor", () => {
     it("shows <VendorRegistration/> if search params contains role=vendor", () => {
-      setSessionToken("none");
+      setSessionToken("NONE");
       cy.visit("/register?role=vendor");
       cy.findByText("Vendor registration not implemented").should("exist");
     });
@@ -25,7 +25,7 @@ describe("register", () => {
       const isLastPage = textVisibleLazy("Finish registration");
 
       beforeEach(() => {
-        setSessionToken("none");
+        setSessionToken("NONE");
       });
 
       const validationEr = "At least 2 characters.";
