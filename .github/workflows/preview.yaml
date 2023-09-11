@@ -44,7 +44,7 @@ jobs:
 
       - name: Run db migrations
         run: |
-          prisma migrate deploy
+          pnpm dlx prisma migrate deploy
 
       # - name: Cypress run
       #   uses: cypress-io/github-action@v6
