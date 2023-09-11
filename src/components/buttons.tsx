@@ -1,22 +1,55 @@
 "use client";
 
-import { cn } from "@/lib/utils";
-import { Link } from "lucide-react";
-import { Button, buttonVariants } from "./ui/Button";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import { Session } from "next-auth";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "./ui/dropdown-menu";
 import { signOut } from "next-auth/react";
+import Link from "next/link";
+import { ROUTES } from "@/lib/const";
+import { LogOutIcon, Megaphone } from "lucide-react";
 
-export function SignIn() {
-  return (
-    <Link href="/sign-in" className={cn(buttonVariants({ size: "xs" }))}>
-      Sign in
-    </Link>
-  );
-}
+const initials = (nameSurname: string) =>
+  nameSurname
+    .split(" ")
+    .filter((x) => x.length > 0)
+    .map((x) => x[0]);
 
-export function SignOut() {
+export function SignOut({
+  sessionUser,
+}: {
+  sessionUser: Exclude<Session["user"], undefined>;
+}) {
   return (
-    <Button size="xs" onClick={() => signOut()}>
-      Sign out
-    </Button>
+    <Avatar role="button">
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <AvatarImage
+            src={sessionUser.image ? sessionUser.image : undefined}
+          />
+        </DropdownMenuTrigger>
+        <DropdownMenuTrigger>
+          <AvatarFallback>
+            {sessionUser.name ? initials(sessionUser.name) : "ME"}
+          </AvatarFallback>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end">
+          <DropdownMenuItem onClick={() => signOut()}>
+            <LogOutIcon className="mr-2 h-4 w-4" />
+            <span>Sign out</span>
+          </DropdownMenuItem>
+          <DropdownMenuItem asChild>
+            <Link href={ROUTES.CLIENT.POSTINGS}>
+              <Megaphone className="mr-2 h-4 w-4" />
+              <span>Postings</span>
+            </Link>
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+    </Avatar>
   );
 }
