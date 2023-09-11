@@ -6,3 +6,8 @@ export type PageParams = {
 };
 
 export type GetServerSession = ReturnType<typeof getServerSession>;
+
+export type ErrorComp = {
+  error: Error & { digest?: string };
+  reset: () => void;
+};

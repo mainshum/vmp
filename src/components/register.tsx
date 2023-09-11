@@ -1,5 +1,7 @@
 "use client";
 
+import ErrorComp from "@/app/register/error";
+import { match } from "ts-pattern";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 
@@ -19,52 +21,19 @@ import React, { useState } from "react";
 import { Noop } from "@/types/shared";
 import { ZodType } from "zod";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import {
+  CompanySizeSchema,
+  CustomerSchema,
+  ProjectForSchema,
+} from "../../prisma/generated/zod";
+import { Dialog, DialogContent } from "./ui/dialog";
+import { Loader2 } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { useSession } from "next-auth/react";
+import { ROUTES } from "@/lib/const";
+import { noop } from "@/lib/utils";
 
-const minToCharsString = z.string().min(2, {
-  message: "At least 2 characters.",
-});
-
-const devProjectType = [
-  "New project",
-  "Current project",
-  "Consulting (expertise)",
-] as const;
-
-const companyType = [
-  "My company (internal support)",
-  "Project for a different company",
-] as const;
-
-const companySize = [
-  "Less than 10",
-  "11-50",
-  "50-250",
-  "250-1000",
-  "1000+",
-] as const;
-
-const questionaire = z.object({
-  devProjectType: z.enum(devProjectType),
-  companyType: z.enum(companyType),
-  companySize: z.enum(companySize),
-});
-
-const companyDetails = z.object({
-  companyName: minToCharsString,
-  address: minToCharsString,
-  taxId: minToCharsString,
-  ndaPerson: minToCharsString,
-});
-
-const buyerRepr = z.object({
-  name: minToCharsString,
-  surname: minToCharsString,
-  position: minToCharsString,
-  mail: minToCharsString,
-  phone: minToCharsString,
-});
-
-type Page = 0 | 1 | 2;
+type FormStep = 0 | 1 | 2 | "submitting" | "error_submitting";
 
 function withTransitionIfExists(fn: CallableFunction) {
   if (!document.startViewTransition) {
@@ -74,83 +43,171 @@ function withTransitionIfExists(fn: CallableFunction) {
 
   document.startViewTransition(fn);
 }
-export type CompanyDetails = z.infer<typeof companyDetails>;
-export type BuyerDetails = z.infer<typeof buyerRepr>;
+
+const CompanySchema = CustomerSchema.pick({
+  companyName: true,
+  addressLine1: true,
+  addressLine2: true,
+  postalCode: true,
+  city: true,
+  taxId: true,
+});
+
+const BuyerDetailsSchema = CustomerSchema.pick({
+  name: true,
+  surname: true,
+  mail: true,
+  phone: true,
+  position: true,
+});
+
+const QuestionaireSchema = CustomerSchema.pick({
+  companySize: true,
+  projectFor: true,
+});
+
+type CompanySchemaT = z.infer<typeof CompanySchema>;
+type BuyerDetailsSchemaT = z.infer<typeof BuyerDetailsSchema>;
+type QuestionaireSchemaT = z.infer<typeof QuestionaireSchema>;
+
+function SavingModal({
+  children,
+  isOpen,
+}: {
+  children: React.ReactNode;
+  isOpen: boolean;
+}) {
+  return (
+    <Dialog open={isOpen}>
+      <DialogContent className="flex items-center justify-between">
+        {children}
+      </DialogContent>
+    </Dialog>
+  );
+}
 
 export function RegisterForm() {
-  const [page, setPage] = useState<Page>(0);
+  const [formStep, setPage] = useState<FormStep>(0);
 
-  const companyDetailsDefault: CompanyDetails =
-    window.Cypress && window.Cypress.mockCompanyDetails
-      ? window.Cypress.mockCompanyDetails
-      : {
-          companyName: "",
-          address: "",
-          ndaPerson: "",
-          taxId: "",
-        };
+  const session = useSession();
 
-  const buyerReprDefault: BuyerDetails =
-    window.Cypress && window.Cypress.mockBuyerDetails
-      ? window.Cypress.mockBuyerDetails
-      : {
-          mail: "",
-          name: "",
-          phone: "",
-          position: "",
-          surname: "",
-        };
+  const router = useRouter();
 
-  const companyForm = useForm<z.infer<typeof companyDetails>>({
-    resolver: zodResolver(companyDetails),
+  let companyDetailsDefault: CompanySchemaT = {
+    addressLine1: "",
+    addressLine2: "",
+    city: "",
+    postalCode: "",
+    companyName: "",
+    taxId: "",
+  };
+  let buyerReprDefault: BuyerDetailsSchemaT = {
+    mail: "",
+    name: "",
+    phone: "",
+    position: "",
+    surname: "",
+  };
+
+  if (typeof window !== "undefined" && window.Cypress) {
+    if (window.Cypress.mockCompanyDetails) {
+      companyDetailsDefault = window.Cypress.mockCompanyDetails;
+    }
+
+    if (window.Cypress.mockBuyerDetails) {
+      buyerReprDefault = window.Cypress.mockBuyerDetails;
+    }
+  }
+
+  const companyForm = useForm<CompanySchemaT>({
+    resolver: zodResolver(CompanySchema),
     defaultValues: companyDetailsDefault,
   });
 
-  const buyerForm = useForm<z.infer<typeof buyerRepr>>({
-    resolver: zodResolver(buyerRepr),
+  const buyerForm = useForm<BuyerDetailsSchemaT>({
+    resolver: zodResolver(BuyerDetailsSchema),
     defaultValues: buyerReprDefault,
   });
 
-  const questionaireForm = useForm<z.infer<typeof questionaire>>({
-    resolver: zodResolver(questionaire),
+  const questionaireForm = useForm<QuestionaireSchemaT>({
+    resolver: zodResolver(QuestionaireSchema),
     defaultValues: {
-      devProjectType: devProjectType[0],
-      companyType: companyType[0],
-      companySize: companySize[0],
+      companySize: "BELOW10",
+      projectFor: "INTERNAL",
     },
   });
 
-  function onCompanyDetailsSubmit(values: z.infer<typeof companyDetails>) {
-    withTransitionIfExists(() => setPage(1));
-  }
+  const hopPage = (no: FormStep) => withTransitionIfExists(() => setPage(no));
 
-  function onBuyerReprSubmit(values: z.infer<typeof buyerRepr>) {
-    withTransitionIfExists(() => setPage(2));
-  }
+  const onCompanyDetailsSubmit = () => {
+    hopPage(1);
+  };
 
-  function onQuestionaireSubmit(values: z.infer<typeof questionaire>) {
-    alert("Registartion finished.");
-  }
+  const onBuyerReprSubmit = () => hopPage(2);
+
+  const onQuestionaireSubmit = async () => {
+    setPage("submitting");
+
+    try {
+      const res = await fetch(ROUTES.API.CLIENT_REGISTER, {
+        method: "POST",
+        body: JSON.stringify({
+          id: session.data?.user.id,
+          ...companyForm.getValues(),
+          ...buyerForm.getValues(),
+          ...questionaireForm.getValues(),
+        }),
+      });
+
+      const json = await res.json();
+
+      if (!res.ok) throw Error(json?.errors);
+    } catch (err) {
+      setPage("error_submitting");
+      return;
+    }
+
+    router.push(ROUTES.SUCCESS("customer_registered"));
+  };
 
   return (
     <React.Fragment>
-      {page === 0 && (
-        <CompanyDetails form={companyForm} onSubmit={onCompanyDetailsSubmit} />
-      )}
-      {page === 1 && (
-        <BuyerRepr
-          form={buyerForm}
-          onPrevClick={() => withTransitionIfExists(() => setPage(0))}
-          onSubmit={onBuyerReprSubmit}
-        />
-      )}
-      {page === 2 && (
-        <Questionaire
-          form={questionaireForm}
-          onPrevClick={() => withTransitionIfExists(() => setPage(1))}
-          onSubmit={onQuestionaireSubmit}
-        />
-      )}
+      {match(formStep)
+        .with(0, () => (
+          <CompanyDetails
+            form={companyForm}
+            onSubmit={onCompanyDetailsSubmit}
+          />
+        ))
+        .with(1, () => (
+          <BuyerRepr
+            form={buyerForm}
+            onPrevClick={() => withTransitionIfExists(() => setPage(0))}
+            onSubmit={onBuyerReprSubmit}
+          />
+        ))
+        .with(2, () => (
+          <Questionaire
+            form={questionaireForm}
+            onPrevClick={() => withTransitionIfExists(() => setPage(1))}
+            onSubmit={onQuestionaireSubmit}
+          />
+        ))
+        .with("submitting", () => (
+          <SavingModal isOpen={true}>
+            <Typo.H2>Saving the user</Typo.H2>
+            <Loader2 className="animate-spin"></Loader2>
+          </SavingModal>
+        ))
+        .with("error_submitting", () => (
+          <ErrorComp
+            reset={noop}
+            error={
+              new Error("Unexpected error occured when submitting the form")
+            }
+          />
+        ))
+        .exhaustive()}
     </React.Fragment>
   );
 }
@@ -165,31 +222,44 @@ function Questionaire({
   form,
   onPrevClick,
   onSubmit,
-}: { onPrevClick: Noop } & SharedProps<typeof questionaire>) {
+}: { onPrevClick: Noop } & SharedProps<typeof QuestionaireSchema>) {
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-12">
+        <Typo.H1>More information</Typo.H1>
         <FormField
           control={form.control}
-          name="devProjectType"
+          name="projectFor"
           render={({ field }) => (
             <FormItem className="space-y-4">
-              <Typo.H2>How mature is the project?</Typo.H2>
+              <Typo.H2>I’m looking for developers for</Typo.H2>
               <FormControl>
                 <RadioGroup
                   onValueChange={field.onChange}
                   defaultValue={field.value}
                   className="flex flex-col space-y-1"
                 >
-                  {devProjectType.map((el) => (
+                  {ProjectForSchema.options.map((opt) => (
                     <FormItem
-                      key={el}
+                      key={opt}
                       className="flex items-center space-x-3 space-y-0"
                     >
                       <FormControl>
-                        <RadioGroupItem value={el} />
+                        <RadioGroupItem value={opt} />
                       </FormControl>
-                      <FormLabel>{el}</FormLabel>
+                      <FormLabel>
+                        {match(opt)
+                          .with(
+                            "INTERNAL",
+                            () => "My company (internal support)",
+                          )
+                          .with(
+                            "EXTERNAL",
+                            () =>
+                              "project for a different company (re-sell of services)",
+                          )
+                          .exhaustive()}
+                      </FormLabel>
                     </FormItem>
                   ))}
                 </RadioGroup>
@@ -200,46 +270,17 @@ function Questionaire({
         />{" "}
         <FormField
           control={form.control}
-          name="companyType"
-          render={({ field }) => (
-            <FormItem className="space-y-4">
-              <Typo.H2>Who is the project for?</Typo.H2>
-              <FormControl>
-                <RadioGroup
-                  onValueChange={field.onChange}
-                  defaultValue={field.value}
-                  className="flex flex-col space-y-1"
-                >
-                  {companyType.map((el) => (
-                    <FormItem
-                      key={el}
-                      className="flex items-center space-x-3 space-y-0"
-                    >
-                      <FormControl>
-                        <RadioGroupItem value={el} />
-                      </FormControl>
-                      <FormLabel>{el}</FormLabel>
-                    </FormItem>
-                  ))}
-                </RadioGroup>
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <FormField
-          control={form.control}
           name="companySize"
           render={({ field }) => (
             <FormItem className="space-y-4">
-              <Typo.H2>How big is the company?</Typo.H2>
+              <Typo.H2>My company employs</Typo.H2>
               <FormControl>
                 <RadioGroup
                   onValueChange={field.onChange}
                   defaultValue={field.value}
                   className="flex flex-col space-y-1"
                 >
-                  {companySize.map((el) => (
+                  {CompanySizeSchema.options.map((el) => (
                     <FormItem
                       key={el}
                       className="flex items-center space-x-3 space-y-0"
@@ -247,7 +288,15 @@ function Questionaire({
                       <FormControl>
                         <RadioGroupItem value={el} />
                       </FormControl>
-                      <FormLabel>{el}</FormLabel>
+                      <FormLabel>
+                        {match(el)
+                          .with("BELOW10", () => "Less than 10")
+                          .with("FROM11TO50", () => "11-50")
+                          .with("FROM50TO250", () => "50-250")
+                          .with("FROM250TO1000", () => "250-1000")
+                          .with("ABOVE1000", () => "1000+")
+                          .exhaustive()}
+                      </FormLabel>
                     </FormItem>
                   ))}
                 </RadioGroup>
@@ -288,7 +337,7 @@ function BuyerRepr({
   onPrevClick,
 }: {
   onPrevClick: Noop;
-} & SharedProps<typeof buyerRepr>) {
+} & SharedProps<typeof BuyerDetailsSchema>) {
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
@@ -364,33 +413,17 @@ function BuyerRepr({
   );
 }
 
-function CompanyDetails({
-  form,
-  onSubmit,
-}: SharedProps<typeof companyDetails>) {
+function CompanyDetails({ form, onSubmit }: SharedProps<typeof CompanySchema>) {
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
-        <Typo.H1>Company details</Typo.H1>
+        <Typo.H1>Company Information</Typo.H1>
         <FormField
           control={form.control}
           name="companyName"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Company name</FormLabel>
-              <FormControl>
-                <Input {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <FormField
-          control={form.control}
-          name="address"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Address</FormLabel>
+              <FormLabel className="font-extrabold">Company name</FormLabel>
               <FormControl>
                 <Input {...field} />
               </FormControl>
@@ -403,7 +436,21 @@ function CompanyDetails({
           name="taxId"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Tax ID</FormLabel>
+              <FormLabel className="font-extrabold">Tax ID</FormLabel>
+              <FormControl>
+                <Input {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <Typo.H2>Address</Typo.H2>
+        <FormField
+          control={form.control}
+          name="addressLine1"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Address line 1</FormLabel>
               <FormControl>
                 <Input {...field} />
               </FormControl>
@@ -413,10 +460,36 @@ function CompanyDetails({
         />
         <FormField
           control={form.control}
-          name="ndaPerson"
+          name="addressLine2"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Name and position of the person to sign NDA</FormLabel>
+              <FormLabel>Address line 2</FormLabel>
+              <FormControl>
+                <Input {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <FormField
+          control={form.control}
+          name="postalCode"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Postal code</FormLabel>
+              <FormControl>
+                <Input {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <FormField
+          control={form.control}
+          name="city"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>City</FormLabel>
               <FormControl>
                 <Input {...field} />
               </FormControl>
@@ -431,37 +504,3 @@ function CompanyDetails({
     </Form>
   );
 }
-
-// import { useForm, SubmitHandler } from "react-hook-form";
-
-// type Inputs = {
-//   example: string;
-//   exampleRequired: string;
-// };
-
-// export function Form() {
-//   const {
-//     register,
-//     handleSubmit,
-//     watch,
-//     formState: { errors },
-//   } = useForm<Inputs>();
-//   const onSubmit: SubmitHandler<Inputs> = (data) => console.log(data);
-
-//   console.log(watch("example")); // watch input value by passing the name of it
-
-//   return (
-//     /* "handleSubmit" will validate your inputs before invoking "onSubmit" */
-//     <form onSubmit={handleSubmit(onSubmit)}>
-//       {/* register your input into the hook by invoking the "register" function */}
-//       <input defaultValue="test" {...register("example")} />
-
-//       {/* include validation with required or other standard HTML validation rules */}
-//       <input {...register("exampleRequired", { required: true })} />
-//       {/* errors will return when field validation fails  */}
-//       {errors.exampleRequired && <span>This field is required</span>}
-
-//       <input type="submit" />
-//     </form>
-//   );
-// }

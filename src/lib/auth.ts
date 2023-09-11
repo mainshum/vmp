@@ -1,24 +1,16 @@
 import GP from "next-auth/providers/google";
-import { NextAuthOptions } from "next-auth";
-import { UserRole } from "@/types/shared";
-
-const dbMock = {
-  async findUserRole(email: string): Promise<UserRole> {
-    return email.includes("vendor")
-      ? "vendor"
-      : email.includes("client")
-      ? "client"
-      : "none";
-  },
-};
+import { NextAuthOptions, getServerSession } from "next-auth";
+import { PrismaAdapter } from "@auth/prisma-adapter";
+import { db } from "@/lib/db";
 
 export const nextAuthOptions: NextAuthOptions = {
+  adapter: PrismaAdapter(db) as any,
   pages: {
     signIn: "/sign-in",
     newUser: "/role-select",
   },
   session: {
-    strategy: "jwt",
+    strategy: "database",
   },
   providers: [
     GP({
@@ -26,16 +18,19 @@ export const nextAuthOptions: NextAuthOptions = {
       clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
     }),
   ],
-  callbacks: {
-    jwt({ token }) {
-      return token;
-    },
-    async session({ session, token }) {
-      const role = await dbMock.findUserRole(token!.email!);
 
-      session.user.role = role;
+  callbacks: {
+    async session({ session, user }) {
+      session.user.role = user.role;
+      session.user.id = user.id;
 
       return session;
     },
+    redirect() {
+      return "/";
+    },
   },
 };
+
+export const getVMPSession = async () =>
+  await getServerSession(nextAuthOptions);

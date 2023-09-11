@@ -1,9 +1,12 @@
+import { VMPRole } from "@prisma/client";
 import { type ClassValue, clsx } from "clsx";
 import { twMerge } from "tailwind-merge";
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
+
+export const noop = () => {};
 
 export function getBaseUrl() {
   const vc = process.env.VERCEL_URL;
@@ -25,3 +28,17 @@ export const startViewTransitionIfExists = (fn: CallableFunction) => {
 
   document.startViewTransition(fn);
 };
+
+class MyError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = this.constructor.name;
+    this.message = message;
+  }
+}
+
+export class RoleNotImplementedError extends MyError {
+  constructor(role: VMPRole) {
+    super(`Role not implemented for ${role}`);
+  }
+}

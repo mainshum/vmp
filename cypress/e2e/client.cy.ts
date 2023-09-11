@@ -2,7 +2,7 @@ import { setSessionToken } from "../support/utils";
 
 describe("client postings", () => {
   beforeEach(() => {
-    setSessionToken("client");
+    setSessionToken("CLIENT");
   });
 
   it("renders 10 rows of postings (+1 header)", () => {

@@ -1,6 +1,6 @@
-import { DefaultSession } from "next-auth";
-import { UserRole } from "./shared";
+import { DefaultSession, AdapterUser } from "next-auth";
 import { CompanyDetails, type BuyerDetails } from "../components/register";
+import { VMPRoleType } from "../../prisma/generated/zod";
 
 declare module "next-auth" {
   /**
@@ -8,8 +8,12 @@ declare module "next-auth" {
    */
   interface Session {
     user: {
-      role: UserRole;
+      id: string;
+      role: VMPRoleType;
     } & DefaultSession["user"];
+  }
+  interface User {
+    role: VMPRoleType;
   }
 }
 

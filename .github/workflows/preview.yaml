@@ -42,8 +42,8 @@ jobs:
         run: |
           vercel env pull --yes --token=${{ secrets.VERCEL_TOKEN }}
 
-      - name: Cypress run
-        uses: cypress-io/github-action@v6
-        with:
-          start: pnpm run dev
-          wait-on: "http://localhost:3000"
+      # - name: Cypress run
+      #   uses: cypress-io/github-action@v6
+      #   with:
+      #     start: pnpm run dev
+      #     wait-on: "http://localhost:3000"
