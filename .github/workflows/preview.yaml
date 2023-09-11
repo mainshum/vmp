@@ -42,9 +42,9 @@ jobs:
         run: |
           vercel env pull --yes --token=${{ secrets.VERCEL_TOKEN }}
 
-      - name: Run db migrations
+      - name: Run db migrations (DB_URL is pulled from .env.local craeted by prev command)
         run: |
-          pnpm dlx prisma migrate deploy
+          pnpm dlx dotenv-cli -e .env.local -- pnpm dlx prisma migrate deploy
 
       # - name: Cypress run
       #   uses: cypress-io/github-action@v6
