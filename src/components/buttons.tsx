@@ -1,22 +1,26 @@
 "use client";
 
-import { cn } from "@/lib/utils";
-import { Link } from "lucide-react";
-import { Button, buttonVariants } from "./ui/Button";
-import { signOut } from "next-auth/react";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import { Session } from "next-auth";
 
-export function SignIn() {
-  return (
-    <Link href="/sign-in" className={cn(buttonVariants({ size: "xs" }))}>
-      Sign in
-    </Link>
-  );
-}
+const initials = (nameSurname: string) =>
+  nameSurname
+    .split(" ")
+    .filter((x) => x.length > 0)
+    .map((x) => x[0]);
 
-export function SignOut() {
+export function SignOut({
+  sessionUser,
+}: {
+  sessionUser: Exclude<Session["user"], undefined>;
+}) {
+  console.log(sessionUser);
   return (
-    <Button size="xs" onClick={() => signOut()}>
-      Sign out
-    </Button>
+    <Avatar role="button" onClick={console.log}>
+      <AvatarImage src={sessionUser.image ? sessionUser.image : undefined} />
+      <AvatarFallback>
+        {sessionUser.name ? initials(sessionUser.name) : "ME"}
+      </AvatarFallback>
+    </Avatar>
   );
 }
