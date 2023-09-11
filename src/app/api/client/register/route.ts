@@ -11,10 +11,18 @@ export async function POST(req: Request) {
   }
 
   try {
-    const { id } = await db.customer.create({ data, select: { id: true } });
-    return NextResponse.json({ id });
+    await Promise.all([
+      db.user.update({
+        where: { id: data.id },
+        data: { role: "CLIENT" },
+      }),
+      db.customer.create({
+        data: data,
+      }),
+    ]);
+
+    return NextResponse.json({ userId: data.id });
   } catch (err) {
-    console.error(err);
     return NextResponse.json({ errors: err }, { status: 422 });
   }
 }

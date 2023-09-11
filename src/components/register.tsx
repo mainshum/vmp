@@ -1,5 +1,6 @@
 "use client";
 
+import ErrorComp from "@/app/register/error";
 import { match } from "ts-pattern";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -28,8 +29,11 @@ import {
 import { Dialog, DialogContent } from "./ui/dialog";
 import { Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { useSession } from "next-auth/react";
+import { ROUTES } from "@/lib/const";
+import { noop } from "@/lib/utils";
 
-type FormStep = 0 | 1 | 2 | "submitting";
+type FormStep = 0 | 1 | 2 | "submitting" | "error_submitting";
 
 function withTransitionIfExists(fn: CallableFunction) {
   if (!document.startViewTransition) {
@@ -85,6 +89,8 @@ function SavingModal({
 export function RegisterForm() {
   const [formStep, setPage] = useState<FormStep>(0);
 
+  const session = useSession();
+
   const router = useRouter();
 
   let companyDetailsDefault: CompanySchemaT = {
@@ -133,24 +139,35 @@ export function RegisterForm() {
 
   const hopPage = (no: FormStep) => withTransitionIfExists(() => setPage(no));
 
-  const onCompanyDetailsSubmit = () => hopPage(1);
+  const onCompanyDetailsSubmit = () => {
+    hopPage(1);
+  };
 
   const onBuyerReprSubmit = () => hopPage(2);
 
   const onQuestionaireSubmit = async () => {
     setPage("submitting");
+
     try {
-      await fetch("/api/client/register", {
+      const res = await fetch(ROUTES.API.CLIENT_REGISTER, {
         method: "POST",
         body: JSON.stringify({
+          id: session.data?.user.id,
           ...companyForm.getValues(),
           ...buyerForm.getValues(),
           ...questionaireForm.getValues(),
         }),
       });
 
-      router.push("/success?type=customer_registered");
-    } catch (err) {}
+      const json = await res.json();
+
+      if (!res.ok) throw Error(json?.errors);
+    } catch (err) {
+      setPage("error_submitting");
+      return;
+    }
+
+    router.push(ROUTES.SUCCESS("customer_registered"));
   };
 
   return (
@@ -181,6 +198,14 @@ export function RegisterForm() {
             <Typo.H2>Saving the user</Typo.H2>
             <Loader2 className="animate-spin"></Loader2>
           </SavingModal>
+        ))
+        .with("error_submitting", () => (
+          <ErrorComp
+            reset={noop}
+            error={
+              new Error("Unexpected error occured when submitting the form")
+            }
+          />
         ))
         .exhaustive()}
     </React.Fragment>
@@ -231,7 +256,7 @@ function Questionaire({
                           .with(
                             "EXTERNAL",
                             () =>
-                              "project for a different company (re-sell of services",
+                              "project for a different company (re-sell of services)",
                           )
                           .exhaustive()}
                       </FormLabel>

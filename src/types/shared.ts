@@ -7,8 +7,6 @@ export type Posting = {
   offers: number;
 };
 
-export type UserRole = "client" | "vendor" | "none";
-
 export type Nullalble<T> = T | null;
 
 export type Noop = () => void;

@@ -1,3 +1,5 @@
+import { ROUTES } from "../../src/lib/const";
+
 describe("/success", () => {
   describe("?type=customer_registered", () => {
     it("should match type=customer_registered", () => {
@@ -10,7 +12,7 @@ describe("/success", () => {
       cy.visit("/success?type=customer_registered");
       cy.findByText("Get started").should("exist").click();
 
-      cy.url().should("contain", "/client/postings");
+      cy.url().should("contain", ROUTES.CLIENT.POSTINGS);
     });
   });
 

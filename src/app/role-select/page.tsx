@@ -1,11 +1,14 @@
 import { buttonVariants } from "@/components/ui/Button";
-import { useCommonRedirects } from "@/hooks/use-common-redirects";
-import { nextAuthOptions } from "@/lib/auth";
-import { cn } from "@/lib/utils";
+import { useCommonRedirects as useRoleGuard } from "@/hooks/use-common-redirects";
+import { getVMPSession } from "@/lib/auth";
+import { ROUTES } from "@/lib/const";
+import { RoleNotImplementedError, cn } from "@/lib/utils";
 import { capitalize } from "@/lib/utils";
 import { HeartHandshake, ShoppingCart } from "lucide-react";
-import { getServerSession } from "next-auth";
+import { RedirectType } from "next/dist/client/components/redirect";
 import Link from "next/link";
+import { redirect } from "next/navigation";
+import { match } from "ts-pattern";
 
 function CardLink({ type }: { type: "client" | "vendor" }) {
   const url =
@@ -36,16 +39,21 @@ function CardLink({ type }: { type: "client" | "vendor" }) {
 }
 
 async function Page() {
-  const session = await getServerSession(nextAuthOptions);
+  let session = await getVMPSession();
 
-  useCommonRedirects(session);
+  session = useRoleGuard(session);
 
-  return (
-    <div className="flex flex-col items-center justify-center gap-8 py-8 sm:flex-row">
-      <CardLink type="client" />
-      <CardLink type="vendor" />
-    </div>
-  );
+  return match(session.user.role)
+    .with("NONE", () => (
+      <div className="flex flex-col items-center justify-center gap-8 py-8 sm:flex-row">
+        <CardLink type="client" />
+        <CardLink type="vendor" />
+      </div>
+    ))
+    .with("CLIENT", () => redirect(ROUTES.CLIENT.POSTINGS))
+    .otherwise((r) => {
+      throw new RoleNotImplementedError(r);
+    });
 }
 
 export default Page;

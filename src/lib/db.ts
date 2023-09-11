@@ -17,7 +17,7 @@ if (process.env.NODE_ENV === "production") {
   prisma = global.cachedPrisma;
 }
 
-export const db = prisma.$extends({
+prisma.$extends({
   query: {
     customer: {
       create({ args, query }) {
@@ -30,3 +30,5 @@ export const db = prisma.$extends({
     },
   },
 });
+
+export const db = prisma;

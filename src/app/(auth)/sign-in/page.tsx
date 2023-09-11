@@ -8,7 +8,7 @@ import Link from "next/link";
 async function Page() {
   const session = await getServerSession(nextAuthOptions);
 
-  if (session) return redirect("/");
+  // if (session) return redirect("/");
 
   return (
     <div className="center-absolute">
