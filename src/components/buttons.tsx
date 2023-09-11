@@ -2,6 +2,16 @@
 
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Session } from "next-auth";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "./ui/dropdown-menu";
+import { signOut } from "next-auth/react";
+import Link from "next/link";
+import { ROUTES } from "@/lib/const";
+import { LogOutIcon, Megaphone } from "lucide-react";
 
 const initials = (nameSurname: string) =>
   nameSurname
@@ -14,13 +24,32 @@ export function SignOut({
 }: {
   sessionUser: Exclude<Session["user"], undefined>;
 }) {
-  console.log(sessionUser);
   return (
-    <Avatar role="button" onClick={console.log}>
-      <AvatarImage src={sessionUser.image ? sessionUser.image : undefined} />
-      <AvatarFallback>
-        {sessionUser.name ? initials(sessionUser.name) : "ME"}
-      </AvatarFallback>
+    <Avatar role="button">
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <AvatarImage
+            src={sessionUser.image ? sessionUser.image : undefined}
+          />
+        </DropdownMenuTrigger>
+        <DropdownMenuTrigger>
+          <AvatarFallback>
+            {sessionUser.name ? initials(sessionUser.name) : "ME"}
+          </AvatarFallback>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end">
+          <DropdownMenuItem onClick={() => signOut()}>
+            <LogOutIcon className="mr-2 h-4 w-4" />
+            <span>Sign out</span>
+          </DropdownMenuItem>
+          <DropdownMenuItem asChild>
+            <Link href={ROUTES.CLIENT.POSTINGS}>
+              <Megaphone className="mr-2 h-4 w-4" />
+              <span>Postings</span>
+            </Link>
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
     </Avatar>
   );
 }
