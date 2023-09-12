@@ -11,7 +11,7 @@ import {
 import { signOut } from "next-auth/react";
 import Link from "next/link";
 import { ROUTES } from "@/lib/const";
-import { LogOutIcon, Megaphone } from "lucide-react";
+import { LogOutIcon, Megaphone, Settings } from "lucide-react";
 
 const initials = (nameSurname: string) =>
   nameSurname
@@ -46,6 +46,12 @@ export function SignOut({
             <Link href={ROUTES.CLIENT.POSTINGS}>
               <Megaphone className="mr-2 h-4 w-4" />
               <span>Postings</span>
+            </Link>
+          </DropdownMenuItem>
+          <DropdownMenuItem asChild>
+            <Link href={ROUTES.CLIENT.SETTINGS}>
+              <Settings className="mr-2 h-4 w-4" />
+              <span>Settings</span>
             </Link>
           </DropdownMenuItem>
         </DropdownMenuContent>
