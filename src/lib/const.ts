@@ -7,7 +7,7 @@ export const ROUTES = {
   ROLE_SELECT: "/role-select",
   CLIENT: {
     POSTINGS: "/client",
-    SETTINGS: "/client/settings",
+    SETTINGS: "/settings",
   },
   SUCCESS: (t: SuccessType) => `/success?type=${t}`,
   API: {

@@ -42,3 +42,12 @@ export class RoleNotImplementedError extends MyError {
     super(`Role not implemented for ${role}`);
   }
 }
+
+export const withTransitionIfExists = (fn: CallableFunction) => {
+  if (!document.startViewTransition) {
+    fn();
+    return;
+  }
+
+  document.startViewTransition(fn);
+};

@@ -31,18 +31,9 @@ import { Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { ROUTES } from "@/lib/const";
-import { noop } from "@/lib/utils";
+import { noop, withTransitionIfExists } from "@/lib/utils";
 
 type FormStep = 0 | 1 | 2 | "submitting" | "error_submitting";
-
-function withTransitionIfExists(fn: CallableFunction) {
-  if (!document.startViewTransition) {
-    fn();
-    return;
-  }
-
-  document.startViewTransition(fn);
-}
 
 const CompanySchema = CustomerSchema.pick({
   companyName: true,
@@ -86,6 +77,13 @@ function SavingModal({
   );
 }
 
+export function useCompanyForm(defaultVals?: CompanySchemaT) {
+  return useForm<CompanySchemaT>({
+    resolver: zodResolver(CompanySchema),
+    defaultValues: defaultVals,
+  });
+}
+
 export function RegisterForm() {
   const [formStep, setPage] = useState<FormStep>(0);
 
@@ -119,10 +117,7 @@ export function RegisterForm() {
     }
   }
 
-  const companyForm = useForm<CompanySchemaT>({
-    resolver: zodResolver(CompanySchema),
-    defaultValues: companyDetailsDefault,
-  });
+  const companyForm = useCompanyForm(companyDetailsDefault);
 
   const buyerForm = useForm<BuyerDetailsSchemaT>({
     resolver: zodResolver(BuyerDetailsSchema),
@@ -413,94 +408,95 @@ function BuyerRepr({
   );
 }
 
-function CompanyDetails({ form, onSubmit }: SharedProps<typeof CompanySchema>) {
+export function CompanyDetails({
+  form,
+  onSubmit,
+}: SharedProps<typeof CompanySchema>) {
   return (
-    <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
-        <Typo.H1>Company Information</Typo.H1>
-        <FormField
-          control={form.control}
-          name="companyName"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel className="font-extrabold">Company name</FormLabel>
-              <FormControl>
-                <Input {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <FormField
-          control={form.control}
-          name="taxId"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel className="font-extrabold">Tax ID</FormLabel>
-              <FormControl>
-                <Input {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <Typo.H2>Address</Typo.H2>
-        <FormField
-          control={form.control}
-          name="addressLine1"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Address line 1</FormLabel>
-              <FormControl>
-                <Input {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <FormField
-          control={form.control}
-          name="addressLine2"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Address line 2</FormLabel>
-              <FormControl>
-                <Input {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <FormField
-          control={form.control}
-          name="postalCode"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Postal code</FormLabel>
-              <FormControl>
-                <Input {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <FormField
-          control={form.control}
-          name="city"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>City</FormLabel>
-              <FormControl>
-                <Input {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <div className="flex justify-center">
-          <Button type="submit">Next</Button>
-        </div>
-      </form>
-    </Form>
+    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+      <Typo.H1>Company Information</Typo.H1>
+      <FormField
+        control={form.control}
+        name="companyName"
+        render={({ field }) => (
+          <FormItem>
+            <FormLabel className="font-extrabold">Company name</FormLabel>
+            <FormControl>
+              <Input {...field} />
+            </FormControl>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
+      <FormField
+        control={form.control}
+        name="taxId"
+        render={({ field }) => (
+          <FormItem>
+            <FormLabel className="font-extrabold">Tax ID</FormLabel>
+            <FormControl>
+              <Input {...field} />
+            </FormControl>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
+      <Typo.H2>Address</Typo.H2>
+      <FormField
+        control={form.control}
+        name="addressLine1"
+        render={({ field }) => (
+          <FormItem>
+            <FormLabel>Address line 1</FormLabel>
+            <FormControl>
+              <Input {...field} />
+            </FormControl>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
+      <FormField
+        control={form.control}
+        name="addressLine2"
+        render={({ field }) => (
+          <FormItem>
+            <FormLabel>Address line 2</FormLabel>
+            <FormControl>
+              <Input {...field} />
+            </FormControl>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
+      <FormField
+        control={form.control}
+        name="postalCode"
+        render={({ field }) => (
+          <FormItem>
+            <FormLabel>Postal code</FormLabel>
+            <FormControl>
+              <Input {...field} />
+            </FormControl>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
+      <FormField
+        control={form.control}
+        name="city"
+        render={({ field }) => (
+          <FormItem>
+            <FormLabel>City</FormLabel>
+            <FormControl>
+              <Input {...field} />
+            </FormControl>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
+      <div className="flex justify-center">
+        <Button type="submit">Next</Button>
+      </div>
+    </form>
   );
 }

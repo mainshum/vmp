@@ -1,9 +1,10 @@
+import DemoForm from "@/components/demo-form";
 import { getVMPSession } from "@/lib/auth";
 import { ROUTES } from "@/lib/const";
 import { db } from "@/lib/db";
 import { Session } from "next-auth";
 import { redirect } from "next/navigation";
-import DemoForm from "@/components/demo-form";
+// import DemoForm from "@/components/demo-form";
 
 const wrapGetSession = async (): Promise<Session> => {
   const session = await getVMPSession();
@@ -22,7 +23,7 @@ const getSettings = async (session: Session) => {
 async function Page() {
   const data = await getSettings(await wrapGetSession());
 
-  return <div>Sien</div>;
+  return <DemoForm data={data} />;
 }
 
 export default Page;
