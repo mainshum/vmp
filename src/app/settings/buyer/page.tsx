@@ -1,4 +1,4 @@
-import DemoForm from "@/components/demo-form";
+import { BuyerForm } from "../forms";
 import { getVMPSession } from "@/lib/auth";
 import { ROUTES } from "@/lib/const";
 import { db } from "@/lib/db";
@@ -23,7 +23,7 @@ const getSettings = async (session: Session) => {
 async function Page() {
   const data = await getSettings(await wrapGetSession());
 
-  return <DemoForm data={data} />;
+  return <BuyerForm data={data} />;
 }
 
 export default Page;

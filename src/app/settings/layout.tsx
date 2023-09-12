@@ -1,13 +1,11 @@
 import { Separator } from "@/components/ui/separator";
 import { H2 } from "@/components/typography";
-import { cn } from "@/lib/utils";
-import { buttonVariants } from "@/components/ui/Button";
-import Link from "next/link";
+import { ROUTES } from "@/lib/const";
+import Navbar from "./navbar";
 
 const links = [
-  { name: "Company details", href: "" },
-  { name: "Buyer details", href: "" },
-  { name: "Company details", href: "" },
+  { name: "Company details", href: `${ROUTES.CLIENT.SETTINGS}/company` },
+  { name: "Buyer details", href: `${ROUTES.CLIENT.SETTINGS}/buyer` },
 ];
 
 export default function SettingsLayout({
@@ -23,20 +21,7 @@ export default function SettingsLayout({
       </div>
       <Separator />
       <div className="flex flex-col  gap-6 pt-6 md:flex-row">
-        <nav className="flex flex-row md:flex-col">
-          {links.map((l) => (
-            <Link
-              key={l.href}
-              href={l.href}
-              className={cn(
-                buttonVariants({ variant: "ghost" }),
-                "justify-start",
-              )}
-            >
-              {l.name}
-            </Link>
-          ))}
-        </nav>
+        <Navbar links={links} />
         <div className="flex-grow px-4 pt-2">{children}</div>
       </div>
     </>
