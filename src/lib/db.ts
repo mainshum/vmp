@@ -1,4 +1,3 @@
-import { CustomerSchema } from "../../prisma/generated/zod";
 import { PrismaClient } from "@prisma/client";
 import "server-only";
 

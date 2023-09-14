@@ -1,15 +1,8 @@
 import Icons from "@/components/icons";
 import SignUpForm from "@/components/sign-up-form";
-import { nextAuthOptions } from "@/lib/auth";
-import { getServerSession } from "next-auth";
-import { redirect } from "next/navigation";
 import Link from "next/link";
 
 async function Page() {
-  const session = await getServerSession(nextAuthOptions);
-
-  // if (session) return redirect("/");
-
   return (
     <div className="center-absolute">
       <div className="flex h-full w-[500px] flex-col items-center justify-center gap-2">

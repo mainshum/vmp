@@ -2,6 +2,28 @@ import { db } from "@/lib/db";
 import { NextResponse } from "next/server";
 
 // register user as client
+
+export async function PUT(req: Request) {
+  let data;
+  try {
+    data = await req.json();
+  } catch {
+    return new Response("Body should be a JSON object", { status: 400 });
+  }
+
+  try {
+    
+      const customer = await db.customer.update({
+        where: { id: data.id },
+        data: data,
+      });
+
+    return NextResponse.json({customer});
+  } catch (err) {
+    return NextResponse.json({ errors: err }, { status: 422 });
+  }
+}
+
 export async function POST(req: Request) {
   let data;
   try {

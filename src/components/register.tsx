@@ -14,7 +14,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Button } from "./ui/Button";
-import { useForm, UseFormReturn } from "react-hook-form";
+import { useForm, UseFormProps, UseFormReturn } from "react-hook-form";
 import { Input } from "./ui/input";
 import * as Typo from "./typography";
 import React, { useState } from "react";
@@ -57,8 +57,8 @@ const QuestionaireSchema = CustomerSchema.pick({
   projectFor: true,
 });
 
-type CompanySchemaT = z.infer<typeof CompanySchema>;
-type BuyerDetailsSchemaT = z.infer<typeof BuyerDetailsSchema>;
+export type CompanySchemaT = z.infer<typeof CompanySchema>;
+export type BuyerDetailsSchemaT = z.infer<typeof BuyerDetailsSchema>;
 type QuestionaireSchemaT = z.infer<typeof QuestionaireSchema>;
 
 function SavingModal({
@@ -77,10 +77,10 @@ function SavingModal({
   );
 }
 
-export function useCompanyForm(defaultVals?: CompanySchemaT) {
+export function useCompanyForm(xs: Pick<UseFormProps<CompanySchemaT>, 'defaultValues' | 'values'>) {
   return useForm<CompanySchemaT>({
     resolver: zodResolver(CompanySchema),
-    defaultValues: defaultVals,
+    ...xs
   });
 }
 
@@ -124,7 +124,9 @@ export function RegisterForm() {
     }
   }
 
-  const companyForm = useCompanyForm(companyDetailsDefault);
+  const companyForm = useCompanyForm({
+    defaultValues: companyDetailsDefault
+  });
   const buyerForm = useBuyerForm(buyerReprDefault);
 
   const questionaireForm = useForm<QuestionaireSchemaT>({
@@ -175,6 +177,10 @@ export function RegisterForm() {
           <Form {...companyForm}>
             <form onSubmit={companyForm.handleSubmit(onCompanyDetailsSubmit)}>
               <CompanyDetails form={companyForm} />
+
+              <div className="flex justify-center">
+                <Button type="submit">Next</Button>
+              </div>
             </form>
           </Form>
         ))
@@ -184,10 +190,15 @@ export function RegisterForm() {
               className="space-y-8"
               onSubmit={buyerForm.handleSubmit(onBuyerReprSubmit)}
             >
-              <BuyerRepr
-                form={buyerForm}
-                onPrevClick={() => withTransitionIfExists(() => setPage(0))}
-              />
+              <BuyerRepr form={buyerForm} />
+              <div className="flex justify-center">
+                <Button
+                  onClick={() => withTransitionIfExists(() => setPage(0))}
+                >
+                  Previous
+                </Button>
+                <Button type="submit">Next</Button>
+              </div>
             </form>
           </Form>
         ))
@@ -334,12 +345,7 @@ function BtnsControls({
   );
 }
 
-export function BuyerRepr({
-  form,
-  onPrevClick,
-}: {
-  onPrevClick: Noop;
-} & SharedProps<typeof BuyerDetailsSchema>) {
+export function BuyerRepr({ form }: SharedProps<typeof BuyerDetailsSchema>) {
   return (
     <>
       <Typo.H1>Buyer representative</Typo.H1>
@@ -408,7 +414,6 @@ export function BuyerRepr({
           </FormItem>
         )}
       />
-      <BtnsControls onPrevClick={onPrevClick} />
     </>
   );
 }
@@ -496,9 +501,6 @@ export function CompanyDetails({ form }: SharedProps<typeof CompanySchema>) {
           </FormItem>
         )}
       />
-      <div className="flex justify-center">
-        <Button type="submit">Next</Button>
-      </div>
     </>
   );
 }

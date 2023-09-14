@@ -2,7 +2,11 @@ import { CompanyForm } from "../forms";
 import { getVMPSession } from "@/lib/auth";
 import { ROUTES } from "@/lib/const";
 import { db } from "@/lib/db";
+import getQueryClient from "@/lib/queryClient";
+import { getBaseUrl } from "@/lib/utils";
+import { Hydrate, dehydrate } from "@tanstack/react-query";
 import { Session } from "next-auth";
+import { headers, cookies } from "next/headers";
 import { redirect } from "next/navigation";
 // import DemoForm from "@/components/demo-form";
 
@@ -14,16 +18,27 @@ const wrapGetSession = async (): Promise<Session> => {
   return session;
 };
 
-const getSettings = async (session: Session) => {
-  return await db.customer.findFirstOrThrow({
-    where: { id: session.user.id },
-  });
-};
-
 async function Page() {
-  const data = await getSettings(await wrapGetSession());
 
-  return <CompanyForm data={data} />;
+  const client = getQueryClient();
+
+  const getSettings = async () => {
+
+    return fetch(getBaseUrl() + "/api/client/settings", {
+      method: 'GET',
+      headers: {
+        Cookie: cookies().toString(),
+      }
+    }).then(res => res.json());
+  }
+
+  await client.prefetchQuery(['client.settings'], getSettings)
+
+  const state = dehydrate(client);
+
+  return <Hydrate state={state}>
+    <CompanyForm />
+  </Hydrate>
 }
 
 export default Page;

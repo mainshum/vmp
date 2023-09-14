@@ -1,16 +1,12 @@
 import { Button } from "@/components/ui/Button";
-import { nextAuthOptions } from "@/lib/auth";
 import { getBaseUrl } from "@/lib/utils";
 import { PageParams } from "@/types/next";
-import { getServerSession } from "next-auth";
 
 async function PageServer({ searchParams }: PageParams) {
   const url = new URL(`${getBaseUrl()}/api/postings`);
 
   if (searchParams["mockstate"])
     url.searchParams.set("mockstate", searchParams["mockstate"] as string);
-
-  const session = await getServerSession(nextAuthOptions);
 
   return (
     <>

@@ -1,11 +1,10 @@
 import Navbar from "@/components/navbar";
 import { Toaster } from "@/components/ui/toaster";
-import { nextAuthOptions } from "@/lib/auth";
+import { getVMPSession } from "@/lib/auth";
 import { cn } from "@/lib/utils";
 import "@/styles/globals.css";
-import { getServerSession } from "next-auth";
 import { Inter } from "next/font/google";
-import { NextAuthProvider } from "./providers";
+import { NextAuthProvider, TenstackProvider } from "./providers";
 
 export const metadata = {
   title: "VMP",
@@ -19,7 +18,7 @@ export default async function RootLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const session = await getServerSession(nextAuthOptions);
+  const session = await getVMPSession();
 
   return (
     <html
@@ -31,9 +30,11 @@ export default async function RootLayout({
     >
       <body className="min-h-screen antialiased">
         <NextAuthProvider>
-          <Navbar session={session} />
-          <main className="container h-full pt-14">{children}</main>
-          <Toaster />
+          <TenstackProvider>
+            <Navbar session={session} />
+            <main className="container h-full pt-14">{children}</main>
+            <Toaster />
+          </TenstackProvider>
         </NextAuthProvider>
       </body>
     </html>
