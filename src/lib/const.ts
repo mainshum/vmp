@@ -7,6 +7,10 @@ export const ROUTES = {
   ROLE_SELECT: "/role-select",
   CLIENT: {
     POSTINGS: "/client",
+    SETTINGS: {
+      COMPANY: "/settings/company",
+      BUYER: "/settings/buyer",
+    },
   },
   SUCCESS: (t: SuccessType) => `/success?type=${t}`,
   API: {

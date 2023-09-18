@@ -6,6 +6,7 @@ import { match } from "ts-pattern";
 export default async function Home() {
   const session = await getVMPSession();
 
+
   if (!session) return redirect(ROUTES.SIGIN);
 
   return (
