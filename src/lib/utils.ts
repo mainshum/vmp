@@ -1,3 +1,9 @@
+import {
+  BuyerDetailsSchema,
+  BuyerDetailsSchemaT,
+  CompanySchema,
+  CompanySchemaT,
+} from "@/components/register";
 import { VMPRole } from "@prisma/client";
 import { type ClassValue, clsx } from "clsx";
 import { twMerge } from "tailwind-merge";
@@ -51,3 +57,11 @@ export const withTransitionIfExists = (fn: CallableFunction) => {
 
   document.startViewTransition(fn);
 };
+
+export function isCompanyKey(x: string): x is keyof CompanySchemaT {
+  return Object.keys(CompanySchema.keyof().Values).includes(x);
+}
+
+export function isBuyerKey(x: string): x is keyof BuyerDetailsSchemaT {
+  return Object.keys(BuyerDetailsSchema.keyof().Values).includes(x);
+}

@@ -8,7 +8,6 @@ type Props = {
   children?: React.ReactNode;
 };
 
-// TODO figure out if this wrapper is neceesary if we're doing hydration instead
 export const TenstackProvider = ({ children }: Props) => {
   const [client] = React.useState(() => new QueryClient());
 

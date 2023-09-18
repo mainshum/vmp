@@ -49,7 +49,7 @@ export function SignOut({
             </Link>
           </DropdownMenuItem>
           <DropdownMenuItem asChild>
-            <Link href={ROUTES.CLIENT.SETTINGS}>
+            <Link href={ROUTES.CLIENT.SETTINGS.COMPANY}>
               <Settings className="mr-2 h-4 w-4" />
               <span>Settings</span>
             </Link>

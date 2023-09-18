@@ -4,8 +4,8 @@ import { ROUTES } from "@/lib/const";
 import Navbar from "./navbar";
 
 const links = [
-  { name: "Company details", href: `${ROUTES.CLIENT.SETTINGS}/company` },
-  { name: "Buyer details", href: `${ROUTES.CLIENT.SETTINGS}/buyer` },
+  { name: "Company details", href: `${ROUTES.CLIENT.SETTINGS.COMPANY}` },
+  { name: "Buyer details", href: `${ROUTES.CLIENT.SETTINGS.BUYER}` },
 ];
 
 export default function SettingsLayout({
@@ -20,7 +20,7 @@ export default function SettingsLayout({
         <p>Manage your preferences</p>
       </div>
       <Separator />
-      <div className="flex flex-col  gap-6 pt-6 md:flex-row">
+      <div className="flex flex-col  gap-6 py-6 md:flex-row">
         <Navbar links={links} />
         <div className="flex-grow px-4 pt-2">{children}</div>
       </div>

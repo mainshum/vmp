@@ -20,22 +20,25 @@ import * as Typo from "./typography";
 import React, { useState } from "react";
 import { Noop } from "@/types/shared";
 import { ZodType } from "zod";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import {
-  CompanySizeSchema,
-  CustomerSchema,
-  ProjectForSchema,
-} from "../../prisma/generated/zod";
+import { CustomerSchema, ProjectForSchema } from "../../prisma/generated/zod";
 import { Dialog, DialogContent } from "./ui/dialog";
 import { Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { ROUTES } from "@/lib/const";
 import { noop, withTransitionIfExists } from "@/lib/utils";
+import {
+  BuyerInputs,
+  CompanyInputs,
+  CompanySizeRadioItems,
+  FormInput,
+  ProjectsForRadioItems,
+  RadioGroup,
+} from "./forms";
 
 type FormStep = 0 | 1 | 2 | "submitting" | "error_submitting";
 
-const CompanySchema = CustomerSchema.pick({
+export const CompanySchema = CustomerSchema.pick({
   companyName: true,
   addressLine1: true,
   addressLine2: true,
@@ -44,7 +47,7 @@ const CompanySchema = CustomerSchema.pick({
   taxId: true,
 });
 
-const BuyerDetailsSchema = CustomerSchema.pick({
+export const BuyerDetailsSchema = CustomerSchema.pick({
   name: true,
   surname: true,
   mail: true,
@@ -52,14 +55,14 @@ const BuyerDetailsSchema = CustomerSchema.pick({
   position: true,
 });
 
-const QuestionaireSchema = CustomerSchema.pick({
+export const QuestionaireSchema = CustomerSchema.pick({
   companySize: true,
   projectFor: true,
 });
 
 export type CompanySchemaT = z.infer<typeof CompanySchema>;
 export type BuyerDetailsSchemaT = z.infer<typeof BuyerDetailsSchema>;
-type QuestionaireSchemaT = z.infer<typeof QuestionaireSchema>;
+export type QuestionaireSchemaT = z.infer<typeof QuestionaireSchema>;
 
 function SavingModal({
   children,
@@ -77,17 +80,21 @@ function SavingModal({
   );
 }
 
-export function useCompanyForm(xs: Pick<UseFormProps<CompanySchemaT>, 'defaultValues' | 'values'>) {
+export function useCompanyForm(
+  xs: Pick<UseFormProps<CompanySchemaT>, "defaultValues" | "values">,
+) {
   return useForm<CompanySchemaT>({
+    ...xs,
     resolver: zodResolver(CompanySchema),
-    ...xs
   });
 }
 
-export function useBuyerForm(defaultVals?: BuyerDetailsSchemaT) {
+export function useBuyerForm(
+  xs: Pick<UseFormProps<BuyerDetailsSchemaT>, "defaultValues" | "values">,
+) {
   return useForm<BuyerDetailsSchemaT>({
+    ...xs,
     resolver: zodResolver(BuyerDetailsSchema),
-    defaultValues: defaultVals,
   });
 }
 
@@ -125,9 +132,11 @@ export function RegisterForm() {
   }
 
   const companyForm = useCompanyForm({
-    defaultValues: companyDetailsDefault
+    defaultValues: companyDetailsDefault,
   });
-  const buyerForm = useBuyerForm(buyerReprDefault);
+  const buyerForm = useBuyerForm({
+    defaultValues: buyerReprDefault,
+  });
 
   const questionaireForm = useForm<QuestionaireSchemaT>({
     resolver: zodResolver(QuestionaireSchema),
@@ -175,8 +184,12 @@ export function RegisterForm() {
       {match(formStep)
         .with(0, () => (
           <Form {...companyForm}>
-            <form onSubmit={companyForm.handleSubmit(onCompanyDetailsSubmit)}>
-              <CompanyDetails form={companyForm} />
+            <form
+              className="space-y-6"
+              onSubmit={companyForm.handleSubmit(onCompanyDetailsSubmit)}
+            >
+              <Typo.H1>Company Information</Typo.H1>
+              <CompanyInputs form={companyForm} />
 
               <div className="flex justify-center">
                 <Button type="submit">Next</Button>
@@ -190,7 +203,8 @@ export function RegisterForm() {
               className="space-y-8"
               onSubmit={buyerForm.handleSubmit(onBuyerReprSubmit)}
             >
-              <BuyerRepr form={buyerForm} />
+              <Typo.H1>Buyer representative</Typo.H1>
+              <BuyerInputs form={buyerForm} />
               <div className="flex justify-center">
                 <Button
                   onClick={() => withTransitionIfExists(() => setPage(0))}
@@ -238,88 +252,21 @@ type SharedProps<T extends ZodType<any, any, any>> = {
   form: UseFormReturn<z.infer<T>>;
 };
 
-function Questionaire({
+export function Questionaire({
   form,
   onPrevClick,
 }: { onPrevClick: Noop } & SharedProps<typeof QuestionaireSchema>) {
   return (
     <>
       <Typo.H1>More information</Typo.H1>
-      <FormField
-        control={form.control}
-        name="projectFor"
-        render={({ field }) => (
-          <FormItem className="space-y-4">
-            <Typo.H2>I’m looking for developers for</Typo.H2>
-            <FormControl>
-              <RadioGroup
-                onValueChange={field.onChange}
-                defaultValue={field.value}
-                className="flex flex-col space-y-1"
-              >
-                {ProjectForSchema.options.map((opt) => (
-                  <FormItem
-                    key={opt}
-                    className="flex items-center space-x-3 space-y-0"
-                  >
-                    <FormControl>
-                      <RadioGroupItem value={opt} />
-                    </FormControl>
-                    <FormLabel>
-                      {match(opt)
-                        .with("INTERNAL", () => "My company (internal support)")
-                        .with(
-                          "EXTERNAL",
-                          () =>
-                            "project for a different company (re-sell of services)",
-                        )
-                        .exhaustive()}
-                    </FormLabel>
-                  </FormItem>
-                ))}
-              </RadioGroup>
-            </FormControl>
-            <FormMessage />
-          </FormItem>
-        )}
-      />{" "}
-      <FormField
-        control={form.control}
-        name="companySize"
-        render={({ field }) => (
-          <FormItem className="space-y-4">
-            <Typo.H2>My company employs</Typo.H2>
-            <FormControl>
-              <RadioGroup
-                onValueChange={field.onChange}
-                defaultValue={field.value}
-                className="flex flex-col space-y-1"
-              >
-                {CompanySizeSchema.options.map((el) => (
-                  <FormItem
-                    key={el}
-                    className="flex items-center space-x-3 space-y-0"
-                  >
-                    <FormControl>
-                      <RadioGroupItem value={el} />
-                    </FormControl>
-                    <FormLabel>
-                      {match(el)
-                        .with("BELOW10", () => "Less than 10")
-                        .with("FROM11TO50", () => "11-50")
-                        .with("FROM50TO250", () => "50-250")
-                        .with("FROM250TO1000", () => "250-1000")
-                        .with("ABOVE1000", () => "1000+")
-                        .exhaustive()}
-                    </FormLabel>
-                  </FormItem>
-                ))}
-              </RadioGroup>
-            </FormControl>
-            <FormMessage />
-          </FormItem>
-        )}
-      />
+      <Typo.H2>I’m looking for developers for</Typo.H2>
+      <RadioGroup control={form.control} path="projectFor">
+        <ProjectsForRadioItems />
+      </RadioGroup>
+      <Typo.H2>Some other prompt</Typo.H2>
+      <RadioGroup control={form.control} path="companySize">
+        <CompanySizeRadioItems />
+      </RadioGroup>
       <BtnsControls
         onPrevClick={onPrevClick}
         submitBtnText="Finish registration"
@@ -342,165 +289,5 @@ function BtnsControls({
       </Button>
       <Button type="submit">{submitBtnText}</Button>
     </div>
-  );
-}
-
-export function BuyerRepr({ form }: SharedProps<typeof BuyerDetailsSchema>) {
-  return (
-    <>
-      <Typo.H1>Buyer representative</Typo.H1>
-      <FormField
-        control={form.control}
-        name="name"
-        render={({ field }) => (
-          <FormItem>
-            <FormLabel>Name</FormLabel>
-            <FormControl>
-              <Input {...field} />
-            </FormControl>
-            <FormMessage />
-          </FormItem>
-        )}
-      />
-      <FormField
-        control={form.control}
-        name="surname"
-        render={({ field }) => (
-          <FormItem>
-            <FormLabel>Surname</FormLabel>
-            <FormControl>
-              <Input {...field} />
-            </FormControl>
-            <FormMessage />
-          </FormItem>
-        )}
-      />
-      <FormField
-        control={form.control}
-        name="position"
-        render={({ field }) => (
-          <FormItem>
-            <FormLabel>Position</FormLabel>
-            <FormControl>
-              <Input {...field} />
-            </FormControl>
-            <FormMessage />
-          </FormItem>
-        )}
-      />
-      <FormField
-        control={form.control}
-        name="phone"
-        render={({ field }) => (
-          <FormItem>
-            <FormLabel>Phone number</FormLabel>
-            <FormControl>
-              <Input type="tel" {...field} />
-            </FormControl>
-            <FormMessage />
-          </FormItem>
-        )}
-      />
-      <FormField
-        control={form.control}
-        name="mail"
-        render={({ field }) => (
-          <FormItem>
-            <FormLabel>Email</FormLabel>
-            <FormControl>
-              <Input type="email" {...field} />
-            </FormControl>
-            <FormMessage />
-          </FormItem>
-        )}
-      />
-    </>
-  );
-}
-
-export function CompanyDetails({ form }: SharedProps<typeof CompanySchema>) {
-  return (
-    <>
-      <Typo.H1>Company Information</Typo.H1>
-      <FormField
-        control={form.control}
-        name="companyName"
-        render={({ field }) => (
-          <FormItem>
-            <FormLabel className="font-extrabold">Company name</FormLabel>
-            <FormControl>
-              <Input {...field} />
-            </FormControl>
-            <FormMessage />
-          </FormItem>
-        )}
-      />
-      <FormField
-        control={form.control}
-        name="taxId"
-        render={({ field }) => (
-          <FormItem>
-            <FormLabel className="font-extrabold">Tax ID</FormLabel>
-            <FormControl>
-              <Input {...field} />
-            </FormControl>
-            <FormMessage />
-          </FormItem>
-        )}
-      />
-      <Typo.H2>Address</Typo.H2>
-      <FormField
-        control={form.control}
-        name="addressLine1"
-        render={({ field }) => (
-          <FormItem>
-            <FormLabel>Address line 1</FormLabel>
-            <FormControl>
-              <Input {...field} />
-            </FormControl>
-            <FormMessage />
-          </FormItem>
-        )}
-      />
-      <FormField
-        control={form.control}
-        name="addressLine2"
-        render={({ field }) => (
-          <FormItem>
-            <FormLabel>Address line 2</FormLabel>
-            <FormControl>
-              <Input {...field} />
-            </FormControl>
-            <FormMessage />
-          </FormItem>
-        )}
-      />
-      <FormField
-        control={form.control}
-        name="postalCode"
-        render={({ field }) => (
-          <FormItem>
-            <FormLabel>Postal code</FormLabel>
-            <FormControl>
-              <Input {...field} />
-            </FormControl>
-            <FormMessage />
-          </FormItem>
-        )}
-      />
-      <FormField
-        control={form.control}
-        name="city"
-        render={({ field }) => (
-          <FormItem>
-            <FormLabel>City</FormLabel>
-            <FormControl>
-              <Input {...field} />
-            </FormControl>
-            <FormMessage />
-          </FormItem>
-        )}
-      />
-    </>
   );
 }
