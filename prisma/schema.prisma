@@ -109,3 +109,24 @@ model Customer {
   companySize CompanySize @default(BELOW10)
   projectFor  ProjectFor  @default(INTERNAL)
 }
+
+enum OpportunityStatus {
+  DRAFT
+  PENDING
+  NOOFFERS
+  WITHOFFERS
+  EXPIRED
+}
+
+model Opportunity {
+  /// @zod.string.min(3)
+  id String @id @default(cuid())
+
+  /// @zod.string.min(1)
+  name String
+
+  status OpportunityStatus @default(PENDING)
+
+  validUntil   DateTime?
+  creationDate DateTime?
+}

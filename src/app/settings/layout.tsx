@@ -4,8 +4,8 @@ import { ROUTES } from "@/lib/const";
 import Navbar from "./navbar";
 
 const links = [
-  { name: "Company details", href: `${ROUTES.CLIENT.SETTINGS.COMPANY}` },
-  { name: "Buyer details", href: `${ROUTES.CLIENT.SETTINGS.BUYER}` },
+  { name: "Company details", href: `${ROUTES.CUSTOMER.SETTINGS.COMPANY}` },
+  { name: "Buyer details", href: `${ROUTES.CUSTOMER.SETTINGS.BUYER}` },
 ];
 
 export default function SettingsLayout({

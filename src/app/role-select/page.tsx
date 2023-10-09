@@ -50,7 +50,7 @@ async function Page() {
         <CardLink type="vendor" />
       </div>
     ))
-    .with("CLIENT", () => redirect(ROUTES.CLIENT.POSTINGS))
+    .with("CLIENT", () => redirect(ROUTES.CUSTOMER.POSTINGS))
     .otherwise((r) => {
       throw new RoleNotImplementedError(r);
     });
