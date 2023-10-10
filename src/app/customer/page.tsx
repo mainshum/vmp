@@ -1,12 +1,11 @@
 import { getBaseUrl } from "@/lib/utils";
 import { PageParams } from "@/types/next";
-import { Opportunity } from "../../../prisma/generated/zod";
-import { DataTable } from "./data-table";
+import { DataTable, OpsTable } from "./data-table";
 import { columns } from "./columns";
 import { db } from "@/lib/db";
 
-const getPostings = (): Promise<Opportunity[]> => {
-  return db.opportunity.findMany({});
+const getPostings = () => {
+  return db.opportunity.findMany({ include: { offers: true } });
 };
 
 async function PageServer({ searchParams }: PageParams) {
@@ -17,7 +16,7 @@ async function PageServer({ searchParams }: PageParams) {
 
   return (
     <section className="flex flex-col py-8">
-      <DataTable columns={columns} data={await getPostings()} />
+      <OpsTable data={await getPostings()} />
     </section>
   );
 }

@@ -6,8 +6,8 @@ generator client {
 }
 
 generator zod {
-  provider         = "zod-prisma-types"
-  createInputTypes = false
+  provider = "prisma-client-js"
+  // createInputTypes = false
 }
 
 datasource db {
@@ -76,10 +76,8 @@ enum CompanySize {
 }
 
 model Customer {
-  // company stuff
-
   /// @zod.string.min(3)
-  id           String @id @default(cuid())
+  id           String      @id @default(cuid())
   /// @zod.string.min(3)
   companyName  String
   /// @zod.string.min(3)
@@ -92,22 +90,18 @@ model Customer {
   city         String
   /// @zod.string.min(3)
   taxId        String
-
-  // buyer rep
   /// @zod.string.min(3)
-  name     String
+  name         String
   /// @zod.string.min(3)
-  surname  String
+  surname      String
   /// @zod.string.min(3)
-  position String
+  position     String
   /// @zod.string.min(3)
-  mail     String
+  mail         String
   /// @zod.string.min(3)
-  phone    String
-
-  // questionnaire
-  companySize CompanySize @default(BELOW10)
-  projectFor  ProjectFor  @default(INTERNAL)
+  phone        String
+  companySize  CompanySize @default(BELOW10)
+  projectFor   ProjectFor  @default(INTERNAL)
 }
 
 enum OpportunityStatus {
@@ -119,14 +113,17 @@ enum OpportunityStatus {
 }
 
 model Opportunity {
-  /// @zod.string.min(3)
-  id String @id @default(cuid())
-
-  /// @zod.string.min(1)
-  name String
-
-  status OpportunityStatus @default(PENDING)
-
+  id           String            @id @default(cuid())
+  name         String
+  status       OpportunityStatus @default(PENDING)
   validUntil   DateTime?
   creationDate DateTime?
+  offers       Offer[]
+}
+
+model Offer {
+  id            String       @id @default(cuid())
+  matchingGrade Int?
+  opportunity   Opportunity? @relation(fields: [opportunityId], references: [id])
+  opportunityId String
 }

@@ -10,21 +10,25 @@ import type { Prisma } from '@prisma/client';
 // ENUMS
 /////////////////////////////////////////
 
+export const TransactionIsolationLevelSchema = z.enum(['ReadUncommitted','ReadCommitted','RepeatableRead','Serializable']);
+
 export const AccountScalarFieldEnumSchema = z.enum(['id','userId','type','provider','providerAccountId','refresh_token','access_token','expires_at','token_type','scope','id_token','session_state']);
+
+export const SessionScalarFieldEnumSchema = z.enum(['id','sessionToken','userId','expires']);
+
+export const UserScalarFieldEnumSchema = z.enum(['id','name','email','emailVerified','image','role']);
 
 export const CustomerScalarFieldEnumSchema = z.enum(['id','companyName','addressLine1','addressLine2','postalCode','city','taxId','name','surname','position','mail','phone','companySize','projectFor']);
 
 export const OpportunityScalarFieldEnumSchema = z.enum(['id','name','status','validUntil','creationDate']);
 
-export const QueryModeSchema = z.enum(['default','insensitive']);
-
-export const SessionScalarFieldEnumSchema = z.enum(['id','sessionToken','userId','expires']);
+export const OfferScalarFieldEnumSchema = z.enum(['id','matchingGrade','opportunityId']);
 
 export const SortOrderSchema = z.enum(['asc','desc']);
 
-export const TransactionIsolationLevelSchema = z.enum(['ReadUncommitted','ReadCommitted','RepeatableRead','Serializable']);
+export const QueryModeSchema = z.enum(['default','insensitive']);
 
-export const UserScalarFieldEnumSchema = z.enum(['id','name','email','emailVerified','image','role']);
+export const NullsOrderSchema = z.enum(['first','last']);
 
 export const VMPRoleSchema = z.enum(['NONE','CLIENT','VENDOR','ADMIN']);
 
@@ -124,10 +128,22 @@ export type Customer = z.infer<typeof CustomerSchema>
 
 export const OpportunitySchema = z.object({
   status: OpportunityStatusSchema,
-  id: z.string().min(3),
-  name: z.string().min(1),
+  id: z.string().cuid(),
+  name: z.string(),
   validUntil: z.coerce.date().nullable(),
   creationDate: z.coerce.date().nullable(),
 })
 
 export type Opportunity = z.infer<typeof OpportunitySchema>
+
+/////////////////////////////////////////
+// OFFER SCHEMA
+/////////////////////////////////////////
+
+export const OfferSchema = z.object({
+  id: z.string().cuid(),
+  matchingGrade: z.number().int().nullable(),
+  opportunityId: z.string(),
+})
+
+export type Offer = z.infer<typeof OfferSchema>
