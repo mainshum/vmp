@@ -2,7 +2,6 @@
 
 import {
   ExpandedState,
-  Table,
   flexRender,
   getCoreRowModel,
   getExpandedRowModel,
@@ -10,27 +9,81 @@ import {
 } from "@tanstack/react-table";
 
 import {
-  Table as T,
+  Table,
   TableBody,
   TableCell,
   TableHead,
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { OpsWithOffers, columns } from "./columns";
+import { OpsWithOffers, offersColumns, opsColumns } from "./columns";
 import React from "react";
-import { Opportunity } from "@prisma/client";
+import { Offer } from "@prisma/client";
 
-interface DataTableProps<TData> {
-  table: Table<TData>;
+function OffersTable({ offers }: { offers: Offer[] }) {
+  const table = useReactTable({
+    data: offers,
+    columns: offersColumns,
+    getCoreRowModel: getCoreRowModel(),
+  });
+
+  return (
+    <Table>
+      <TableHeader>
+        {table.getHeaderGroups().map((headerGroup) => (
+          <TableRow key={headerGroup.id}>
+            {headerGroup.headers.map((header) => {
+              return (
+                <TableHead style={{ width: header.getSize() }} key={header.id}>
+                  {header.isPlaceholder
+                    ? null
+                    : flexRender(
+                        header.column.columnDef.header,
+                        header.getContext(),
+                      )}
+                </TableHead>
+              );
+            })}
+          </TableRow>
+        ))}
+      </TableHeader>
+      <TableBody>
+        {table.getRowModel().rows?.length ? (
+          table.getRowModel().rows.map((row) => (
+            <TableRow
+              key={row.id}
+              data-state={row.getIsSelected() && "selected"}
+            >
+              {row.getVisibleCells().map((cell) => (
+                <>
+                  <TableCell key={cell.id}>
+                    {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                  </TableCell>
+                </>
+              ))}
+            </TableRow>
+          ))
+        ) : (
+          <TableRow>
+            <TableCell
+              colSpan={table.getAllColumns().length}
+              className="h-24 text-center"
+            >
+              No offers.
+            </TableCell>
+          </TableRow>
+        )}
+      </TableBody>
+    </Table>
+  );
 }
 
-export function OpsTable({ data }: { data: Opportunity[] }) {
+export function OpportunityTable({ data }: { data: OpsWithOffers[] }) {
   const [expanded, setExpanded] = React.useState<ExpandedState>({});
 
   const table = useReactTable({
     data,
-    columns,
+    columns: opsColumns,
     state: {
       expanded,
     },
@@ -40,91 +93,68 @@ export function OpsTable({ data }: { data: Opportunity[] }) {
     getCoreRowModel: getCoreRowModel(),
   });
 
-  return <DataTable table={table} />;
-}
-
-export function DataTable<TData>({ table }: DataTableProps<TData>) {
   return (
-    <div className="rounded-md border">
-      <T>
-        <TableHeader>
-          {table.getHeaderGroups().map((headerGroup) => (
-            <TableRow key={headerGroup.id}>
-              {headerGroup.headers.map((header) => {
-                return (
-                  <TableHead key={header.id}>
-                    {header.isPlaceholder
-                      ? null
-                      : flexRender(
-                          header.column.columnDef.header,
-                          header.getContext(),
-                        )}
-                  </TableHead>
-                );
-              })}
-            </TableRow>
-          ))}
-        </TableHeader>
-        <TableBody>
-          {table.getRowModel().rows?.length ? (
-            table.getRowModel().rows.map((row) => (
-              <>
-                <TableRow
-                  key={row.id}
-                  data-state={row.getIsSelected() && "selected"}
-                >
-                  {row.getVisibleCells().map((cell) => (
-                    <>
-                      <TableCell key={cell.id}>
-                        {flexRender(
-                          cell.column.columnDef.cell,
-                          cell.getContext(),
-                        )}
-                      </TableCell>
-                    </>
-                  ))}
-                </TableRow>
-                {row.getIsExpanded() && (
-                  <TableRow>
-                    <TableCell
-                      className="p-0"
-                      colSpan={table.getAllColumns().length}
-                    >
-                      <T>
-                        <TableHeader>
-                          <TableHead>ID</TableHead>
-                          <TableHead>stars</TableHead>
-                          <TableHead>stars</TableHead>
-                          <TableHead>stars</TableHead>
-                          <TableHead>stars</TableHead>
-                        </TableHeader>
-                        <TableBody>
-                          <TableRow>
-                            <TableCell>a</TableCell>
-                            <TableCell>3</TableCell>
-                            <TableCell>3</TableCell>
-                            <TableCell>3</TableCell>
-                            <TableCell>3</TableCell>
-                          </TableRow>
-                        </TableBody>
-                      </T>
-                    </TableCell>
-                  </TableRow>
-                )}
-              </>
-            ))
-          ) : (
-            <TableRow>
-              <TableCell
-                colSpan={table.getAllColumns().length}
-                className="h-24 text-center"
+    <Table>
+      <TableHeader>
+        {table.getHeaderGroups().map((headerGroup) => (
+          <TableRow key={headerGroup.id}>
+            {headerGroup.headers.map((header) => {
+              return (
+                <TableHead style={{ width: header.getSize() }} key={header.id}>
+                  {header.isPlaceholder
+                    ? null
+                    : flexRender(
+                        header.column.columnDef.header,
+                        header.getContext(),
+                      )}
+                </TableHead>
+              );
+            })}
+          </TableRow>
+        ))}
+      </TableHeader>
+      <TableBody>
+        {table.getRowModel().rows?.length ? (
+          table.getRowModel().rows.map((row) => (
+            <>
+              <TableRow
+                key={row.id}
+                data-state={row.getIsSelected() && "selected"}
               >
-                No results.
-              </TableCell>
-            </TableRow>
-          )}
-        </TableBody>
-      </T>
-    </div>
+                {row.getVisibleCells().map((cell) => (
+                  <>
+                    <TableCell key={cell.id}>
+                      {flexRender(
+                        cell.column.columnDef.cell,
+                        cell.getContext(),
+                      )}
+                    </TableCell>
+                  </>
+                ))}
+              </TableRow>
+              {row.getIsExpanded() && (
+                <TableRow>
+                  <TableCell
+                    className="p-0"
+                    colSpan={table.getAllColumns().length}
+                  >
+                    <OffersTable offers={row.original.offers} />
+                  </TableCell>
+                </TableRow>
+              )}
+            </>
+          ))
+        ) : (
+          <TableRow>
+            <TableCell
+              colSpan={table.getAllColumns().length}
+              className="h-24 text-center"
+            >
+              No results.
+            </TableCell>
+          </TableRow>
+        )}
+      </TableBody>
+    </Table>
   );
 }

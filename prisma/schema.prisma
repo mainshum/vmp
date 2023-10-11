@@ -121,9 +121,19 @@ model Opportunity {
   offers       Offer[]
 }
 
+enum OfferStatus {
+  DRAFT
+  PENDING
+  SENT
+  EXPIRED
+}
+
 model Offer {
   id            String       @id @default(cuid())
   matchingGrade Int?
+  offerStatus   OfferStatus  @default(PENDING)
+  validUntil    DateTime?
+  creationDate  DateTime?
   opportunity   Opportunity? @relation(fields: [opportunityId], references: [id])
   opportunityId String
 }

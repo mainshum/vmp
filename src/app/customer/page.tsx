@@ -1,7 +1,7 @@
 import { getBaseUrl } from "@/lib/utils";
 import { PageParams } from "@/types/next";
-import { DataTable, OpsTable } from "./data-table";
-import { columns } from "./columns";
+import { OpportunityTable } from "./data-table";
+import { opsColumns } from "./columns";
 import { db } from "@/lib/db";
 
 const getPostings = () => {
@@ -16,7 +16,7 @@ async function PageServer({ searchParams }: PageParams) {
 
   return (
     <section className="flex flex-col py-8">
-      <OpsTable data={await getPostings()} />
+      <OpportunityTable data={await getPostings()} />
     </section>
   );
 }
