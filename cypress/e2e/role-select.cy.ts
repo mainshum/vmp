@@ -8,7 +8,7 @@ describe("/role-select", () => {
       cy.findByText("Vendor").should("exist").click();
       cy.url().should("contain", "/register?role=vendor");
     });
-    it(`redirects to ${ROUTES.CLIENT.POSTINGS} if access by role=CLIENT`, () => {
+    it(`redirects to ${ROUTES.CUSTOMER.POSTINGS} if access by role=CLIENT`, () => {
       // TODO set role to client
       cy.findByText("Vendor").should("exist").click();
       cy.url().should("contain", "/register?role=vendor");

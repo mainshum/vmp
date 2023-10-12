@@ -35,7 +35,7 @@ export function Success({ type }: { type?: string | string[] }) {
               </Typo.H2>
               <Link
                 className={cn(buttonVariants())}
-                href={ROUTES.CLIENT.POSTINGS}
+                href={ROUTES.CUSTOMER.POSTINGS}
               >
                 Get started
               </Link>

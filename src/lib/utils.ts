@@ -65,3 +65,6 @@ export function isCompanyKey(x: string): x is keyof CompanySchemaT {
 export function isBuyerKey(x: string): x is keyof BuyerDetailsSchemaT {
   return Object.keys(BuyerDetailsSchema.keyof().Values).includes(x);
 }
+
+export const delay = (time: number) =>
+  new Promise((res) => setTimeout(res, time));
