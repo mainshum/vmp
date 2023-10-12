@@ -1,17 +1,17 @@
 "use client";
 
-import {
-  ColumnDef,
-  ExpandedState,
-  createColumnHelper,
-  getCoreRowModel,
-  useReactTable,
-} from "@tanstack/react-table";
+import { createColumnHelper } from "@tanstack/react-table";
 import { ChevronDown, ChevronRight, HelpCircle, StarIcon } from "lucide-react";
-import React from "react";
-import { Offer, Opportunity, Prisma } from "@prisma/client";
+import React, { useContext, useState } from "react";
+import { Offer, Prisma } from "@prisma/client";
 import { Nullalble } from "@/types/shared";
-import clsx from "clsx";
+import { cn, noop } from "@/lib/utils";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 const opsWithOffers = Prisma.validator<Prisma.OpportunityArgs>()({
   include: { offers: true },
@@ -21,11 +21,22 @@ export type OpsWithOffers = Prisma.OpportunityGetPayload<typeof opsWithOffers>;
 
 const chevronClasses = "h-4 w-4";
 
-const createDate = (val: Nullalble<Date>) => (
-  <th>
-    {!val ? <HelpCircle className="h-4 w-4 cursor-pointer" /> : val.getTime()}
-  </th>
-);
+const createDate = (val: Nullalble<Date>) => {
+  if (val) return val.getTime();
+
+  return (
+    <TooltipProvider>
+      <Tooltip>
+        <TooltipTrigger>
+          <HelpCircle className="h-4 w-4 cursor-pointer" />
+        </TooltipTrigger>
+        <TooltipContent>
+          Not available until the opportunity/offer is approved
+        </TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
+  );
+};
 
 const opsHelper = createColumnHelper<OpsWithOffers>();
 
@@ -64,21 +75,51 @@ export const opsColumns = [
 
 const offerHelper = createColumnHelper<Offer>();
 
-const createStars = (matchingStars: Nullalble<number>) => {
+type MutateStarsPayload = { id: string; matchingGrade: number };
+
+type Ctx = {
+  // eslint-disable-next-line no-unused-vars
+  onStarsToggled: ({ id, matchingGrade }: MutateStarsPayload) => void;
+};
+
+export const HandlersCtx = React.createContext<Ctx>({ onStarsToggled: noop });
+
+const Stars = ({
+  offerId,
+  matchingStars,
+}: {
+  offerId: string;
+  matchingStars: Nullalble<number>;
+}) => {
   const orangeStars = !matchingStars ? 0 : matchingStars;
+
+  const [hoverInd, setHoverInd] = useState<Nullalble<number>>(null);
+
+  const { onStarsToggled } = useContext(HandlersCtx);
+
   return (
     <span className="flex">
       {Array(5)
         .fill(null)
-        .map((_, ind) => (
-          <StarIcon
-            key={ind}
-            className={clsx(
-              "h-4 w-4 cursor-pointer",
-              ind < orangeStars && "fill-orange-300",
-            )}
-          />
-        ))}
+        .map((_, ind) => {
+          const starNo = ind + 1;
+          return (
+            <StarIcon
+              key={ind}
+              onMouseOver={() => setHoverInd(starNo)}
+              onMouseOut={() => setHoverInd(null)}
+              onClick={() => {
+                if (orangeStars === starNo) return;
+                onStarsToggled({ id: offerId, matchingGrade: starNo });
+              }}
+              className={cn(
+                "h-4 w-4 cursor-pointer",
+                starNo <= orangeStars && "fill-orange-200",
+                hoverInd && starNo <= hoverInd && "fill-orange-300",
+              )}
+            />
+          );
+        })}
     </span>
   );
 };
@@ -90,7 +131,9 @@ export const offersColumns = [
   }),
   offerHelper.accessor("matchingGrade", {
     header: "Grade",
-    cell: (mg) => createStars(mg.getValue()),
+    cell: ({ getValue, row }) => {
+      return <Stars offerId={row.original.id} matchingStars={getValue()} />;
+    },
   }),
   offerHelper.accessor("offerStatus", {
     header: "Status",

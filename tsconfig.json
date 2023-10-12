@@ -20,7 +20,8 @@
       }
     ],
     "paths": {
-      "@/*": ["./src/*"]
+      "@/*": ["./src/*"],
+      "zod-types": ["./prisma/generated/zod"]
     },
     "types": ["cypress", "@testing-library/cypress"]
   },

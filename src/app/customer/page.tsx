@@ -3,8 +3,15 @@ import { PageParams } from "@/types/next";
 import { OpportunityTable } from "./data-table";
 import { opsColumns } from "./columns";
 import { db } from "@/lib/db";
+import { Suspense } from "react";
 
-const getPostings = () => {
+const delay = (time: number) =>
+  new Promise((res) => {
+    setTimeout(res, time);
+  });
+
+const getPostings = async () => {
+  await delay(1000);
   return db.opportunity.findMany({ include: { offers: true } });
 };
 
