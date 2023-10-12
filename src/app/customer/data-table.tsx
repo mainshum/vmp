@@ -43,7 +43,10 @@ function OffersTable({ offers }: { offers: Offer[] }) {
           <TableRow key={headerGroup.id}>
             {headerGroup.headers.map((header) => {
               return (
-                <TableHead style={{ width: header.getSize() }} key={header.id}>
+                <TableHead
+                  className="font-bold text-foreground"
+                  key={header.id}
+                >
                   {header.isPlaceholder
                     ? null
                     : flexRender(

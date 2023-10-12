@@ -23,7 +23,7 @@
       "@/*": ["./src/*"],
       "zod-types": ["./prisma/generated/zod"]
     },
-    "types": ["cypress", "@testing-library/cypress"]
+    "types": ["cypress", "@testing-library/cypress", "node"]
   },
   "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],
   "exclude": ["node_modules"]
