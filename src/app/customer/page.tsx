@@ -1,29 +1,22 @@
-import { getBaseUrl } from "@/lib/utils";
-import { PageParams } from "@/types/next";
 import { OpportunityTable } from "./data-table";
-import { opsColumns } from "./columns";
 import { db } from "@/lib/db";
-import { Suspense } from "react";
+import { getVMPSession } from "@/lib/auth";
+import { redirect } from "next/navigation";
+import { ROUTES } from "@/lib/const";
 
-const delay = (time: number) =>
-  new Promise((res) => {
-    setTimeout(res, time);
-  });
-
-const getPostings = async () => {
-  await delay(1000);
+const getOffers = () => {
   return db.opportunity.findMany({ include: { offers: true } });
 };
 
-async function PageServer({ searchParams }: PageParams) {
-  const url = new URL(`${getBaseUrl()}/api/postings`);
+async function PageServer() {
+  const session = await getVMPSession();
+  if (!session) return redirect(ROUTES.SIGIN);
 
-  if (searchParams["mockstate"])
-    url.searchParams.set("mockstate", searchParams["mockstate"] as string);
+  const postings = await getOffers();
 
   return (
     <section className="flex flex-col py-8">
-      <OpportunityTable data={await getPostings()} />
+      <OpportunityTable data={postings} />
     </section>
   );
 }

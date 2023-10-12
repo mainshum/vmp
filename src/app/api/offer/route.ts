@@ -7,6 +7,8 @@ import { OfferSchema } from "zod-types";
 export async function PUT(req: Request) {
   const [session, body] = await Promise.all([getVMPSession(), req.json()]);
 
+  console.log(session);
+
   if (!session) return NextResponse.json("Not signed in", { status: 401 });
 
   const parsed = OfferSchema.omit({ opportunityId: true }).safeParse(body);
