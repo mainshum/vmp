@@ -1,6 +1,9 @@
+"use client";
+
 import {
   ColumnDef,
   Row,
+  TableOptions,
   flexRender,
   getCoreRowModel,
   useReactTable,
@@ -20,14 +23,20 @@ interface DataTableProps<TData, TValue> {
   data: TData[];
   // eslint-disable-next-line no-unused-vars
   renderSubComponent?: (props: { row: Row<TData> }) => React.ReactElement;
+  tableOptions?: Omit<
+    TableOptions<TData>,
+    "data" | "columns" | "getCoreRowModel"
+  >;
 }
 
 export function DataTable<TData, TValue>({
   columns,
   data,
   renderSubComponent,
+  tableOptions,
 }: DataTableProps<TData, TValue>) {
   const table = useReactTable({
+    ...tableOptions,
     data,
     columns,
     getCoreRowModel: getCoreRowModel(),

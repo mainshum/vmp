@@ -2,21 +2,19 @@ import { db } from "@/lib/db";
 import { getVMPSession } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { ROUTES } from "@/lib/const";
-import { OpportunityTable } from "./columns";
+import { RequestsTable } from "./request-table";
 
-const getOffers = () => {
-  return db.opportunity.findMany({ include: { offers: true } });
-};
+const getRequests = () => db.opportunity.findMany();
 
 async function PageServer() {
   const session = await getVMPSession();
   if (!session) return redirect(ROUTES.SIGIN);
 
-  const postings = await getOffers();
+  const requests = await getRequests();
 
   return (
     <section className="flex flex-col py-8">
-      <OpportunityTable data={postings} />
+      <RequestsTable requests={requests} />
     </section>
   );
 }
