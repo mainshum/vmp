@@ -68,3 +68,16 @@ export function isBuyerKey(x: string): x is keyof BuyerDetailsSchemaT {
 
 export const delay = (time: number) =>
   new Promise((res) => setTimeout(res, time));
+
+export function withMinResolveTime<TVar, TRes>(
+  resTime: number,
+  // eslint-disable-next-line no-unused-vars
+  promise: (vars: TVar) => Promise<TRes>,
+) {
+  return (vars: TVar) => {
+    // eslint-disable-next-line no-unused-vars
+    return Promise.all([delay(resTime), promise(vars)]).then(
+      ([_a, res]) => res,
+    );
+  };
+}
