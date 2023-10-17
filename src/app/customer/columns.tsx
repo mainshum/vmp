@@ -1,6 +1,10 @@
 "use client";
 
-import { createColumnHelper } from "@tanstack/react-table";
+import {
+  ColumnDef,
+  IdentifiedColumnDef,
+  createColumnHelper,
+} from "@tanstack/react-table";
 import { ChevronDown, ChevronRight, HelpCircle, StarIcon } from "lucide-react";
 import React, { useContext, useState } from "react";
 import { Offer, Prisma } from "@prisma/client";
@@ -12,6 +16,11 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { DataTable } from "@/components/data-table";
+import { useToast } from "@/hooks/use-toast";
+import { useMutation } from "@tanstack/react-query";
+import { produce } from "immer";
+import { OfferSchema } from "zod-types";
 
 const opsWithOffers = Prisma.validator<Prisma.OpportunityArgs>()({
   include: { offers: true },
@@ -38,42 +47,54 @@ const createDate = (val: Nullalble<Date>) => {
   );
 };
 
-const opsHelper = createColumnHelper<OpsWithOffers>();
-
-export const opsColumns = [
-  opsHelper.accessor("id", {
+export const opsColumns: ColumnDef<OpsWithOffers>[] = [
+  {
+    accessorKey: "id",
     header: "ID",
-    cell: ({ row, getValue }) => (
-      <span className="flex gap-2">
-        <button
-          {...{
-            onClick: () => row.toggleExpanded(),
-            style: { cursor: "pointer" },
-          }}
-        >
-          {row.getIsExpanded() ? (
-            <ChevronDown className={chevronClasses} />
-          ) : (
-            <ChevronRight className={chevronClasses} />
-          )}
-        </button>
-        <span>{getValue()}</span>
-      </span>
-    ),
-  }),
-  opsHelper.accessor("name", { header: "Name" }),
-  opsHelper.accessor("status", { header: "Status" }),
-  opsHelper.accessor("creationDate", {
-    header: "Created at",
-    cell: (x) => createDate(x.getValue()),
-  }),
-  opsHelper.accessor("validUntil", {
-    header: "Valid until",
-    cell: (x) => createDate(x.getValue()),
-  }),
-];
 
-const offerHelper = createColumnHelper<Offer>();
+    cell: ({ row }) => {
+      return (
+        <span className="flex gap-2">
+          <button
+            {...{
+              onClick: () => row.toggleExpanded(),
+              style: { cursor: "pointer" },
+            }}
+          >
+            {row.getIsExpanded() ? (
+              <ChevronDown className={chevronClasses} />
+            ) : (
+              <ChevronRight className={chevronClasses} />
+            )}
+          </button>
+          <span>{row.getValue("id")}</span>
+        </span>
+      );
+    },
+  },
+  {
+    accessorKey: "name",
+    header: "Name",
+  },
+  {
+    accessorKey: "status",
+    header: "Status",
+  },
+  {
+    accessorKey: "status",
+    header: "Status",
+  },
+  {
+    accessorKey: "creationDate",
+    header: "Created at",
+    cell: ({ row }) => createDate(row.getValue("creationDate")),
+  },
+  {
+    accessorKey: "validUntil",
+    header: "Valid until",
+    cell: ({ row }) => createDate(row.getValue("validUntil")),
+  },
+];
 
 type MutateStarsPayload = { id: string; matchingGrade: number };
 
@@ -84,13 +105,13 @@ type Ctx = {
 
 export const HandlersCtx = React.createContext<Ctx>({ onStarsToggled: noop });
 
-const Stars = ({
+function Stars({
   offerId,
   matchingStars,
 }: {
   offerId: string;
   matchingStars: Nullalble<number>;
-}) => {
+}) {
   const orangeStars = !matchingStars ? 0 : matchingStars;
 
   const [hoverInd, setHoverInd] = useState<Nullalble<number>>(null);
@@ -122,28 +143,100 @@ const Stars = ({
         })}
     </span>
   );
-};
+}
 
-export const offersColumns = [
-  offerHelper.accessor("id", {
+export const offersColumns: ColumnDef<Offer>[] = [
+  {
+    accessorKey: "id",
     header: "ID",
-    cell: ({ getValue }) => <span className="pr-[1.6rem]">{getValue()}</span>,
-  }),
-  offerHelper.accessor("matchingGrade", {
+    cell: ({ row }) => (
+      <span className="pr-[1.6rem]">{row.getValue("id")}</span>
+    ),
+  },
+  {
     header: "Grade",
-    cell: ({ getValue, row }) => {
-      return <Stars offerId={row.original.id} matchingStars={getValue()} />;
+    accessorKey: "matchingGrade",
+    cell: ({ row }) => {
+      return (
+        <Stars
+          offerId={row.original.id}
+          matchingStars={row.getValue("matchingGrade")}
+        />
+      );
     },
-  }),
-  offerHelper.accessor("offerStatus", {
+  },
+  {
+    accessorKey: "offerStatus",
     header: "Status",
-  }),
-  offerHelper.accessor("creationDate", {
+  },
+  {
+    accessorKey: "creationDate",
     header: "Created at",
-    cell: (mg) => createDate(mg.getValue()),
-  }),
-  offerHelper.accessor("validUntil", {
+    cell: ({ row }) => createDate(row.getValue("creationDate")),
+  },
+  {
+    accessorKey: "validUntil",
     header: "Valid until",
-    cell: (mg) => createDate(mg.getValue()),
-  }),
+    cell: ({ row }) => createDate(row.getValue("validUntil")),
+  },
 ];
+
+const toggleStars = ({
+  id,
+  matchingGrade,
+}: {
+  id: string;
+  matchingGrade: number;
+}) =>
+  fetch("/api/offer", {
+    method: "PUT",
+    body: JSON.stringify({ id, matchingGrade }),
+  });
+
+export function OpportunityTable({ data }: { data: OpsWithOffers[] }) {
+  const { toast } = useToast();
+
+  const [tableData, setTableData] = useState(data);
+
+  const mutation = useMutation({
+    mutationFn: toggleStars,
+    onSuccess: async (res) => {
+      if (res.status !== 200)
+        return toast({
+          title: "Something went wrong",
+          description: "Grade was not updated",
+          variant: "destructive",
+        });
+
+      // TODO log unexpected response
+      const { id, matchingGrade, opportunityId } = OfferSchema.pick({
+        id: true,
+        matchingGrade: true,
+        opportunityId: true,
+      }).parse(await res.json());
+
+      setTableData((cur) => {
+        return produce(cur, (draft) => {
+          const op = draft.find((op) => op.id === opportunityId);
+          if (!op) return;
+          const of = op.offers.find((of) => of.id === id);
+          if (!of) return;
+          of.matchingGrade = matchingGrade;
+        });
+      });
+      toast({ title: "Grade updated" });
+    },
+  });
+
+  return (
+    <HandlersCtx.Provider value={{ onStarsToggled: mutation.mutate }}>
+      <DataTable
+        columns={opsColumns}
+        data={tableData}
+        renderSubComponent={({ row }) => (
+          <DataTable columns={offersColumns} data={row.original.offers} />
+        )}
+      />
+    </HandlersCtx.Provider>
+  );
+}
