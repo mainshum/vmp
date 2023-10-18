@@ -13,7 +13,7 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import { Button } from "./ui/Button";
+import { Button } from "./ui/button";
 import { useForm, UseFormProps, UseFormReturn } from "react-hook-form";
 import { Input } from "./ui/input";
 import * as Typo from "./typography";

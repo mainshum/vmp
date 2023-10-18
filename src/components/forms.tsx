@@ -19,7 +19,7 @@ import {
   FormLabel,
   FormMessage,
 } from "./ui/form";
-import { Button } from "./ui/Button";
+import { Button } from "./ui/button";
 import { BuyerDetailsSchemaT, CompanySchema } from "./register";
 import { HTMLInputTypeAttribute } from "react";
 
