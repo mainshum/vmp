@@ -87,16 +87,17 @@ const formSchema = z.object({
   travels: z.array(z.string()),
 });
 
+const defaultNumber = "" as unknown as number;
+
 function ProfileForm() {
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      profile: "devops",
       startDate: addMonths(new Date(), 1),
       endDate: addMonths(new Date(), 1),
-      noticePeriod: 30,
+      noticePeriod: defaultNumber,
+      hourlyRate: defaultNumber,
       availability: 50,
-      hourlyRate: 1000,
       travels: [],
     },
   });
@@ -123,7 +124,7 @@ function ProfileForm() {
               <Select onValueChange={field.onChange} defaultValue={field.value}>
                 <FormControl>
                   <SelectTrigger>
-                    <SelectValue placeholder="Select a verified email to display" />
+                    <SelectValue placeholder="Select profile" />
                   </SelectTrigger>
                 </FormControl>
                 <SelectContent>
