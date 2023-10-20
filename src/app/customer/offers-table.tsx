@@ -3,7 +3,6 @@
 import { DataTable } from "@/components/data-table";
 import { useToast } from "@/hooks/use-toast";
 import { useQueryClient, useQuery, useMutation } from "@tanstack/react-query";
-import { Offer, OfferSchema } from "zod-types";
 import { ColumnDef } from "@tanstack/react-table";
 import React, { createContext, useContext, useRef, useState } from "react";
 import { cn, delay, noop, withMinResolveTime } from "@/lib/utils";
@@ -13,6 +12,7 @@ import { createDate } from "./shared";
 import { z } from "zod";
 import { produce } from "immer";
 import { useAutoAnimate } from "@formkit/auto-animate/react";
+import { OfferModel } from "../../../prisma/zod";
 
 type MutateStarsPayload = { id: string; matchingGrade: number };
 
@@ -63,7 +63,9 @@ function Stars({
   );
 }
 
-const offersColumns: ColumnDef<Offer>[] = [
+type OfferSchema = z.infer<typeof OfferModel>;
+
+const offersColumns: ColumnDef<OfferSchema>[] = [
   {
     accessorKey: "id",
     header: "ID",
@@ -113,7 +115,7 @@ const toggleStars = ({
 const getOffers = withMinResolveTime(250, (opId: string) =>
   fetch(`/api/offers/${opId}`)
     .then((res) => res.json())
-    .then((json) => z.array(OfferSchema).parse(json)),
+    .then((json) => z.array(OfferModel).parse(json)),
 );
 
 export function OffersTable({
@@ -142,7 +144,7 @@ export function OffersTable({
 
       const current = queryClient.getQueryData(key);
 
-      queryClient.setQueryData<Offer[]>(key, (ops) =>
+      queryClient.setQueryData<OfferSchema[]>(key, (ops) =>
         produce(ops, (xs) => {
           if (!xs) return;
           const offer = xs.find((d) => d.id === id);

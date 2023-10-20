@@ -1,7 +1,7 @@
 "use client";
 
 import { cn } from "@/lib/utils";
-import { Button } from "./ui/Button";
+import { Button } from "./ui/button";
 import Icons from "./icons";
 import { signIn } from "next-auth/react";
 import { useState } from "react";

@@ -1,4 +1,4 @@
-import { buttonVariants } from "@/components/ui/Button";
+import { buttonVariants } from "@/components/ui/button";
 import { useCommonRedirects as useRoleGuard } from "@/hooks/use-common-redirects";
 import { getVMPSession } from "@/lib/auth";
 import { ROUTES } from "@/lib/const";

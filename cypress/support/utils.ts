@@ -1,6 +1,4 @@
-import { VMPRoleType } from "../../prisma/generated/zod";
-
-const roleToToken: Record<VMPRoleType, string> = {
+const roleToToken: Record<string, string> = {
   CLIENT: Cypress.env("clientSessionToken"),
   VENDOR: Cypress.env("vendorSessionToken"),
   NONE: Cypress.env("noroleSessionToken"),
@@ -12,7 +10,7 @@ export const testRedirect = (initUrl: string) => (finalUrl: string) => {
   cy.url().should("contain", finalUrl);
 };
 
-export const setSessionToken = (role: VMPRoleType) =>
+export const setSessionToken = (role: string) =>
   cy.setCookie("next-auth.session-token", roleToToken[role]);
 
 export const testCommonRedirects = () => {

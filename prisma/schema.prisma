@@ -6,8 +6,8 @@ generator client {
 }
 
 generator zod {
-  provider = "prisma-client-js"
-  // createInputTypes = false
+  provider = "zod-prisma"
+  output   = "./zod" // (default) the directory where generated zod schemas will be saved
 }
 
 datasource db {
@@ -76,35 +76,35 @@ enum CompanySize {
 }
 
 model Customer {
-  /// @zod.string.min(3)
+  /// @zod.min(3, {message: "Minimum of 3 characters"})
   id           String      @id @default(cuid())
-  /// @zod.string.min(3)
+  /// @zod.min(3, {message: "Minimum of 3 characters"})
   companyName  String
-  /// @zod.string.min(3)
+  /// @zod.min(3, {message: "Minimum of 3 characters"})
   addressLine1 String
-  /// @zod.string.min(3)
+  /// @zod.min(3, {message: "Minimum of 3 characters"})
   addressLine2 String
-  /// @zod.string.min(3)
+  /// @zod.min(3, {message: "Minimum of 3 characters"})
   postalCode   String
-  /// @zod.string.min(3)
+  /// @zod.min(3, {message: "Minimum of 3 characters"})
   city         String
-  /// @zod.string.min(3)
+  /// @zod.min(3, {message: "Minimum of 3 characters"})
   taxId        String
-  /// @zod.string.min(3)
+  /// @zod.min(3, {message: "Minimum of 3 characters"})
   name         String
-  /// @zod.string.min(3)
+  /// @zod.min(3, {message: "Minimum of 3 characters"})
   surname      String
-  /// @zod.string.min(3)
+  /// @zod.min(3, {message: "Minimum of 3 characters"})
   position     String
-  /// @zod.string.min(3)
+  /// @zod.min(3, {message: "Minimum of 3 characters"})
   mail         String
-  /// @zod.string.min(3)
+  /// @zod.min(3, {message: "Minimum of 3 characters"})
   phone        String
   companySize  CompanySize @default(BELOW10)
   projectFor   ProjectFor  @default(INTERNAL)
 }
 
-enum OpportunityStatus {
+enum RequestStatus {
   DRAFT
   PENDING
   NOOFFERS
@@ -112,13 +112,68 @@ enum OpportunityStatus {
   EXPIRED
 }
 
-model Opportunity {
-  id           String            @id @default(cuid())
-  name         String
-  status       OpportunityStatus @default(PENDING)
+enum JobProfile {
+  SOFTWARE_ENGINEER
+  DATA_SPECIALIST
+  DEVOPS
+  QUALITY_ASSURANCE
+}
+
+model Request {
+  /// @zod.cuid()
+  id           String        @id @default(cuid())
   validUntil   DateTime?
   creationDate DateTime?
-  offers       Offer[]
+  status       RequestStatus @default(PENDING)
+
+  /// @zod.min(3, {message: "Minimum of 3 characters"})
+  name               String
+  workType           WorkType
+  projectStage       ProjectStage
+  projectDuration    ProjectDuration
+  projectMethodology ProjectMethodology
+
+  fundingGuaranteed Boolean
+  pmExists          Boolean
+
+  /// @zod.min(10, {message: "Minimum 10 characters"})
+  description String
+
+  profile    JobProfile
+  /// @zod.custom(z.number({coerce: true}))
+  /// @zod.positive({ message: "Needs to be a positive integer" })
+  hourlyRate Int
+
+  /// @zod.positive({ message: "Needs to be a positive integer" })
+  availability Int
+
+  /// @zod.custom(z.date({coerce: true, required_error: "Start date is required"}))
+  startDate DateTime
+
+  /// @zod.custom(z.date({coerce: true, required_error: "End date is required"}))
+  endDate DateTime
+
+  /// @zod.custom(z.number({coerce: true}))
+  /// @zod.positive({ message: "Needs to be a positive integer" })
+  noticePeriod Int
+
+  officeLocation String?
+
+  /// @zod.custom(z.number({coerce: true}))
+  /// @zod.min(1, {message: "Required integer (1-5)"})
+  /// @zod.max(5, {message: "Required integer (1-5)"})
+  daysInOffice Int?
+
+  domesticTravel      Boolean?
+  internationalTravel Boolean?
+
+  offers Offer[]
+}
+
+enum WorkType {
+  FULLY_REMOTE
+  ONSITE
+  HYBRID
 }
 
 enum OfferStatus {
@@ -129,11 +184,34 @@ enum OfferStatus {
 }
 
 model Offer {
-  id            String       @id @default(cuid())
+  id            String      @id @default(cuid())
   matchingGrade Int?
-  offerStatus   OfferStatus  @default(PENDING)
+  offerStatus   OfferStatus @default(PENDING)
   validUntil    DateTime?
   creationDate  DateTime?
-  opportunity   Opportunity? @relation(fields: [opportunityId], references: [id])
-  opportunityId String
+  request       Request?    @relation(fields: [requestId], references: [id])
+  requestId     String
+}
+
+enum ProjectStage {
+  NEW
+  PLANNING
+  ANALYSIS
+  DESIGN
+  IMPLEMENTATION
+  MAINTENANCE
+}
+
+enum ProjectDuration {
+  SHORT
+  MEDIUM
+  MEDIUM_LONG
+  LONG
+}
+
+enum ProjectMethodology {
+  SCRUM
+  KANBAN
+  LEAN
+  WATERFALL
 }

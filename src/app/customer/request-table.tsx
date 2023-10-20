@@ -1,15 +1,21 @@
 "use client";
 
 import { DataTable } from "@/components/data-table";
-import { Opportunity } from "@prisma/client";
 import { OffersTable } from "./offers-table";
 import { ColumnDef } from "@tanstack/react-table";
 import { ChevronDown, ChevronRight } from "lucide-react";
 import { createDate } from "./shared";
+import { z } from "zod";
+import { RequestModel } from "../../../prisma/zod";
 
 const chevronClasses = "h-4 w-4";
 
-export const opsColumns: ColumnDef<Opportunity>[] = [
+type RequestSchemaLight = Pick<
+  z.infer<typeof RequestModel>,
+  "id" | "status" | "name" | "creationDate" | "validUntil"
+>;
+
+export const opsColumns: ColumnDef<RequestSchemaLight>[] = [
   {
     accessorKey: "id",
     header: "ID",
@@ -54,7 +60,11 @@ export const opsColumns: ColumnDef<Opportunity>[] = [
   },
 ];
 
-export function RequestsTable({ requests }: { requests: Opportunity[] }) {
+export function RequestsTable({
+  requests,
+}: {
+  requests: RequestSchemaLight[];
+}) {
   return (
     <DataTable
       columns={opsColumns}

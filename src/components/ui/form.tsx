@@ -12,6 +12,7 @@ import {
 
 import { cn } from "@/lib/utils";
 import { Label } from "@/components/ui/label";
+import { useAutoAnimate } from "@formkit/auto-animate/react";
 
 const Form = FormProvider;
 
@@ -144,17 +145,16 @@ FormDescription.displayName = "FormDescription";
 const FormMessage = React.forwardRef<
   HTMLParagraphElement,
   React.HTMLAttributes<HTMLParagraphElement>
->(({ className, children, ...props }, ref) => {
+  // eslint-disable-next-line no-unused-vars
+>(({ className, children, ...props }, _ref) => {
   const { error, formMessageId } = useFormField();
-  const body = error ? String(error?.message) : children;
+  const body = error ? String(error.message) : children;
 
-  if (!body) {
-    return null;
-  }
+  const [pRef] = useAutoAnimate();
 
   return (
     <p
-      ref={ref}
+      ref={pRef}
       id={formMessageId}
       className={cn("text-sm font-medium text-destructive", className)}
       {...props}

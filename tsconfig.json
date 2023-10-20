@@ -21,7 +21,7 @@
     ],
     "paths": {
       "@/*": ["./src/*"],
-      "zod-types": ["./prisma/generated/zod"]
+      "zod-types": ["./prisma/zod"]
     },
     "types": ["cypress", "@testing-library/cypress", "node"]
   },

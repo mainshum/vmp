@@ -13,8 +13,6 @@ import { noop } from "@/lib/utils";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
-  BuyerInputs,
-  CompanyInputs,
   CompanySizeRadioItems,
   ProjectsForRadioItems,
   RadioGroup,
@@ -74,7 +72,7 @@ export function CF({ data }: { data: Customer }) {
         className="space-y-6"
         onSubmit={form.handleSubmit((vals) => m.mutateAsync(vals))}
       >
-        <CompanyInputs form={form} />
+        {/* <CompanyInputs form={form} /> */}
         <Typo.H2>I’m looking for developers for</Typo.H2>
         <RadioGroup control={form.control} path="projectFor">
           <ProjectsForRadioItems />
@@ -160,7 +158,7 @@ export function BF({ data }: { data: Customer }) {
         className="space-y-6"
         onSubmit={form.handleSubmit((xs) => m.mutateAsync(xs))}
       >
-        <BuyerInputs form={form} />
+        {/* <BuyerInputs form={form} /> */}
         <SubmitBtn isEnabled={submittable} />
       </form>
     </Form>

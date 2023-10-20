@@ -1,6 +1,6 @@
 import Image from "next/image";
 import * as Typo from "@/components/typography";
-import { buttonVariants } from "@/components/ui/Button";
+import { buttonVariants } from "@/components/ui/button";
 import { match } from "ts-pattern";
 import React from "react";
 import Link from "next/link";
