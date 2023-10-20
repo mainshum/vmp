@@ -3,7 +3,7 @@ import { RequestStatus, WorkType, ProjectStage, ProjectDuration, ProjectMethodol
 import { CompleteOffer, RelatedOfferModel } from "./index"
 
 export const RequestModel = z.object({
-  id: z.string(),
+  id: z.string().cuid(),
   validUntil: z.date().nullish(),
   creationDate: z.date().nullish(),
   status: z.nativeEnum(RequestStatus),
@@ -18,8 +18,8 @@ export const RequestModel = z.object({
   profile: z.nativeEnum(JobProfile),
   hourlyRate: z.number({ coerce: true }).int().positive({ message: "Needs to be a positive integer" }),
   availability: z.number().int().positive({ message: "Needs to be a positive integer" }),
-  startDate: z.date({ required_error: "Start date is required" }),
-  endDate: z.date({ required_error: "End date is required" }),
+  startDate: z.date({ coerce: true, required_error: "Start date is required" }),
+  endDate: z.date({ coerce: true, required_error: "End date is required" }),
   noticePeriod: z.number({ coerce: true }).int().positive({ message: "Needs to be a positive integer" }),
   officeLocation: z.string().nullish(),
   daysInOffice: z.number({ coerce: true }).int().min(1, { message: "Required integer (1-5)" }).max(5, { message: "Required integer (1-5)" }).nullish(),

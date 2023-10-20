@@ -4,7 +4,16 @@ import { redirect } from "next/navigation";
 import { ROUTES } from "@/lib/const";
 import { RequestsTable } from "./request-table";
 
-const getRequests = () => db.opportunity.findMany();
+const getRequests = () =>
+  db.request.findMany({
+    select: {
+      id: true,
+      name: true,
+      status: true,
+      creationDate: true,
+      validUntil: true,
+    },
+  });
 
 async function PageServer() {
   const session = await getVMPSession();

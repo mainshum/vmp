@@ -1,8 +1,8 @@
 import { db } from "@/lib/db";
-import { RequestModel } from "../../../../../prisma/zod";
+import { RequestModelPayload } from "@/types/prisma-extensions";
 
-export async function PUT(req: Request) {
-  const parsed = RequestModel.safeParse(req.body);
+export async function POST(req: Request) {
+  const parsed = RequestModelPayload.safeParse(await req.json());
 
   if (!parsed.success) {
     const errorTxt = JSON.stringify(parsed.error.issues, null, 2);
@@ -13,7 +13,7 @@ export async function PUT(req: Request) {
   const { data } = parsed;
 
   const updated = await db.request.create({
-    data: data,
+    data: { ...data },
     select: { name: true },
   });
 

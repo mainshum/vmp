@@ -9,39 +9,41 @@ const offersPerOp = 3;
 async function main() {
   // cleanup
   await db.offer.deleteMany({});
-  await db.opportunity.deleteMany({});
+  await db.request.deleteMany({});
 
-  // add opsCnt opportunities with 10 offers each
-  const ops = await Promise.all(
-    Array(opsCnt)
-      .fill(null)
-      .map(() =>
-        db.opportunity.create({
-          data: {
-            name: faker.animal.cat(),
-          },
-        }),
-      ),
-  );
+  return;
 
-  const offers = await Promise.all(
-    ops.flatMap((op) =>
-      Array(offersPerOp)
-        .fill(null)
-        .map(() =>
-          db.offer.createMany({
-            data: [
-              {
-                opportunityId: op.id,
-                matchingGrade: faker.number.int({ min: 1, max: 5 }),
-              },
-            ],
-          }),
-        ),
-    ),
-  );
+  // // add opsCnt opportunities with 10 offers each
+  // const ops = await Promise.all(
+  //   Array(opsCnt)
+  //     .fill(null)
+  //     .map(() =>
+  //       db.request.create({
+  //         data: {
+  //           name: faker.animal.cat(),
+  //         },
+  //       }),
+  //     ),
+  // );
 
-  console.log({ ops, offers });
+  // const offers = await Promise.all(
+  //   ops.flatMap((op) =>
+  //     Array(offersPerOp)
+  //       .fill(null)
+  //       .map(() =>
+  //         db.offer.createMany({
+  //           data: [
+  //             {
+  //               opportunityId: op.id,
+  //               matchingGrade: faker.number.int({ min: 1, max: 5 }),
+  //             },
+  //           ],
+  //         }),
+  //       ),
+  //   ),
+  // );
+
+  // console.log({ ops, offers });
 }
 
 main()

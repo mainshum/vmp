@@ -2,7 +2,7 @@ import { getVMPSession } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { OfferSchema } from "zod-types";
+import { OfferModel } from "../../../../../prisma/zod";
 
 export async function GET(
   _req: Request,
@@ -23,7 +23,7 @@ export async function GET(
   }
 
   const data = await db.offer.findMany({
-    where: { opportunityId: parsed.data },
+    where: { requestId: parsed.data },
     orderBy: { id: "asc" },
   });
 
@@ -36,7 +36,7 @@ export async function PUT(req: Request) {
 
   if (!session) return NextResponse.json("Not signed in", { status: 401 });
 
-  const parsed = OfferSchema.omit({ opportunityId: true }).safeParse(body);
+  const parsed = OfferModel.omit({ requestId: true }).safeParse(body);
 
   if (!parsed.success) {
     const errorTxt = JSON.stringify(parsed.error.issues, null, 2);
@@ -54,7 +54,7 @@ export async function PUT(req: Request) {
     select: {
       id: true,
       matchingGrade: true,
-      opportunityId: true,
+      requestId: true,
     },
   });
 

@@ -120,6 +120,7 @@ enum JobProfile {
 }
 
 model Request {
+  /// @zod.cuid()
   id           String        @id @default(cuid())
   validUntil   DateTime?
   creationDate DateTime?
@@ -146,10 +147,10 @@ model Request {
   /// @zod.positive({ message: "Needs to be a positive integer" })
   availability Int
 
-  /// @zod.custom(z.date({required_error: "Start date is required"}))
+  /// @zod.custom(z.date({coerce: true, required_error: "Start date is required"}))
   startDate DateTime
 
-  /// @zod.custom(z.date({required_error: "End date is required"}))
+  /// @zod.custom(z.date({coerce: true, required_error: "End date is required"}))
   endDate DateTime
 
   /// @zod.custom(z.number({coerce: true}))

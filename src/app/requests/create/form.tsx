@@ -19,15 +19,9 @@ import {
   FieldValues,
   useForm,
 } from "react-hook-form";
-import {
-  Select,
-  SelectTrigger,
-  SelectValue,
-  SelectContent,
-  SelectItem,
-} from "@/components/ui/select";
+import { SelectItem } from "@/components/ui/select";
 import { Slider } from "@/components/ui/slider";
-import { cn, delay } from "@/lib/utils";
+import { cn } from "@/lib/utils";
 import {
   Popover,
   PopoverTrigger,
@@ -35,7 +29,7 @@ import {
 } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import { format, addMonths } from "date-fns";
-import { CalendarIcon, ChevronsUpDown } from "lucide-react";
+import { CalendarIcon } from "lucide-react";
 import { useAutoAnimate } from "@formkit/auto-animate/react";
 import { useState } from "react";
 import { Switch } from "@/components/ui/switch";
@@ -45,15 +39,8 @@ import {
   ProjectDuration,
   ProjectMethodology,
   WorkType,
+  JobProfile,
 } from "@prisma/client";
-import { COUNTRIES } from "@/lib/const";
-import {
-  Command,
-  CommandEmpty,
-  CommandInput,
-  CommandItem,
-} from "@/components/ui/command";
-import { CommandList } from "cmdk";
 import { Carousel } from "@/components/carousel";
 import React from "react";
 import { Noop } from "@/types/shared";
@@ -62,33 +49,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useRouter } from "next/navigation";
 import { RequestModel } from "../../../../prisma/zod";
 import { MyInput, MySelect } from "@/components/forms";
-
-const engProfileKeys = [
-  "software engineer",
-  "data specialist",
-  "devops",
-  "quality assurance",
-] as const;
-
-type Keys = (typeof engProfileKeys)[number];
-
-const engProfiles = {
-  "software engineer": "Software engineer",
-  "data specialist": "Data specialist",
-  devops: "Devops engineer",
-  "quality assurance": "Quality assurance",
-} as const satisfies Record<Keys, string>;
-
-const positiveNumber = "Needs to be a positive number";
-
-const positiveInteger = z
-  .number({ coerce: true, invalid_type_error: positiveNumber })
-  .int({
-    message: "Number needs to be an integer",
-  })
-  .positive({
-    message: positiveNumber,
-  });
+import { RequestModelPayload } from "@/types/prisma-extensions";
 
 const commercialsSchema = RequestModel.pick({
   profile: true,
@@ -124,11 +85,10 @@ function InputBrand({ msg }: { msg: string }) {
   );
 }
 
-type Payload = Omit<z.infer<typeof RequestModel>, "status" | "id">;
-
-const submitRequest = async (request: Payload) => {
+const submitRequest = async (request: RequestModelPayload) => {
   const res = await fetch("/api/requests/create", {
     body: JSON.stringify(request),
+    method: "POST",
   });
 
   return await res.json();
@@ -167,13 +127,16 @@ export function RequestForm() {
       submitRequest({
         ...projectForm.getValues(),
         ...commercialsForm.getValues(),
+        status: "DRAFT",
       }),
+    // eslint-disable-next-line no-unused-vars
     onError: (e) => {
       toast({
         title: "Error saving request",
         description: "Please try resubmitting later",
       });
     },
+    // TODO research why it is calling on success even though request fails
     onSuccess: () => {
       router.push("/customer");
     },
@@ -405,9 +368,9 @@ const CommercialsForm = ({
           placeholder="Select profile"
           label="Consultant's profile"
         >
-          {Object.keys(engProfiles).map((key) => (
-            <SelectItem key={key} value={key}>
-              {engProfiles[key as Keys]}
+          {Object.values(JobProfile).map((val) => (
+            <SelectItem key={val} value={val}>
+              {val}
             </SelectItem>
           ))}
         </MySelect>
