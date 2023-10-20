@@ -1,16 +1,18 @@
-import { Control, FieldValues, Path, UseFormReturn } from "react-hook-form";
-import { isCompanyKey } from "@/lib/utils";
+import {
+  Control,
+  ControllerProps,
+  FieldPath,
+  FieldValues,
+  Path,
+  UseFormReturn,
+} from "react-hook-form";
 import { Input } from "./ui/input";
 import {
   RadioGroup as RG,
   RadioGroupItem as RGI,
   RadioGroupItem,
 } from "./ui/radio-group";
-import {
-  CompanySizeSchema,
-  Customer,
-  ProjectForSchema,
-} from "../../prisma/generated/zod";
+
 import { match } from "ts-pattern";
 import {
   FormField,
@@ -18,10 +20,18 @@ import {
   FormControl,
   FormLabel,
   FormMessage,
+  FormDescription,
 } from "./ui/form";
 import { Button } from "./ui/button";
-import { BuyerDetailsSchemaT, CompanySchema } from "./register";
 import { HTMLInputTypeAttribute } from "react";
+import {
+  Select,
+  SelectTrigger,
+  SelectValue,
+  SelectContent,
+} from "@/components/ui/select";
+import React from "react";
+import { CompanySize, ProjectFor } from "@prisma/client";
 
 export interface InputProps<T>
   extends React.InputHTMLAttributes<HTMLInputElement> {
@@ -31,22 +41,32 @@ export interface InputProps<T>
   type?: HTMLInputTypeAttribute;
 }
 
-export function FormInput<T>({
-  controlForm,
-  path,
-  label,
-  type = "text",
-}: InputProps<T>) {
+export function MySelect<
+  TFieldValues extends FieldValues = FieldValues,
+  TName extends FieldPath<TFieldValues> = FieldPath<TFieldValues>,
+>(props: {
+  control: ControllerProps<TFieldValues, TName>["control"];
+  name: ControllerProps<TFieldValues, TName>["name"];
+  label: string;
+  placeholder: string;
+  children: React.ReactNode;
+}) {
+  const { control, name, children, label, placeholder } = props;
   return (
     <FormField
-      control={controlForm.control}
-      name={path}
+      control={control}
+      name={name}
       render={({ field }) => (
         <FormItem>
           <FormLabel>{label}</FormLabel>
-          <FormControl>
-            <Input type={type} {...field} />
-          </FormControl>
+          <Select onValueChange={field.onChange} defaultValue={field.value}>
+            <FormControl>
+              <SelectTrigger>
+                <SelectValue placeholder={placeholder} />
+              </SelectTrigger>
+            </FormControl>
+            <SelectContent>{children}</SelectContent>
+          </Select>
           <FormMessage />
         </FormItem>
       )}
@@ -54,60 +74,42 @@ export function FormInput<T>({
   );
 }
 
-export function CompanyInputs({ form }: { form: UseFormReturn<any> }) {
-  const vals = CompanySchema.keyof().Values;
+export function MyInput<
+  TFieldValues extends FieldValues = FieldValues,
+  TName extends FieldPath<TFieldValues> = FieldPath<TFieldValues>,
+>(props: {
+  control: ControllerProps<TFieldValues, TName>["control"];
+  name: ControllerProps<TFieldValues, TName>["name"];
+  label: string;
+  placeholder: string;
+  description?: string;
+  disabled?: boolean;
+}) {
+  const {
+    control,
+    name,
+    description,
+    label,
+    placeholder,
+    disabled = false,
+  } = props;
   return (
-    <>
-      {Object.keys(vals).map((key) =>
-        isCompanyKey(key) ? (
-          <FormInput
-            disabled={form.formState.isSubmitting}
-            key={key}
-            controlForm={form}
-            path={key}
-            label={customerLabels[key]}
-          />
-        ) : null,
+    <FormField
+      control={control}
+      name={name}
+      render={({ field }) => (
+        <FormItem>
+          <FormLabel>{label}</FormLabel>
+          <FormControl>
+            <Input disabled={disabled} placeholder={placeholder} {...field} />
+          </FormControl>
+          {description && <FormDescription>{description}</FormDescription>}
+          <FormMessage />
+        </FormItem>
       )}
-    </>
+    />
   );
 }
-
-export const BuyerInputs = ({ form }: { form: UseFormReturn<any> }) => (
-  <>
-    <FormInput<BuyerDetailsSchemaT>
-      disabled={form.formState.isSubmitting}
-      controlForm={form}
-      path="name"
-      label={customerLabels.name}
-    />
-    <FormInput<BuyerDetailsSchemaT>
-      disabled={form.formState.isSubmitting}
-      controlForm={form}
-      path="surname"
-      label={customerLabels.surname}
-    />
-    <FormInput<BuyerDetailsSchemaT>
-      disabled={form.formState.isSubmitting}
-      controlForm={form}
-      path="mail"
-      type="email"
-      label={customerLabels.mail}
-    />
-    <FormInput<BuyerDetailsSchemaT>
-      disabled={form.formState.isSubmitting}
-      controlForm={form}
-      path="phone"
-      label={customerLabels.name}
-    />
-    <FormInput<BuyerDetailsSchemaT>
-      disabled={form.formState.isSubmitting}
-      controlForm={form}
-      path="position"
-      label={customerLabels.position}
-    />
-  </>
-);
 
 export function RadioGroup<T extends FieldValues>({
   control,
@@ -142,17 +144,17 @@ export function RadioGroup<T extends FieldValues>({
 
 export const ProjectsForRadioItems = () => (
   <>
-    {ProjectForSchema.options.map((opt) => (
-      <FormItem key={opt} className="flex items-center space-x-3 space-y-0">
+    {Object.values(ProjectFor).map((el) => (
+      <FormItem key={el} className="flex items-center space-x-3 space-y-0">
         <FormControl>
-          <RGI value={opt} />
+          <RGI value={el} />
         </FormControl>
         <FormLabel>
-          {match(opt)
+          {match(el)
             .with("INTERNAL", () => "My company (internal support)")
             .with(
               "EXTERNAL",
-              () => "project for a different company (re-sell of services)",
+              () => "Project for a different company (re-sell of services)",
             )
             .exhaustive()}
         </FormLabel>
@@ -163,7 +165,7 @@ export const ProjectsForRadioItems = () => (
 
 export const CompanySizeRadioItems = () => (
   <>
-    {CompanySizeSchema.options.map((el) => (
+    {Object.values(CompanySize).map((el) => (
       <FormItem key={el} className="flex items-center space-x-3 space-y-0">
         <FormControl>
           <RadioGroupItem value={el} />
@@ -191,20 +193,3 @@ export function SubmitBtn({ isEnabled = true }: { isEnabled?: boolean }) {
     </div>
   );
 }
-
-export const customerLabels: Record<keyof Customer, string> = {
-  mail: "E-mail",
-  name: "Name",
-  phone: "Phone number",
-  position: "Position",
-  surname: "Surname",
-  companyName: "Company name",
-  addressLine1: "Address line 1",
-  addressLine2: "Address line 2",
-  city: "City",
-  postalCode: "Postal code",
-  taxId: "Tax ID",
-  companySize: "Company size",
-  id: "ID",
-  projectFor: "Project for",
-};

@@ -5,22 +5,14 @@ import { match } from "ts-pattern";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form";
+import { Form } from "@/components/ui/form";
 import { Button } from "./ui/button";
 import { useForm, UseFormProps, UseFormReturn } from "react-hook-form";
-import { Input } from "./ui/input";
 import * as Typo from "./typography";
 import React, { useState } from "react";
 import { Noop } from "@/types/shared";
 import { ZodType } from "zod";
-import { CustomerSchema, ProjectForSchema } from "../../prisma/generated/zod";
+import { CustomerModel } from "../../prisma/zod";
 import { Dialog, DialogContent } from "./ui/dialog";
 import { Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
@@ -28,17 +20,15 @@ import { useSession } from "next-auth/react";
 import { ROUTES } from "@/lib/const";
 import { noop, withTransitionIfExists } from "@/lib/utils";
 import {
-  BuyerInputs,
-  CompanyInputs,
   CompanySizeRadioItems,
-  FormInput,
+  MyInput,
   ProjectsForRadioItems,
   RadioGroup,
 } from "./forms";
 
 type FormStep = 0 | 1 | 2 | "submitting" | "error_submitting";
 
-export const CompanySchema = CustomerSchema.pick({
+export const CompanySchema = CustomerModel.pick({
   companyName: true,
   addressLine1: true,
   addressLine2: true,
@@ -47,7 +37,7 @@ export const CompanySchema = CustomerSchema.pick({
   taxId: true,
 });
 
-export const BuyerDetailsSchema = CustomerSchema.pick({
+export const BuyerDetailsSchema = CustomerModel.pick({
   name: true,
   surname: true,
   mail: true,
@@ -55,7 +45,7 @@ export const BuyerDetailsSchema = CustomerSchema.pick({
   position: true,
 });
 
-export const QuestionaireSchema = CustomerSchema.pick({
+export const QuestionaireSchema = CustomerModel.pick({
   companySize: true,
   projectFor: true,
 });
@@ -185,12 +175,48 @@ export function RegisterForm() {
         .with(0, () => (
           <Form {...companyForm}>
             <form
+              noValidate
               className="space-y-6"
               onSubmit={companyForm.handleSubmit(onCompanyDetailsSubmit)}
             >
               <Typo.H1>Company Information</Typo.H1>
-              <CompanyInputs form={companyForm} />
+              <MyInput
+                control={companyForm.control}
+                name="companyName"
+                label="Company name"
+                placeholder="Insert company name"
+              />
+              <MyInput
+                control={companyForm.control}
+                name="addressLine1"
+                label="Address line 1"
+                placeholder="Input first addres line"
+              />
+              <MyInput
+                control={companyForm.control}
+                name="addressLine2"
+                label="Address line 2"
+                placeholder="Input second addres line"
+              />
+              <MyInput
+                control={companyForm.control}
+                name="postalCode"
+                label="Postal code"
+                placeholder="Input postal code"
+              />
 
+              <MyInput
+                control={companyForm.control}
+                name="city"
+                label="City"
+                placeholder="Input city"
+              />
+              <MyInput
+                control={companyForm.control}
+                name="taxId"
+                label="Tax ID"
+                placeholder="Input tax ID"
+              />
               <div className="flex justify-center">
                 <Button type="submit">Next</Button>
               </div>
@@ -200,11 +226,46 @@ export function RegisterForm() {
         .with(1, () => (
           <Form {...buyerForm}>
             <form
+              noValidate
               className="space-y-8"
               onSubmit={buyerForm.handleSubmit(onBuyerReprSubmit)}
             >
               <Typo.H1>Buyer representative</Typo.H1>
-              <BuyerInputs form={buyerForm} />
+              <MyInput
+                disabled={buyerForm.formState.isSubmitting}
+                control={buyerForm.control}
+                name="name"
+                label="Name"
+                placeholder="Input name"
+              />
+              <MyInput
+                disabled={buyerForm.formState.isSubmitting}
+                control={buyerForm.control}
+                name="surname"
+                label="Surname"
+                placeholder="Input surname"
+              />
+              <MyInput
+                disabled={buyerForm.formState.isSubmitting}
+                control={buyerForm.control}
+                name="surname"
+                label="Surname"
+                placeholder="Input surname"
+              />
+              <MyInput
+                disabled={buyerForm.formState.isSubmitting}
+                control={buyerForm.control}
+                name="phone"
+                label="Phone"
+                placeholder="Input phone number"
+              />
+              <MyInput
+                disabled={buyerForm.formState.isSubmitting}
+                control={buyerForm.control}
+                name="position"
+                label="Position"
+                placeholder="Input position"
+              />
               <div className="flex justify-center">
                 <Button
                   onClick={() => withTransitionIfExists(() => setPage(0))}

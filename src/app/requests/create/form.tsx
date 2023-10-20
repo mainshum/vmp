@@ -13,7 +13,12 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { useForm } from "react-hook-form";
+import {
+  ControllerProps,
+  FieldPath,
+  FieldValues,
+  useForm,
+} from "react-hook-form";
 import {
   Select,
   SelectTrigger,
@@ -22,7 +27,7 @@ import {
   SelectItem,
 } from "@/components/ui/select";
 import { Slider } from "@/components/ui/slider";
-import { cn } from "@/lib/utils";
+import { cn, delay } from "@/lib/utils";
 import {
   Popover,
   PopoverTrigger,
@@ -30,9 +35,33 @@ import {
 } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import { format, addMonths } from "date-fns";
-import { CalendarIcon } from "lucide-react";
-import { Checkbox } from "@/components/ui/checkbox";
+import { CalendarIcon, ChevronsUpDown } from "lucide-react";
 import { useAutoAnimate } from "@formkit/auto-animate/react";
+import { useState } from "react";
+import { Switch } from "@/components/ui/switch";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  ProjectStage,
+  ProjectDuration,
+  ProjectMethodology,
+  WorkType,
+} from "@prisma/client";
+import { COUNTRIES } from "@/lib/const";
+import {
+  Command,
+  CommandEmpty,
+  CommandInput,
+  CommandItem,
+} from "@/components/ui/command";
+import { CommandList } from "cmdk";
+import { Carousel } from "@/components/carousel";
+import React from "react";
+import { Noop } from "@/types/shared";
+import { useMutation } from "@tanstack/react-query";
+import { useToast } from "@/hooks/use-toast";
+import { useRouter } from "next/navigation";
+import { RequestModel } from "../../../../prisma/zod";
+import { MyInput, MySelect } from "@/components/forms";
 
 const engProfileKeys = [
   "software engineer",
@@ -50,17 +79,6 @@ const engProfiles = {
   "quality assurance": "Quality assurance",
 } as const satisfies Record<Keys, string>;
 
-const travels = [
-  {
-    id: "domestic",
-    label: "Domestic",
-  },
-  {
-    id: "international",
-    label: "International",
-  },
-] as const;
-
 const positiveNumber = "Needs to be a positive number";
 
 const positiveInteger = z
@@ -72,18 +90,28 @@ const positiveInteger = z
     message: positiveNumber,
   });
 
-const formSchema = z.object({
-  profile: z.enum(engProfileKeys),
-  hourlyRate: positiveInteger,
-  availability: z.number(),
-  startDate: z.date({
-    required_error: "Start date is required",
-  }),
-  endDate: z.date({
-    required_error: "End date is required",
-  }),
-  noticePeriod: positiveInteger,
-  travels: z.array(z.string()),
+const commercialsSchema = RequestModel.pick({
+  profile: true,
+  hourlyRate: true,
+  availability: true,
+  startDate: true,
+  endDate: true,
+  noticePeriod: true,
+  workType: true,
+  officeLocation: true,
+  daysInOffice: true,
+  domesticTravel: true,
+  internationalTravel: true,
+});
+
+const projectSchema = RequestModel.pick({
+  name: true,
+  description: true,
+  pmExists: true,
+  fundingGuaranteed: true,
+  projectStage: true,
+  projectDuration: true,
+  projectMethodology: true,
 });
 
 const defaultNumber = "" as unknown as number;
@@ -96,56 +124,293 @@ function InputBrand({ msg }: { msg: string }) {
   );
 }
 
-export function ProfileForm() {
-  const form = useForm<z.infer<typeof formSchema>>({
-    resolver: zodResolver(formSchema),
+type Payload = Omit<z.infer<typeof RequestModel>, "status" | "id">;
+
+const submitRequest = async (request: Payload) => {
+  const res = await fetch("/api/requests/create", {
+    body: JSON.stringify(request),
+  });
+
+  return await res.json();
+};
+
+export function RequestForm() {
+  const [page, setPage] = useState<"commercials" | "project">("commercials");
+
+  const commercialsForm = useForm<z.infer<typeof commercialsSchema>>({
+    resolver: zodResolver(commercialsSchema),
     defaultValues: {
       startDate: addMonths(new Date(), 1),
       endDate: addMonths(new Date(), 1),
       noticePeriod: defaultNumber,
       hourlyRate: defaultNumber,
       availability: 50,
-      travels: [],
+      daysInOffice: defaultNumber,
     },
   });
 
-  const onSubmit = (data: z.infer<typeof formSchema>) => {
-    console.log(data);
-  };
+  const projectForm = useForm<z.infer<typeof projectSchema>>({
+    resolver: zodResolver(projectSchema),
+    defaultValues: {
+      description: "",
+      name: "",
+      fundingGuaranteed: false,
+      pmExists: false,
+    },
+  });
 
-  const [spanRef] = useAutoAnimate();
+  const { toast } = useToast();
+  const router = useRouter();
 
+  const { mutate } = useMutation({
+    mutationFn: () =>
+      submitRequest({
+        ...projectForm.getValues(),
+        ...commercialsForm.getValues(),
+      }),
+    onError: (e) => {
+      toast({
+        title: "Error saving request",
+        description: "Please try resubmitting later",
+      });
+    },
+    onSuccess: () => {
+      router.push("/customer");
+    },
+  });
+
+  return (
+    <Carousel>
+      {page === "commercials" && (
+        <CommercialsForm
+          onNext={() => setPage("project")}
+          form={commercialsForm}
+        />
+      )}
+      {page === "project" && (
+        <ProjectForm onSubmit={mutate} form={projectForm} />
+      )}
+    </Carousel>
+  );
+}
+
+function MySwitch<
+  TFieldValues extends FieldValues = FieldValues,
+  TName extends FieldPath<TFieldValues> = FieldPath<TFieldValues>,
+>(props: {
+  control: ControllerProps<TFieldValues, TName>["control"];
+  name: ControllerProps<TFieldValues, TName>["name"];
+  label: string;
+  description?: string;
+}) {
+  const { control, name, description, label } = props;
+  return (
+    <FormField
+      control={control}
+      name={name}
+      render={({ field }) => {
+        return (
+          <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+            <div className="space-y-0.5">
+              <FormLabel className="text-base">{label}</FormLabel>
+              {description && <FormDescription>{description}</FormDescription>}
+            </div>
+            <FormControl>
+              <Switch checked={field.value} onCheckedChange={field.onChange} />
+            </FormControl>
+          </FormItem>
+        );
+      }}
+    />
+  );
+}
+
+export function ProjectForm({
+  form,
+  onSubmit,
+}: {
+  form: ReturnType<typeof useForm<z.infer<typeof projectSchema>>>;
+  onSubmit: Noop;
+}) {
   return (
     <Form {...form}>
       <form
-        noValidate
         onSubmit={form.handleSubmit(onSubmit)}
+        noValidate
         className="space-y-8"
       >
+        <MyInput
+          description=" This name will be visibile to vendors and help you identify the project among all the requests"
+          control={form.control}
+          label="Project name"
+          name="name"
+          placeholder="Give project a name"
+        />
+        <MySelect
+          control={form.control}
+          label="Project maturity"
+          name="projectStage"
+          placeholder="Select stage"
+        >
+          {Object.keys(ProjectStage).map((key) => (
+            <SelectItem key={key} value={key}>
+              {ProjectStage[key as keyof typeof ProjectStage]}
+            </SelectItem>
+          ))}
+        </MySelect>
+        <MySelect
+          control={form.control}
+          label="Project duration"
+          name="projectDuration"
+          placeholder="Select duration"
+        >
+          {Object.keys(ProjectDuration).map((key) => (
+            <SelectItem key={key} value={key}>
+              {ProjectDuration[key as keyof typeof ProjectDuration]}
+            </SelectItem>
+          ))}
+        </MySelect>
+        <MySelect
+          control={form.control}
+          label="Project methodology"
+          name="projectMethodology"
+          placeholder="Select methodology"
+        >
+          {Object.keys(ProjectMethodology).map((key) => (
+            <SelectItem key={key} value={key}>
+              {ProjectMethodology[key as keyof typeof ProjectMethodology]}
+            </SelectItem>
+          ))}
+        </MySelect>
         <FormField
           control={form.control}
-          name="profile"
+          name="description"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Consultant&apos;s profile</FormLabel>
-              <Select onValueChange={field.onChange} defaultValue={field.value}>
-                <FormControl>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select profile" />
-                  </SelectTrigger>
-                </FormControl>
-                <SelectContent>
-                  {Object.keys(engProfiles).map((key) => (
-                    <SelectItem key={key} value={key}>
-                      {engProfiles[key as Keys]}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <FormLabel>Project description</FormLabel>
+              <FormControl>
+                <Textarea
+                  placeholder="Describe your project"
+                  className="resize-none"
+                  {...field}
+                />
+              </FormControl>
               <FormMessage />
             </FormItem>
           )}
         />
+
+        <MySwitch
+          control={form.control}
+          name="fundingGuaranteed"
+          label="Funding status"
+          description="Check if project has guaranteed funding for the time of its duration"
+        />
+        <MySwitch
+          control={form.control}
+          name="pmExists"
+          label="Project manager"
+          description="Check if project is managed by a Project Manager"
+        />
+        {/* <MySwitch
+          control={form.control}
+          name="teamExists"
+          label="Team"
+          description="Check if there is a team working on this project already"
+        />
+
+        <FormField
+          control={form.control}
+          name="teamCountries"
+          render={({ field }) => (
+            <FormItem className="flex flex-col">
+              <FormLabel>Team countries</FormLabel>
+              <div>
+                {field.value &&
+                  field.value.map((f) => <Button key={f}>{f}</Button>)}
+
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <FormControl>
+                      <Button
+                        variant="outline"
+                        role="combobox"
+                        className={cn(
+                          "w-[200px] justify-between",
+                          !field.value && "text-muted-foreground",
+                        )}
+                      >
+                        Add country
+                        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                      </Button>
+                    </FormControl>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-[200px] p-0">
+                    <Command>
+                      <CommandInput placeholder="Search country..." />
+                      <CommandEmpty>No matching country.</CommandEmpty>
+                      <CommandList className="max-h-[200px] overflow-auto">
+                        {COUNTRIES.map((ctr) => (
+                          <CommandItem
+                            value={ctr.name}
+                            key={ctr.name}
+                            onSelect={() => {
+                              form.setValue("teamCountries", [
+                                ...field.value,
+                                ctr.name,
+                              ]);
+                            }}
+                          >
+                            {ctr.name}
+                          </CommandItem>
+                        ))}
+                      </CommandList>
+                    </Command>{" "}
+                  </PopoverContent>
+                </Popover>
+              </div>
+              <FormMessage />
+            </FormItem>
+          )}
+        /> */}
+        <Button type="submit">Save request</Button>
+      </form>
+    </Form>
+  );
+}
+
+// eslint-disable-next-line react/display-name
+const CommercialsForm = ({
+  form,
+  onNext,
+}: {
+  form: ReturnType<typeof useForm<z.infer<typeof commercialsSchema>>>;
+  onNext: Noop;
+}) => {
+  const [spanRef] = useAutoAnimate();
+
+  const isFullyRemote =
+    form.watch("workType") && form.watch("workType") === "FULLY_REMOTE";
+
+  return (
+    <Form {...form}>
+      <form
+        onSubmit={form.handleSubmit(onNext)}
+        noValidate
+        className="space-y-8"
+      >
+        <MySelect
+          control={form.control}
+          name="profile"
+          placeholder="Select profile"
+          label="Consultant's profile"
+        >
+          {Object.keys(engProfiles).map((key) => (
+            <SelectItem key={key} value={key}>
+              {engProfiles[key as Keys]}
+            </SelectItem>
+          ))}
+        </MySelect>
         <FormField
           control={form.control}
           name="hourlyRate"
@@ -288,54 +553,54 @@ export function ProfileForm() {
             </FormItem>
           )}
         />
-        <FormField
+        <MySelect
           control={form.control}
-          name="travels"
-          render={() => (
-            <FormItem>
-              <div className="mb-4">
-                <FormLabel className="text-base">Travel requirements</FormLabel>
-              </div>
-              {travels.map((item) => (
-                <FormField
-                  key={item.id}
-                  control={form.control}
-                  name="travels"
-                  render={({ field }) => {
-                    return (
-                      <FormItem
-                        key={item.id}
-                        className="flex flex-row items-start space-x-3 space-y-0"
-                      >
-                        <FormControl>
-                          <Checkbox
-                            checked={field.value?.includes(item.id)}
-                            onCheckedChange={(checked) => {
-                              return checked
-                                ? field.onChange([...field.value, item.id])
-                                : field.onChange(
-                                    field.value?.filter(
-                                      (value) => value !== item.id,
-                                    ),
-                                  );
-                            }}
-                          />
-                        </FormControl>
-                        <FormLabel className="font-normal">
-                          {item.label}
-                        </FormLabel>
-                      </FormItem>
-                    );
-                  }}
-                />
-              ))}
-              <FormMessage />
-            </FormItem>
-          )}
+          name="workType"
+          label="Work location"
+          placeholder="Select work location"
+        >
+          {Object.keys(WorkType).map((key) => (
+            <SelectItem className="flex items-center" key={key} value={key}>
+              <span>{WorkType[key as keyof typeof WorkType]}</span>
+            </SelectItem>
+          ))}
+        </MySelect>
+        <MyInput
+          control={form.control}
+          name="daysInOffice"
+          label="Days in office"
+          disabled={form.watch("workType") === "HYBRID" ? false : true}
+          placeholder={
+            form.watch("workType") === "HYBRID"
+              ? "Days in office"
+              : "Only for hybrid position"
+          }
         />
-
-        <Button type="submit">Submit</Button>
+        <MyInput
+          control={form.control}
+          name="officeLocation"
+          label="Office location"
+          disabled={isFullyRemote ? true : false}
+          placeholder={
+            isFullyRemote
+              ? "Only for onsite/hybrid positions"
+              : "City where the office is located"
+          }
+        />
+        <MySwitch
+          control={form.control}
+          name="domesticTravel"
+          label="Domestic travel"
+          description="Check if domestic travels be required"
+        />
+        <MySwitch
+          control={form.control}
+          name="internationalTravel"
+          label="International travel"
+          description="Check if travelling abroad will be required"
+        />
+        <Button type="submit">Next</Button>
       </form>
     </Form>
   );
-}
+};
