@@ -1,50 +1,26 @@
 import { db } from "@/lib/db";
-import { NextResponse } from "next/server";
+import { CustomerModel } from "../../../../../prisma/zod/customer";
 
 // register user as client
-
-export async function PUT(req: Request) {
-  let data;
-  try {
-    data = await req.json();
-  } catch {
-    return new Response("Body should be a JSON object", { status: 400 });
-  }
-
-  try {
-    
-      const customer = await db.customer.update({
-        where: { id: data.id },
-        data: data,
-      });
-
-    return NextResponse.json({customer});
-  } catch (err) {
-    return NextResponse.json({ errors: err }, { status: 422 });
-  }
-}
-
 export async function POST(req: Request) {
-  let data;
-  try {
-    data = await req.json();
-  } catch {
-    return new Response("Body should be a JSON object", { status: 400 });
-  }
+  const parsed = CustomerModel.safeParse(await req.json());
+
+  if (!parsed.success)
+    return new Response(JSON.stringify({ errors: parsed.error.errors }), {
+      status: 404,
+    });
 
   try {
-    await Promise.all([
+    const [{ id }] = await Promise.all([
+      db.customer.create({ data: parsed.data, select: { id: true } }),
       db.user.update({
-        where: { id: data.id },
+        where: { id: parsed.data.id },
         data: { role: "CLIENT" },
-      }),
-      db.customer.create({
-        data: data,
       }),
     ]);
 
-    return NextResponse.json({ userId: data.id });
+    return new Response(JSON.stringify({ id }));
   } catch (err) {
-    return NextResponse.json({ errors: err }, { status: 422 });
+    return new Response(JSON.stringify(err), { status: 404 });
   }
 }

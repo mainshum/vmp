@@ -7,34 +7,27 @@ import * as z from "zod";
 
 import { Form } from "@/components/ui/form";
 import { Button } from "./ui/button";
-import { useForm, UseFormProps, UseFormReturn } from "react-hook-form";
+import { useForm } from "react-hook-form";
 import * as Typo from "./typography";
 import React, { useState } from "react";
-import { Noop } from "@/types/shared";
-import { ZodType } from "zod";
 import { CustomerModel } from "../../prisma/zod";
 import { Dialog, DialogContent } from "./ui/dialog";
 import { Loader2 } from "lucide-react";
-import { useRouter } from "next/navigation";
+import { redirect, useRouter, useSearchParams } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { ROUTES } from "@/lib/const";
 import { noop, withTransitionIfExists } from "@/lib/utils";
-import {
-  CompanySizeRadioItems,
-  MyInput,
-  ProjectsForRadioItems,
-  RadioGroup,
-} from "./forms";
+import { MyInput, MySelect } from "./forms";
+import { useMutation } from "@tanstack/react-query";
+import { SelectItem } from "./ui/select";
+import { CompanySize, ProjectFor } from "@prisma/client";
 
-type FormStep =
-  | "company"
-  | "buyer"
-  | "question"
-  | "submitting"
-  | "error_submitting";
+type FormStep = "company" | "buyer" | "submitting" | "error_submitting";
 
 export const CompanySchema = CustomerModel.pick({
   companyName: true,
+  companySize: true,
+  projectFor: true,
   addressLine1: true,
   addressLine2: true,
   postalCode: true,
@@ -50,14 +43,8 @@ export const BuyerDetailsSchema = CustomerModel.pick({
   position: true,
 });
 
-export const QuestionaireSchema = CustomerModel.pick({
-  companySize: true,
-  projectFor: true,
-});
-
 export type CompanySchemaT = z.infer<typeof CompanySchema>;
 export type BuyerDetailsSchemaT = z.infer<typeof BuyerDetailsSchema>;
-export type QuestionaireSchemaT = z.infer<typeof QuestionaireSchema>;
 
 function SavingModal({
   children,
@@ -75,31 +62,17 @@ function SavingModal({
   );
 }
 
-export function useCompanyForm(
-  xs: Pick<UseFormProps<CompanySchemaT>, "defaultValues" | "values">,
-) {
-  return useForm<CompanySchemaT>({
-    ...xs,
-    resolver: zodResolver(CompanySchema),
-  });
-}
-
-export function useBuyerForm(
-  xs: Pick<UseFormProps<BuyerDetailsSchemaT>, "defaultValues" | "values">,
-) {
-  return useForm<BuyerDetailsSchemaT>({
-    ...xs,
-    resolver: zodResolver(BuyerDetailsSchema),
-  });
-}
-
 export function RegisterForm() {
   const [formStep, setPage] = useState<FormStep>("company");
 
   const session = useSession();
   const router = useRouter();
 
+  const sp = useSearchParams();
+
   let companyDetailsDefault: CompanySchemaT = {
+    companySize: "FROM50TO250",
+    projectFor: "INTERNAL",
     addressLine1: "",
     addressLine2: "",
     city: "",
@@ -125,7 +98,8 @@ export function RegisterForm() {
     }
   }
 
-  const companyForm = useCompanyForm({
+  const companyForm = useForm<CompanySchemaT>({
+    resolver: zodResolver(CompanySchema),
     defaultValues: companyDetailsDefault,
   });
 
@@ -134,60 +108,67 @@ export function RegisterForm() {
     defaultValues: buyerReprDefault,
   });
 
-  const questionaireForm = useForm<QuestionaireSchemaT>({
-    resolver: zodResolver(QuestionaireSchema),
-    defaultValues: {
-      companySize: "BELOW10",
-      projectFor: "INTERNAL",
-    },
+  const registerCustomer = () => {
+    setPage("submitting");
+    return fetch(ROUTES.API.CLIENT_REGISTER, {
+      method: "POST",
+      body: JSON.stringify({
+        id: session.data?.user.id,
+        ...companyForm.getValues(),
+        ...buyerForm.getValues(),
+      }),
+    })
+      .then((res) => res.json())
+      .then((data) => data.id);
+  };
+
+  const { mutate } = useMutation({
+    mutationFn: registerCustomer,
+    onSuccess: () => router.push(ROUTES.SUCCESS("customer_registered")),
   });
 
   const hopPage = (no: FormStep) => setPage(no);
-
-  const onQuestionaireSubmit = async () => {
-    setPage("submitting");
-
-    try {
-      const res = await fetch(ROUTES.API.CLIENT_REGISTER, {
-        method: "POST",
-        body: JSON.stringify({
-          id: session.data?.user.id,
-          ...companyForm.getValues(),
-          ...buyerForm.getValues(),
-          ...questionaireForm.getValues(),
-        }),
-      });
-
-      const json = await res.json();
-
-      if (!res.ok) throw Error(json?.errors);
-    } catch (err) {
-      setPage("error_submitting");
-      return;
-    }
-
-    router.push(ROUTES.SUCCESS("customer_registered"));
-  };
-
-  console.log(buyerForm.watch());
 
   return (
     <React.Fragment>
       {match(formStep)
         .with("company", () => (
-          <Form {...companyForm}>
+          <Form key="companyForm" {...companyForm}>
             <form
               noValidate
               className="space-y-6"
               onSubmit={companyForm.handleSubmit(() => hopPage("buyer"))}
             >
-              <Typo.H1>Company Information</Typo.H1>
               <MyInput
                 control={companyForm.control}
                 name="companyName"
                 label="Company name"
                 placeholder="Insert company name"
               />
+              <MySelect
+                control={companyForm.control}
+                name="companySize"
+                label="Company size"
+                placeholder="Insert company size"
+              >
+                {Object.keys(CompanySize).map((key) => (
+                  <SelectItem key={key} value={key}>
+                    {CompanySize[key as keyof typeof CompanySize]}
+                  </SelectItem>
+                ))}
+              </MySelect>
+              <MySelect
+                control={companyForm.control}
+                name="projectFor"
+                label="Project for"
+                placeholder="Internal or external project?"
+              >
+                {Object.keys(ProjectFor).map((key) => (
+                  <SelectItem key={key} value={key}>
+                    {ProjectFor[key as keyof typeof ProjectFor]}
+                  </SelectItem>
+                ))}
+              </MySelect>
               <MyInput
                 control={companyForm.control}
                 name="addressLine1"
@@ -226,11 +207,11 @@ export function RegisterForm() {
           </Form>
         ))
         .with("buyer", () => (
-          <Form {...buyerForm}>
+          <Form key="buyerForm" {...buyerForm}>
             <form
               noValidate
               className="space-y-8"
-              onSubmit={buyerForm.handleSubmit(() => hopPage("question"))}
+              onSubmit={buyerForm.handleSubmit(() => mutate())}
             >
               <Typo.H1>Buyer representative</Typo.H1>
               <MyInput
@@ -277,21 +258,6 @@ export function RegisterForm() {
             </form>
           </Form>
         ))
-        .with("question", () => (
-          <Form {...questionaireForm}>
-            <form
-              className="space-y-12"
-              onSubmit={questionaireForm.handleSubmit(onQuestionaireSubmit)}
-            >
-              <Questionaire
-                form={questionaireForm}
-                onPrevClick={() =>
-                  withTransitionIfExists(() => setPage("buyer"))
-                }
-              />
-            </form>
-          </Form>
-        ))
         .with("submitting", () => (
           <SavingModal isOpen={true}>
             <Typo.H2>Saving the user</Typo.H2>
@@ -308,49 +274,5 @@ export function RegisterForm() {
         ))
         .exhaustive()}
     </React.Fragment>
-  );
-}
-
-type SharedProps<T extends ZodType<any, any, any>> = {
-  form: UseFormReturn<z.infer<T>>;
-};
-
-export function Questionaire({
-  form,
-  onPrevClick,
-}: { onPrevClick: Noop } & SharedProps<typeof QuestionaireSchema>) {
-  return (
-    <>
-      <Typo.H1>More information</Typo.H1>
-      <Typo.H2>I’m looking for developers for</Typo.H2>
-      <RadioGroup control={form.control} path="projectFor">
-        <ProjectsForRadioItems />
-      </RadioGroup>
-      <Typo.H2>Some other prompt</Typo.H2>
-      <RadioGroup control={form.control} path="companySize">
-        <CompanySizeRadioItems />
-      </RadioGroup>
-      <BtnsControls
-        onPrevClick={onPrevClick}
-        submitBtnText="Finish registration"
-      />
-    </>
-  );
-}
-
-function BtnsControls({
-  onPrevClick,
-  submitBtnText = "Next",
-}: {
-  onPrevClick: Noop;
-  submitBtnText?: string;
-}) {
-  return (
-    <div className="flex justify-around">
-      <Button variant="subtle" type="button" onClick={onPrevClick}>
-        Prev
-      </Button>
-      <Button type="submit">{submitBtnText}</Button>
-    </div>
   );
 }

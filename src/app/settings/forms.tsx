@@ -31,7 +31,7 @@ export function CF({ data }: { data: Customer }) {
   const update = (xs: F.CompanySchemaT) => {
     setIsSaving(true);
 
-    return fetch("/api/client/register", {
+    return fetch("/api/customer/register", {
       method: "PUT",
       body: JSON.stringify({
         ...xs,

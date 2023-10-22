@@ -38,13 +38,11 @@ async function PageServer() {
         <DialogTrigger className={buttonVariants()}>
           Create new request
         </DialogTrigger>
-        <DialogContent className="max-h-full overflow-y-auto sm:max-h-[75%]">
+        <DialogContent className="max-h-full overflow-y-auto overflow-x-hidden sm:max-h-[75%]">
           <DialogHeader>
             <DialogTitle className="pb-4">Job request</DialogTitle>
-            <DialogDescription>
-              <RequestForm />
-            </DialogDescription>
           </DialogHeader>
+          <RequestForm />
         </DialogContent>
       </Dialog>
       <RequestsTable requests={requests} />

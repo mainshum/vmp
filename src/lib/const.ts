@@ -14,7 +14,7 @@ export const ROUTES = {
   },
   SUCCESS: (t: SuccessType) => `/success?type=${t}`,
   API: {
-    CLIENT_REGISTER: "/api/client/register",
+    CLIENT_REGISTER: "/api/customer/register",
     CUSTOMER: {
       POSTINGS: "/customer",
     },
