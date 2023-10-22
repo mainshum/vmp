@@ -1,7 +1,5 @@
-import { BuyerForm } from "../forms";
-
 async function Page() {
-  return <BuyerForm />;
+  return <div>TODO</div>;
 }
 
 export default Page;
