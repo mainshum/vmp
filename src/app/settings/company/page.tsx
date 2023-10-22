@@ -1,7 +1,5 @@
-import { CompanyForm } from "../forms";
-
 async function Page() {
-  return <CompanyForm />;
+  return <div>TODO</div>;
 }
 
 export default Page;
