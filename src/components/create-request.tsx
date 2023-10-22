@@ -47,7 +47,7 @@ import { Noop } from "@/types/shared";
 import { useMutation } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { useRouter } from "next/navigation";
-import { RequestModel } from "../../../../prisma/zod";
+import { RequestModel } from "../../prisma/zod";
 import { MyInput, MySelect } from "@/components/forms";
 import { RequestModelPayload } from "@/types/prisma-extensions";
 

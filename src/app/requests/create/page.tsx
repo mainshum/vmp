@@ -1,5 +1,5 @@
 import { getVMPSession } from "@/lib/auth";
-import { RequestForm } from "./form";
+import { RequestForm } from "../../../components/create-request";
 import { headers, cookies } from "next/headers";
 
 async function Page(...xs: any) {

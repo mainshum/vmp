@@ -26,7 +26,12 @@ import {
   RadioGroup,
 } from "./forms";
 
-type FormStep = 0 | 1 | 2 | "submitting" | "error_submitting";
+type FormStep =
+  | "company"
+  | "buyer"
+  | "question"
+  | "submitting"
+  | "error_submitting";
 
 export const CompanySchema = CustomerModel.pick({
   companyName: true,
@@ -89,10 +94,9 @@ export function useBuyerForm(
 }
 
 export function RegisterForm() {
-  const [formStep, setPage] = useState<FormStep>(0);
+  const [formStep, setPage] = useState<FormStep>("company");
 
   const session = useSession();
-
   const router = useRouter();
 
   let companyDetailsDefault: CompanySchemaT = {
@@ -124,7 +128,9 @@ export function RegisterForm() {
   const companyForm = useCompanyForm({
     defaultValues: companyDetailsDefault,
   });
-  const buyerForm = useBuyerForm({
+
+  const buyerForm = useForm<BuyerDetailsSchemaT>({
+    resolver: zodResolver(BuyerDetailsSchema),
     defaultValues: buyerReprDefault,
   });
 
@@ -136,13 +142,7 @@ export function RegisterForm() {
     },
   });
 
-  const hopPage = (no: FormStep) => withTransitionIfExists(() => setPage(no));
-
-  const onCompanyDetailsSubmit = () => {
-    hopPage(1);
-  };
-
-  const onBuyerReprSubmit = () => hopPage(2);
+  const hopPage = (no: FormStep) => setPage(no);
 
   const onQuestionaireSubmit = async () => {
     setPage("submitting");
@@ -169,15 +169,17 @@ export function RegisterForm() {
     router.push(ROUTES.SUCCESS("customer_registered"));
   };
 
+  console.log(buyerForm.watch());
+
   return (
     <React.Fragment>
       {match(formStep)
-        .with(0, () => (
+        .with("company", () => (
           <Form {...companyForm}>
             <form
               noValidate
               className="space-y-6"
-              onSubmit={companyForm.handleSubmit(onCompanyDetailsSubmit)}
+              onSubmit={companyForm.handleSubmit(() => hopPage("buyer"))}
             >
               <Typo.H1>Company Information</Typo.H1>
               <MyInput
@@ -223,37 +225,33 @@ export function RegisterForm() {
             </form>
           </Form>
         ))
-        .with(1, () => (
+        .with("buyer", () => (
           <Form {...buyerForm}>
             <form
               noValidate
               className="space-y-8"
-              onSubmit={buyerForm.handleSubmit(onBuyerReprSubmit)}
+              onSubmit={buyerForm.handleSubmit(() => hopPage("question"))}
             >
               <Typo.H1>Buyer representative</Typo.H1>
               <MyInput
-                disabled={buyerForm.formState.isSubmitting}
                 control={buyerForm.control}
                 name="name"
                 label="Name"
                 placeholder="Input name"
               />
               <MyInput
-                disabled={buyerForm.formState.isSubmitting}
                 control={buyerForm.control}
                 name="surname"
                 label="Surname"
                 placeholder="Input surname"
               />
               <MyInput
-                disabled={buyerForm.formState.isSubmitting}
                 control={buyerForm.control}
-                name="surname"
-                label="Surname"
-                placeholder="Input surname"
+                name="mail"
+                label="Mail"
+                placeholder="Input email"
               />
               <MyInput
-                disabled={buyerForm.formState.isSubmitting}
                 control={buyerForm.control}
                 name="phone"
                 label="Phone"
@@ -268,16 +266,18 @@ export function RegisterForm() {
               />
               <div className="flex justify-center">
                 <Button
-                  onClick={() => withTransitionIfExists(() => setPage(0))}
+                  onClick={() =>
+                    withTransitionIfExists(() => setPage("company"))
+                  }
                 >
-                  Previous
+                  Company information
                 </Button>
                 <Button type="submit">Next</Button>
               </div>
             </form>
           </Form>
         ))
-        .with(2, () => (
+        .with("question", () => (
           <Form {...questionaireForm}>
             <form
               className="space-y-12"
@@ -285,7 +285,9 @@ export function RegisterForm() {
             >
               <Questionaire
                 form={questionaireForm}
-                onPrevClick={() => withTransitionIfExists(() => setPage(1))}
+                onPrevClick={() =>
+                  withTransitionIfExists(() => setPage("buyer"))
+                }
               />
             </form>
           </Form>
