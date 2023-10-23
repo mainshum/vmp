@@ -1,4 +1,5 @@
 import * as z from "zod"
+import * as imports from "../../src/types/prisma-extensions"
 import { RequestStatus, WorkType, ProjectStage, ProjectDuration, ProjectMethodology, JobProfile } from "@prisma/client"
 import { CompleteOffer, RelatedOfferModel } from "./index"
 
@@ -16,13 +17,13 @@ export const RequestModel = z.object({
   pmExists: z.boolean(),
   description: z.string().min(10, { message: "Minimum 10 characters" }),
   profile: z.nativeEnum(JobProfile),
-  hourlyRate: z.number({ coerce: true }).int().positive({ message: "Needs to be a positive integer" }),
+  hourlyRate: imports.positiveInteger.int(),
   availability: z.number().int().positive({ message: "Needs to be a positive integer" }),
   startDate: z.date({ coerce: true, required_error: "Start date is required" }),
   endDate: z.date({ coerce: true, required_error: "End date is required" }),
-  noticePeriod: z.number({ coerce: true }).int().positive({ message: "Needs to be a positive integer" }),
+  noticePeriod: imports.positiveInteger.int(),
   officeLocation: z.string().nullish(),
-  daysInOffice: z.number({ coerce: true }).int().min(1, { message: "Required integer (1-5)" }).max(5, { message: "Required integer (1-5)" }).nullish(),
+  daysInOffice: imports.positiveInteger15.int().nullish(),
   domesticTravel: z.boolean().nullish(),
   internationalTravel: z.boolean().nullish(),
 })

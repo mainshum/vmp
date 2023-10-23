@@ -1,4 +1,5 @@
 import * as z from "zod"
+import * as imports from "../../src/types/prisma-extensions"
 import { CompanySize, ProjectFor } from "@prisma/client"
 
 export const CustomerModel = z.object({

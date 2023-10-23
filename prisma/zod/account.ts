@@ -1,4 +1,5 @@
 import * as z from "zod"
+import * as imports from "../../src/types/prisma-extensions"
 import { CompleteUser, RelatedUserModel } from "./index"
 
 export const AccountModel = z.object({

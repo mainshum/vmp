@@ -1,5 +1,13 @@
 import { db } from "@/lib/db";
-import { RequestModelPayload } from "@/types/prisma-extensions";
+import { RequestModelPayload } from "@/types/prisma-types";
+import { match } from "ts-pattern";
+import { RequestModel } from "../../../../../prisma/zod/request";
+import { z } from "zod";
+
+type Mapped = Pick<
+  z.infer<typeof RequestModel>,
+  "workType" | "officeLocation" | "daysInOffice"
+>;
 
 export async function POST(req: Request) {
   const parsed = RequestModelPayload.safeParse(await req.json());
@@ -12,8 +20,27 @@ export async function POST(req: Request) {
   }
   const { data } = parsed;
 
+  const mapped: Mapped = match(data.workType)
+    .with(
+      { workType: "FULLY_REMOTE" },
+      ({ workType }): Mapped => ({ workType }),
+    )
+    .with(
+      { workType: "HYBRID" },
+      ({ daysInOffice, officeLocation, workType }): Mapped => ({
+        officeLocation,
+        daysInOffice,
+        workType,
+      }),
+    )
+    .with(
+      { workType: "ONSITE" },
+      ({ officeLocation, workType }): Mapped => ({ officeLocation, workType }),
+    )
+    .exhaustive();
+
   const updated = await db.request.create({
-    data: { ...data },
+    data: { ...data, ...mapped },
     select: { name: true },
   });
 

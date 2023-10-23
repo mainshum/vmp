@@ -32,6 +32,7 @@ import {
 } from "@/components/ui/select";
 import React from "react";
 import { CompanySize, ProjectFor } from "@prisma/client";
+import { Switch } from "./ui/switch";
 
 export interface InputProps<T>
   extends React.InputHTMLAttributes<HTMLInputElement> {
@@ -74,17 +75,22 @@ export function MySelect<
   );
 }
 
-export function MyInput<
+type MyIputProps<
   TFieldValues extends FieldValues = FieldValues,
   TName extends FieldPath<TFieldValues> = FieldPath<TFieldValues>,
->(props: {
+> = {
   control: ControllerProps<TFieldValues, TName>["control"];
   name: ControllerProps<TFieldValues, TName>["name"];
   label: string;
   placeholder: string;
   description?: string;
   disabled?: boolean;
-}) {
+};
+
+export function MyInput<
+  TFieldValues extends FieldValues = FieldValues,
+  TName extends FieldPath<TFieldValues> = FieldPath<TFieldValues>,
+>(props: MyIputProps<TFieldValues, TName>) {
   const {
     control,
     name,
@@ -191,5 +197,36 @@ export function SubmitBtn({ isEnabled = true }: { isEnabled?: boolean }) {
         Save changes
       </Button>
     </div>
+  );
+}
+
+export function MySwitch<
+  TFieldValues extends FieldValues = FieldValues,
+  TName extends FieldPath<TFieldValues> = FieldPath<TFieldValues>,
+>(props: {
+  control: ControllerProps<TFieldValues, TName>["control"];
+  name: ControllerProps<TFieldValues, TName>["name"];
+  label: string;
+  description?: string;
+}) {
+  const { control, name, description, label } = props;
+  return (
+    <FormField
+      control={control}
+      name={name}
+      render={({ field }) => {
+        return (
+          <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+            <div className="space-y-0.5">
+              <FormLabel className="text-base">{label}</FormLabel>
+              {description && <FormDescription>{description}</FormDescription>}
+            </div>
+            <FormControl>
+              <Switch checked={field.value} onCheckedChange={field.onChange} />
+            </FormControl>
+          </FormItem>
+        );
+      }}
+    />
   );
 }

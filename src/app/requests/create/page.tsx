@@ -1,10 +1,7 @@
 import { getVMPSession } from "@/lib/auth";
 import { RequestForm } from "../../../components/create-request";
-import { headers, cookies } from "next/headers";
 
-async function Page(...xs: any) {
-  console.log(cookies());
-
+async function Page() {
   //console.log(process.env);
   const session = await getVMPSession();
 
