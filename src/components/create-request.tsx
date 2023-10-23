@@ -13,12 +13,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import {
-  ControllerProps,
-  FieldPath,
-  FieldValues,
-  useForm,
-} from "react-hook-form";
+import { useForm } from "react-hook-form";
 import { SelectItem } from "@/components/ui/select";
 import { Slider } from "@/components/ui/slider";
 import { cn } from "@/lib/utils";
@@ -32,7 +27,6 @@ import { format, addMonths } from "date-fns";
 import { CalendarIcon } from "lucide-react";
 import { useAutoAnimate } from "@formkit/auto-animate/react";
 import { useState } from "react";
-import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import {
   ProjectStage,
@@ -47,33 +41,12 @@ import { Noop } from "@/types/shared";
 import { useMutation } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { useRouter } from "next/navigation";
-import { RequestModel } from "../../prisma/zod";
 import { MyInput, MySelect, MySwitch } from "@/components/forms";
-import { RequestModelPayload } from "@/types/prisma-extensions";
-
-const commercialsSchema = RequestModel.pick({
-  profile: true,
-  hourlyRate: true,
-  availability: true,
-  startDate: true,
-  endDate: true,
-  noticePeriod: true,
-  workType: true,
-  officeLocation: true,
-  daysInOffice: true,
-  domesticTravel: true,
-  internationalTravel: true,
-});
-
-const projectSchema = RequestModel.pick({
-  name: true,
-  description: true,
-  pmExists: true,
-  fundingGuaranteed: true,
-  projectStage: true,
-  projectDuration: true,
-  projectMethodology: true,
-});
+import {
+  RequestModelPayload,
+  commercialsSchema,
+  projectSchema,
+} from "@/types/prisma-types";
 
 const defaultNumber = "" as unknown as number;
 
@@ -105,7 +78,11 @@ export function RequestForm() {
       noticePeriod: defaultNumber,
       hourlyRate: defaultNumber,
       availability: 50,
-      daysInOffice: defaultNumber,
+      workType: {
+        workType: "HYBRID",
+        daysInOffice: defaultNumber,
+        officeLocation: "",
+      },
     },
   });
 
@@ -127,7 +104,6 @@ export function RequestForm() {
       submitRequest({
         ...projectForm.getValues(),
         ...commercialsForm.getValues(),
-        status: "DRAFT",
       }),
     // eslint-disable-next-line no-unused-vars
     onError: (e) => {
@@ -322,7 +298,7 @@ const CommercialsForm = ({
   const [availabilityRef] = useAutoAnimate();
   const [officeLocationRef] = useAutoAnimate();
 
-  const workType = form.watch("workType");
+  const workType = form.watch("workType")?.workType;
 
   const showOfficeLocation = workType !== "FULLY_REMOTE";
   const showDaysInOffice = workType === "HYBRID";
@@ -491,7 +467,7 @@ const CommercialsForm = ({
         <section ref={officeLocationRef}>
           <MySelect
             control={form.control}
-            name="workType"
+            name="workType.workType"
             label="Work location"
             placeholder="Select work location"
           >
@@ -504,7 +480,7 @@ const CommercialsForm = ({
           {showDaysInOffice && (
             <MyInput
               control={form.control}
-              name="daysInOffice"
+              name="workType.daysInOffice"
               label="Days in office"
               placeholder="Days in office"
             />
@@ -512,7 +488,7 @@ const CommercialsForm = ({
           {showOfficeLocation && (
             <MyInput
               control={form.control}
-              name="officeLocation"
+              name="workType.officeLocation"
               label="Office location"
               placeholder="City where the office is located"
             />

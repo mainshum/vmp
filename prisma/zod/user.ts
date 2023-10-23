@@ -1,4 +1,5 @@
 import * as z from "zod"
+import * as imports from "../../src/types/prisma-extensions"
 import { VMPRole } from "@prisma/client"
 import { CompleteAccount, RelatedAccountModel, CompleteSession, RelatedSessionModel } from "./index"
 

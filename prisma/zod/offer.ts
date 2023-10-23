@@ -1,4 +1,5 @@
 import * as z from "zod"
+import * as imports from "../../src/types/prisma-extensions"
 import { OfferStatus } from "@prisma/client"
 import { CompleteRequest, RelatedRequestModel } from "./index"
 

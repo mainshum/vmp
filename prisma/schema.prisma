@@ -8,6 +8,7 @@ generator client {
 generator zod {
   provider = "zod-prisma"
   output   = "./zod" // (default) the directory where generated zod schemas will be saved
+  imports  = "../src/types/prisma-extensions"
 }
 
 datasource db {
@@ -140,8 +141,7 @@ model Request {
   description String
 
   profile    JobProfile
-  /// @zod.custom(z.number({coerce: true}))
-  /// @zod.positive({ message: "Needs to be a positive integer" })
+  /// @zod.custom(imports.positiveInteger)
   hourlyRate Int
 
   /// @zod.positive({ message: "Needs to be a positive integer" })
@@ -153,15 +153,12 @@ model Request {
   /// @zod.custom(z.date({coerce: true, required_error: "End date is required"}))
   endDate DateTime
 
-  /// @zod.custom(z.number({coerce: true}))
-  /// @zod.positive({ message: "Needs to be a positive integer" })
+  /// @zod.custom(imports.positiveInteger)
   noticePeriod Int
 
   officeLocation String?
 
-  /// @zod.custom(z.number({coerce: true}))
-  /// @zod.min(1, {message: "Required integer (1-5)"})
-  /// @zod.max(5, {message: "Required integer (1-5)"})
+  /// @zod.custom(imports.positiveInteger15)
   daysInOffice Int?
 
   domesticTravel      Boolean?
