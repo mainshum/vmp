@@ -48,7 +48,7 @@ import { useMutation } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { useRouter } from "next/navigation";
 import { RequestModel } from "../../prisma/zod";
-import { MyInput, MySelect } from "@/components/forms";
+import { MyInput, MySelect, MySwitch } from "@/components/forms";
 import { RequestModelPayload } from "@/types/prisma-extensions";
 
 const commercialsSchema = RequestModel.pick({
@@ -154,37 +154,6 @@ export function RequestForm() {
         <ProjectForm onSubmit={mutate} form={projectForm} />
       )}
     </Carousel>
-  );
-}
-
-function MySwitch<
-  TFieldValues extends FieldValues = FieldValues,
-  TName extends FieldPath<TFieldValues> = FieldPath<TFieldValues>,
->(props: {
-  control: ControllerProps<TFieldValues, TName>["control"];
-  name: ControllerProps<TFieldValues, TName>["name"];
-  label: string;
-  description?: string;
-}) {
-  const { control, name, description, label } = props;
-  return (
-    <FormField
-      control={control}
-      name={name}
-      render={({ field }) => {
-        return (
-          <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
-            <div className="space-y-0.5">
-              <FormLabel className="text-base">{label}</FormLabel>
-              {description && <FormDescription>{description}</FormDescription>}
-            </div>
-            <FormControl>
-              <Switch checked={field.value} onCheckedChange={field.onChange} />
-            </FormControl>
-          </FormItem>
-        );
-      }}
-    />
   );
 }
 
@@ -350,10 +319,13 @@ const CommercialsForm = ({
   form: ReturnType<typeof useForm<z.infer<typeof commercialsSchema>>>;
   onNext: Noop;
 }) => {
-  const [spanRef] = useAutoAnimate();
+  const [availabilityRef] = useAutoAnimate();
+  const [officeLocationRef] = useAutoAnimate();
 
-  const isFullyRemote =
-    form.watch("workType") && form.watch("workType") === "FULLY_REMOTE";
+  const workType = form.watch("workType");
+
+  const showOfficeLocation = workType !== "FULLY_REMOTE";
+  const showDaysInOffice = workType === "HYBRID";
 
   return (
     <Form {...form}>
@@ -396,7 +368,7 @@ const CommercialsForm = ({
           render={({ field }) => (
             <FormItem>
               <FormLabel>Consultant&apos;s availability</FormLabel>
-              <div ref={spanRef} className="flex items-center gap-4">
+              <div ref={availabilityRef} className="flex items-center gap-4">
                 <FormControl>
                   <Slider
                     onValueChange={(e) => field.onChange(e[0])}
@@ -516,40 +488,36 @@ const CommercialsForm = ({
             </FormItem>
           )}
         />
-        <MySelect
-          control={form.control}
-          name="workType"
-          label="Work location"
-          placeholder="Select work location"
-        >
-          {Object.keys(WorkType).map((key) => (
-            <SelectItem className="flex items-center" key={key} value={key}>
-              <span>{WorkType[key as keyof typeof WorkType]}</span>
-            </SelectItem>
-          ))}
-        </MySelect>
-        <MyInput
-          control={form.control}
-          name="daysInOffice"
-          label="Days in office"
-          disabled={form.watch("workType") === "HYBRID" ? false : true}
-          placeholder={
-            form.watch("workType") === "HYBRID"
-              ? "Days in office"
-              : "Only for hybrid position"
-          }
-        />
-        <MyInput
-          control={form.control}
-          name="officeLocation"
-          label="Office location"
-          disabled={isFullyRemote ? true : false}
-          placeholder={
-            isFullyRemote
-              ? "Only for onsite/hybrid positions"
-              : "City where the office is located"
-          }
-        />
+        <section ref={officeLocationRef}>
+          <MySelect
+            control={form.control}
+            name="workType"
+            label="Work location"
+            placeholder="Select work location"
+          >
+            {Object.keys(WorkType).map((key) => (
+              <SelectItem className="flex items-center" key={key} value={key}>
+                <span>{WorkType[key as keyof typeof WorkType]}</span>
+              </SelectItem>
+            ))}
+          </MySelect>
+          {showDaysInOffice && (
+            <MyInput
+              control={form.control}
+              name="daysInOffice"
+              label="Days in office"
+              placeholder="Days in office"
+            />
+          )}
+          {showOfficeLocation && (
+            <MyInput
+              control={form.control}
+              name="officeLocation"
+              label="Office location"
+              placeholder="City where the office is located"
+            />
+          )}
+        </section>
         <MySwitch
           control={form.control}
           name="domesticTravel"
