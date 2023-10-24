@@ -13,7 +13,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { useForm } from "react-hook-form";
+import { FieldValues, UseFormProps, useForm } from "react-hook-form";
 import { SelectItem } from "@/components/ui/select";
 import { Slider } from "@/components/ui/slider";
 import { cn } from "@/lib/utils";
@@ -26,7 +26,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { format, addMonths } from "date-fns";
 import { CalendarIcon } from "lucide-react";
 import { useAutoAnimate } from "@formkit/auto-animate/react";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Textarea } from "@/components/ui/textarea";
 import {
   ProjectStage,
@@ -38,9 +38,9 @@ import {
 import { Carousel } from "@/components/carousel";
 import React from "react";
 import { Noop } from "@/types/shared";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { MyInput, MySelect, MySwitch } from "@/components/forms";
 import {
   RequestModelPayload,
@@ -67,37 +67,84 @@ const submitRequest = async (request: RequestModelPayload) => {
   return await res.json();
 };
 
+export default function useQueryParams() {
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const urlSearchParams = new URLSearchParams(searchParams?.toString());
+
+  function setQueryParams(params: Record<string, string | undefined>) {
+    Object.entries(params).forEach(([key, value]) => {
+      if (value === undefined || value === null) {
+        urlSearchParams.delete(key);
+      } else {
+        urlSearchParams.set(key, String(value));
+      }
+    });
+
+    const search = urlSearchParams.toString();
+    const query = search ? `?${search}` : "";
+    // replace since we don't want to build a history
+    router.replace(`${pathname}${query}`);
+  }
+
+  return { queryParams: searchParams, setQueryParams };
+}
+
+function useFormWithInitialValues<T extends z.ZodRawShape>(
+  t: z.ZodObject<T>,
+  objName: string,
+  fallbackDefaults: UseFormProps<z.infer<typeof t>>["defaultValues"],
+) {
+  const searchParams = useSearchParams();
+
+  const defaultValues: any = useMemo(() => {
+    const formInit = searchParams.get(objName);
+
+    if (!formInit) return fallbackDefaults;
+
+    try {
+      return t.parse(JSON.parse(formInit));
+    } catch {
+      return fallbackDefaults;
+    }
+  }, [searchParams, t, objName, fallbackDefaults]);
+
+  return useForm<z.infer<typeof t>>({
+    resolver: zodResolver(t),
+    defaultValues: defaultValues,
+  });
+}
+
 export function RequestForm() {
   const [page, setPage] = useState<"commercials" | "project">("commercials");
 
-  const commercialsForm = useForm<z.infer<typeof commercialsSchema>>({
-    resolver: zodResolver(commercialsSchema),
-    defaultValues: {
+  const commercialsForm = useFormWithInitialValues(
+    commercialsSchema,
+    "commercials",
+    {
+      availability: defaultNumber,
+      domesticTravel: false,
+      hourlyRate: defaultNumber,
+      noticePeriod: defaultNumber,
       startDate: addMonths(new Date(), 1),
       endDate: addMonths(new Date(), 1),
-      noticePeriod: defaultNumber,
-      hourlyRate: defaultNumber,
-      availability: 50,
       workType: {
         workType: "HYBRID",
-        daysInOffice: defaultNumber,
         officeLocation: "",
+        daysInOffice: 1,
       },
     },
+  );
+
+  const projectForm = useFormWithInitialValues(projectSchema, "project", {
+    description: "",
+    name: "",
   });
 
-  const projectForm = useForm<z.infer<typeof projectSchema>>({
-    resolver: zodResolver(projectSchema),
-    defaultValues: {
-      description: "",
-      name: "",
-      fundingGuaranteed: false,
-      pmExists: false,
-    },
-  });
+  const router = useRouter();
 
   const { toast } = useToast();
-  const router = useRouter();
 
   const { mutate } = useMutation({
     mutationFn: () =>
@@ -348,7 +395,7 @@ const CommercialsForm = ({
                 <FormControl>
                   <Slider
                     onValueChange={(e) => field.onChange(e[0])}
-                    defaultValue={[50]}
+                    defaultValue={[field.value]}
                     max={100}
                     step={10}
                   />

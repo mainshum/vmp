@@ -1,7 +1,14 @@
-import * as z from "zod"
-import * as imports from "../../src/types/prisma-extensions"
-import { RequestStatus, WorkType, ProjectStage, ProjectDuration, ProjectMethodology, JobProfile } from "@prisma/client"
-import { CompleteOffer, RelatedOfferModel } from "./index"
+import * as z from "zod";
+import * as imports from "../../src/types/prisma-extensions";
+import {
+  RequestStatus,
+  WorkType,
+  ProjectStage,
+  ProjectDuration,
+  ProjectMethodology,
+  JobProfile,
+} from "@prisma/client";
+import { CompleteOffer, RelatedOfferModel } from "./index";
 
 export const RequestModel = z.object({
   id: z.string().cuid(),
@@ -18,7 +25,7 @@ export const RequestModel = z.object({
   description: z.string().min(10, { message: "Minimum 10 characters" }),
   profile: z.nativeEnum(JobProfile),
   hourlyRate: imports.positiveInteger.int(),
-  availability: z.number().int().positive({ message: "Needs to be a positive integer" }),
+  availability: imports.availabilitySlider,
   startDate: z.date({ coerce: true, required_error: "Start date is required" }),
   endDate: z.date({ coerce: true, required_error: "End date is required" }),
   noticePeriod: imports.positiveInteger.int(),
@@ -26,10 +33,10 @@ export const RequestModel = z.object({
   daysInOffice: imports.positiveInteger15.int().nullish(),
   domesticTravel: z.boolean().nullish(),
   internationalTravel: z.boolean().nullish(),
-})
+});
 
 export interface CompleteRequest extends z.infer<typeof RequestModel> {
-  offers: CompleteOffer[]
+  offers: CompleteOffer[];
 }
 
 /**
@@ -37,6 +44,8 @@ export interface CompleteRequest extends z.infer<typeof RequestModel> {
  *
  * NOTE: Lazy required in case of potential circular dependencies within schema
  */
-export const RelatedRequestModel: z.ZodSchema<CompleteRequest> = z.lazy(() => RequestModel.extend({
-  offers: RelatedOfferModel.array(),
-}))
+export const RelatedRequestModel: z.ZodSchema<CompleteRequest> = z.lazy(() =>
+  RequestModel.extend({
+    offers: RelatedOfferModel.array(),
+  }),
+);

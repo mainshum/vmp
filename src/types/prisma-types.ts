@@ -25,11 +25,9 @@ export const commercialsSchema = RequestModel.pick({
   noticePeriod: true,
   domesticTravel: true,
   internationalTravel: true,
-}).merge(
-  z.object({
-    workType: workSchema,
-  }),
-);
+}).extend({
+  workType: workSchema,
+});
 
 export const projectSchema = RequestModel.pick({
   name: true,
