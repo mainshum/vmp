@@ -8,3 +8,5 @@ export const positiveInteger = z
 export const positiveInteger15 = positiveInteger
   .min(1, { message: "Integer in range (1-5)" })
   .max(5, { message: "Integer in range (1-5)" });
+
+export const availabilitySlider = z.number({ coerce: true });

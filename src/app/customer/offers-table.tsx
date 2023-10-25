@@ -132,7 +132,7 @@ export function OffersTable({
   const { data } = useQuery({
     queryFn: () => getOffers(opId),
     queryKey: key,
-    keepPreviousData: true,
+    placeholderData: (d) => d,
   });
 
   const [divRef] = useAutoAnimate();
@@ -140,7 +140,7 @@ export function OffersTable({
   const mutation = useMutation({
     mutationFn: toggleStars,
     onMutate: async ({ id, matchingGrade }) => {
-      await queryClient.cancelQueries(key);
+      await queryClient.cancelQueries({ queryKey: key });
 
       const current = queryClient.getQueryData(key);
 
@@ -160,7 +160,7 @@ export function OffersTable({
       // TODO onError
     },
     onSettled: async () => {
-      queryClient.invalidateQueries(key);
+      queryClient.invalidateQueries({ queryKey: key });
       toast({ title: "Grade updated" });
     },
   });
