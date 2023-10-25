@@ -226,7 +226,6 @@ export function RequestForm() {
       form.handleSubmit(() => {})();
       return Object.entries(form.getValues()).reduce((acc, [key, val]) => {
         if (!form.getFieldState(key as Path<TFieldValues>).invalid) {
-          debugger;
           acc[key as keyof TFieldValues] = val;
         }
         return acc;
