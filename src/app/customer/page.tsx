@@ -34,17 +34,7 @@ async function PageServer() {
 
   return (
     <section className="flex flex-col py-8">
-      <Dialog>
-        <DialogTrigger className={buttonVariants()}>
-          Create new request
-        </DialogTrigger>
-        <DialogContent className="max-h-full overflow-y-auto overflow-x-hidden sm:max-h-[75%]">
-          <DialogHeader>
-            <DialogTitle className="pb-4">Job request</DialogTitle>
-          </DialogHeader>
-          <RequestForm />
-        </DialogContent>
-      </Dialog>
+      <RequestForm />
       <RequestsTable requests={requests} />
     </section>
   );

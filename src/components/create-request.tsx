@@ -13,7 +13,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { FieldValues, UseFormProps, useForm } from "react-hook-form";
+import { UseFormProps, UseFormReturn, useForm } from "react-hook-form";
 import { SelectItem } from "@/components/ui/select";
 import { Slider } from "@/components/ui/slider";
 import { cn } from "@/lib/utils";
@@ -38,15 +38,27 @@ import {
 import { Carousel } from "@/components/carousel";
 import React from "react";
 import { Noop } from "@/types/shared";
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { MyInput, MySelect, MySwitch } from "@/components/forms";
 import {
-  RequestModelPayload,
+  requestPayloadBody,
   commercialsSchema,
   projectSchema,
 } from "@/types/prisma-types";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "./ui/alert-dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "./ui/dialog";
+import { stringMin3 } from "@/types/prisma-extensions";
 
 const defaultNumber = "" as unknown as number;
 
@@ -58,7 +70,7 @@ function InputBrand({ msg }: { msg: string }) {
   );
 }
 
-const submitRequest = async (request: RequestModelPayload) => {
+const submitRequest = async (request: z.infer<typeof requestPayloadBody>) => {
   const res = await fetch("/api/requests/create", {
     body: JSON.stringify(request),
     method: "POST",
@@ -89,6 +101,35 @@ export default function useQueryParams() {
   }
 
   return { queryParams: searchParams, setQueryParams };
+}
+
+function useDirtyPrevent(...xs: UseFormReturn<any>[]) {
+  const [formDialogOpen, setFormDialogOpen] = useState<boolean>(false);
+  const [alertOpen, setAlertOpen] = useState<boolean>(false);
+
+  const anyFormsDirty = xs.some((x) => x.formState.isDirty);
+
+  const onFormDialogOpenChange = (shouldOpen: boolean) => {
+    if (shouldOpen) return setFormDialogOpen(true);
+    if (anyFormsDirty) return setAlertOpen(true);
+
+    return setFormDialogOpen(false);
+  };
+
+  const onAlertCancel = () => {
+    xs.forEach((x) => x.reset());
+    setAlertOpen(false);
+    setFormDialogOpen(false);
+  };
+  const onAlertContinue = () => {};
+
+  return {
+    alertOpen,
+    formDialogOpen,
+    onFormDialogOpenChange,
+    onAlertCancel,
+    onAlertContinue,
+  };
 }
 
 function useFormWithInitialValues<T extends z.ZodRawShape>(
@@ -124,16 +165,16 @@ export function RequestForm() {
     "commercials",
     {
       availability: defaultNumber,
-      domesticTravel: false,
       hourlyRate: defaultNumber,
       noticePeriod: defaultNumber,
-      startDate: addMonths(new Date(), 1),
-      endDate: addMonths(new Date(), 1),
-      workType: {
-        workType: "HYBRID",
-        officeLocation: "",
-        daysInOffice: 1,
-      },
+      // domesticTravel: false,
+      // startDate: addMonths(new Date(), 1),
+      // endDate: addMonths(new Date(), 1),
+      // workSchema: {
+      //   workType: "HYBRID",
+      //   officeLocation: "",
+      //   daysInOffice: 1,
+      // },
     },
   );
 
@@ -147,12 +188,7 @@ export function RequestForm() {
   const { toast } = useToast();
 
   const { mutate } = useMutation({
-    mutationFn: () =>
-      submitRequest({
-        ...projectForm.getValues(),
-        ...commercialsForm.getValues(),
-      }),
-    // eslint-disable-next-line no-unused-vars
+    mutationFn: submitRequest,
     onError: (e) => {
       toast({
         title: "Error saving request",
@@ -165,18 +201,94 @@ export function RequestForm() {
     },
   });
 
+  const { alertOpen, formDialogOpen, onFormDialogOpenChange, onAlertCancel } =
+    useDirtyPrevent(commercialsForm, projectForm);
+
+  function PreventFormClose({
+    draftName = "",
+  }: {
+    draftName: string | undefined;
+  }) {
+    const draftForm = useForm<{ draftName: string }>({
+      defaultValues: { draftName },
+      resolver: zodResolver(z.object({ draftName: stringMin3 })),
+    });
+
+    return (
+      <AlertDialog open={alertOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Form is unsaved. Either save as draft or cancel (all the fields
+              will be cleared).
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <Form {...draftForm}>
+            <form
+              onSubmit={draftForm.handleSubmit((f) =>
+                mutate({
+                  ...projectForm.getValues(),
+                  ...commercialsForm.getValues(),
+                  status: "DRAFT",
+                  name: f.draftName,
+                }),
+              )}
+            >
+              <MyInput
+                placeholder=""
+                control={draftForm.control}
+                label="Draft name"
+                name="draftName"
+              />
+              <AlertDialogFooter>
+                <AlertDialogCancel onClick={onAlertCancel}>
+                  Cancel
+                </AlertDialogCancel>
+                <AlertDialogAction type="submit">Save draft</AlertDialogAction>
+              </AlertDialogFooter>
+            </form>
+          </Form>
+        </AlertDialogContent>
+      </AlertDialog>
+    );
+  }
+
   return (
-    <Carousel>
-      {page === "commercials" && (
-        <CommercialsForm
-          onNext={() => setPage("project")}
-          form={commercialsForm}
-        />
-      )}
-      {page === "project" && (
-        <ProjectForm onSubmit={mutate} form={projectForm} />
-      )}
-    </Carousel>
+    <React.Fragment>
+      <Button onClick={() => onFormDialogOpenChange(true)}>
+        Create new request
+      </Button>
+      <PreventFormClose draftName={projectForm.getValues("name")} />
+
+      <Dialog open={formDialogOpen} onOpenChange={onFormDialogOpenChange}>
+        <DialogContent className="max-h-full overflow-y-auto overflow-x-hidden sm:max-h-[75%]">
+          <DialogHeader>
+            <DialogTitle className="pb-4">Job request</DialogTitle>
+          </DialogHeader>
+          <Carousel>
+            {page === "commercials" && (
+              <CommercialsForm
+                onNext={() => setPage("project")}
+                form={commercialsForm}
+              />
+            )}
+            {page === "project" && (
+              <ProjectForm
+                onSubmit={() =>
+                  mutate({
+                    status: "DRAFT",
+                    ...projectForm.getValues(),
+                    ...commercialsForm.getValues(),
+                  })
+                }
+                form={projectForm}
+              />
+            )}
+          </Carousel>
+        </DialogContent>
+      </Dialog>
+    </React.Fragment>
   );
 }
 
@@ -345,7 +457,7 @@ const CommercialsForm = ({
   const [availabilityRef] = useAutoAnimate();
   const [officeLocationRef] = useAutoAnimate();
 
-  const workType = form.watch("workType")?.workType;
+  const workType = form.watch("workSchema")?.workType;
 
   const showOfficeLocation = workType !== "FULLY_REMOTE";
   const showDaysInOffice = workType === "HYBRID";
@@ -514,7 +626,7 @@ const CommercialsForm = ({
         <section ref={officeLocationRef}>
           <MySelect
             control={form.control}
-            name="workType.workType"
+            name="workSchema.workType"
             label="Work location"
             placeholder="Select work location"
           >
@@ -527,7 +639,7 @@ const CommercialsForm = ({
           {showDaysInOffice && (
             <MyInput
               control={form.control}
-              name="workType.daysInOffice"
+              name="workSchema.daysInOffice"
               label="Days in office"
               placeholder="Days in office"
             />
@@ -535,7 +647,7 @@ const CommercialsForm = ({
           {showOfficeLocation && (
             <MyInput
               control={form.control}
-              name="workType.officeLocation"
+              name="workSchema.officeLocation"
               label="Office location"
               placeholder="City where the office is located"
             />
