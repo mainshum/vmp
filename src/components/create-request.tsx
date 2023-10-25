@@ -13,7 +13,13 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { UseFormProps, UseFormReturn, useForm } from "react-hook-form";
+import {
+  FieldValues,
+  Path,
+  UseFormProps,
+  UseFormReturn,
+  useForm,
+} from "react-hook-form";
 import { SelectItem } from "@/components/ui/select";
 import { Slider } from "@/components/ui/slider";
 import { cn } from "@/lib/utils";
@@ -214,6 +220,19 @@ export function RequestForm() {
       resolver: zodResolver(z.object({ draftName: stringMin3 })),
     });
 
+    const getValid = function <TFieldValues extends FieldValues>(
+      form: UseFormReturn<TFieldValues>,
+    ): TFieldValues {
+      form.handleSubmit(() => {})();
+      return Object.entries(form.getValues()).reduce((acc, [key, val]) => {
+        if (!form.getFieldState(key as Path<TFieldValues>).invalid) {
+          debugger;
+          acc[key as keyof TFieldValues] = val;
+        }
+        return acc;
+      }, {} as TFieldValues);
+    };
+
     return (
       <AlertDialog open={alertOpen}>
         <AlertDialogContent>
@@ -228,8 +247,8 @@ export function RequestForm() {
             <form
               onSubmit={draftForm.handleSubmit((f) =>
                 mutate({
-                  ...projectForm.getValues(),
-                  ...commercialsForm.getValues(),
+                  ...getValid(projectForm),
+                  ...getValid(commercialsForm),
                   status: "DRAFT",
                   name: f.draftName,
                 }),
