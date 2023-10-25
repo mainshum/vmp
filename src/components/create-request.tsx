@@ -173,6 +173,8 @@ export function RequestForm() {
       availability: defaultNumber,
       hourlyRate: defaultNumber,
       noticePeriod: defaultNumber,
+      domesticTravel: false,
+      internationalTravel: false,
       // domesticTravel: false,
       // startDate: addMonths(new Date(), 1),
       // endDate: addMonths(new Date(), 1),
@@ -193,6 +195,9 @@ export function RequestForm() {
 
   const { toast } = useToast();
 
+  const { alertOpen, formDialogOpen, onFormDialogOpenChange, onAlertCancel } =
+    useDirtyPrevent(commercialsForm, projectForm);
+
   const { mutate } = useMutation({
     mutationFn: submitRequest,
     onError: (e) => {
@@ -203,12 +208,14 @@ export function RequestForm() {
     },
     // TODO research why it is calling on success even though request fails
     onSuccess: () => {
-      router.push("/customer");
+      toast({
+        title: "Saved successfully",
+        // TODO add request name
+        description: "Request has been saved",
+      });
     },
+    onSettled: () => {},
   });
-
-  const { alertOpen, formDialogOpen, onFormDialogOpenChange, onAlertCancel } =
-    useDirtyPrevent(commercialsForm, projectForm);
 
   function PreventFormClose({
     draftName = "",
@@ -220,17 +227,18 @@ export function RequestForm() {
       resolver: zodResolver(z.object({ draftName: stringMin3 })),
     });
 
-    const getValid = function <TFieldValues extends FieldValues>(
+    async function getValid<TFieldValues extends FieldValues>(
       form: UseFormReturn<TFieldValues>,
-    ): TFieldValues {
-      form.handleSubmit(() => {})();
+    ): Promise<TFieldValues> {
+      await form.trigger();
+
       return Object.entries(form.getValues()).reduce((acc, [key, val]) => {
-        if (!form.getFieldState(key as Path<TFieldValues>).invalid) {
+        const state = form.getFieldState(key as Path<TFieldValues>);
+        if (state.isDirty && !state.invalid)
           acc[key as keyof TFieldValues] = val;
-        }
         return acc;
       }, {} as TFieldValues);
-    };
+    }
 
     return (
       <AlertDialog open={alertOpen}>
@@ -244,14 +252,19 @@ export function RequestForm() {
           </AlertDialogHeader>
           <Form {...draftForm}>
             <form
-              onSubmit={draftForm.handleSubmit((f) =>
+              noValidate
+              onSubmit={draftForm.handleSubmit(async (f) => {
+                const [pf, cf] = await Promise.all([
+                  getValid(projectForm),
+                  getValid(commercialsForm),
+                ]);
                 mutate({
-                  ...getValid(projectForm),
-                  ...getValid(commercialsForm),
+                  ...pf,
+                  ...cf,
                   status: "DRAFT",
                   name: f.draftName,
-                }),
-              )}
+                });
+              })}
             >
               <MyInput
                 placeholder=""
