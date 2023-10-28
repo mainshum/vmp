@@ -18,88 +18,96 @@ import {
   stringMin3,
 } from "./prisma-extensions";
 
-type NonNullableFields<T> = {
-  [P in keyof T]: NonNullable<T[P]>;
-};
-
 const workSchema = z.discriminatedUnion("workType", [
   z.object({ workType: z.literal(WorkType.FULLY_REMOTE) }),
   z.object({
     workType: z.literal(WorkType.ONSITE),
-    officeLocation: z.string().min(3),
+    officeLocation: stringMin3,
   }),
   z.object({
     workType: z.literal(WorkType.HYBRID),
     daysInOffice: positiveInteger15,
-    officeLocation: z.string().min(3),
+    officeLocation: stringMin3,
   }),
 ]);
 
-type CommercialsSchema = NonNullableFields<
-  Pick<
-    Request,
-    | "profile"
-    | "hourlyRate"
-    | "availability"
-    | "startDate"
-    | "endDate"
-    | "noticePeriod"
-    | "domesticTravel"
-    | "internationalTravel"
-  > & { workSchema: z.infer<typeof workSchema> }
->;
+export type RequestSchema = Pick<
+  Request,
+  | "profile"
+  | "hourlyRate"
+  | "availability"
+  | "startDate"
+  | "endDate"
+  | "noticePeriod"
+  | "domesticTravel"
+  | "internationalTravel"
+  | "name"
+  | "description"
+  | "pmExists"
+  | "fundingGuaranteed"
+  | "projectStage"
+  | "projectDuration"
+  | "projectMethodology"
+> & { workSchema: z.infer<typeof workSchema> };
 
-type ProjectSchema = NonNullableFields<
-  Pick<
-    Request,
-    | "name"
-    | "description"
-    | "pmExists"
-    | "fundingGuaranteed"
-    | "projectStage"
-    | "projectDuration"
-    | "projectMethodology"
-  >
->;
+export type RequestMutationInput = Partial<Request> & {
+  status: "DRAFT" | "PENDING";
+};
 
-type RequestDraftInput = Partial<Request> & { status: "DRAFT" | "PENDING" };
+type UDef<T> = {
+  [P in keyof T]?: T[P] | undefined | string | "";
+};
 
-// validate commercials form
-export const commercialsSchema = z.object({
-  workSchema: workSchema,
-  profile: z.nativeEnum(JobProfile),
-  hourlyRate: positiveInteger,
-  availability: z
-    .number()
-    .int()
-    .positive({ message: "Needs to be a positive integer" }),
-  startDate: z.date({ coerce: true, required_error: "Start date is required" }),
-  endDate: z.date({ coerce: true, required_error: "End date is required" }),
-  noticePeriod: positiveInteger,
-  domesticTravel: z.boolean(),
-  internationalTravel: z.boolean(),
-}) satisfies z.ZodType<CommercialsSchema>;
-
-// validate project form
-export const projectSchema = z.object({
+// form validation
+export const pendingRequestSchema = z.object({
   name: stringMin3,
   description: stringMin3,
+  hourlyRate: positiveInteger,
+  availability: positiveInteger,
+  noticePeriod: positiveInteger,
+  startDate: z.date({ coerce: true, required_error: "Start date is required" }),
+  endDate: z.date({ coerce: true, required_error: "End date is required" }),
+  domesticTravel: z.boolean(),
+  internationalTravel: z.boolean(),
   pmExists: z.boolean(),
   fundingGuaranteed: z.boolean(),
+  workSchema: workSchema,
+  profile: z.nativeEnum(JobProfile),
   projectStage: z.nativeEnum(ProjectStage),
   projectDuration: z.nativeEnum(ProjectDuration),
   projectMethodology: z.nativeEnum(ProjectMethodology),
-}) satisfies z.ZodType<ProjectSchema>;
+}) satisfies z.Schema<NonNullable<RequestSchema>, any, UDef<RequestSchema>>;
 
-export const requestPayloadBody = projectSchema
-  .partial()
-  .merge(commercialsSchema.partial())
-  .merge(
-    z.object({
-      status: z.union([z.literal("DRAFT"), z.literal("PENDING")]),
-    }),
-  )
-  .strict() satisfies z.ZodType<RequestDraftInput>;
+export const draftRequestSchema = z.object({
+  name: stringMin3,
+  description: z.string().or(z.literal("").transform(() => null)),
+  hourlyRate: z
+    .number({ coerce: true })
+    .or(z.literal("").transform(() => null)),
+  availability: positiveInteger,
+  noticePeriod: z
+    .number({ coerce: true })
+    .or(z.literal("").transform(() => null)),
+  startDate: z
+    .date({ coerce: true, required_error: "Start date is required" })
+    .or(z.any().transform(() => null)),
+  endDate: z
+    .date({ coerce: true, required_error: "End date is required" })
+    .or(z.any().transform(() => null)),
+  domesticTravel: z.boolean(),
+  internationalTravel: z.boolean(),
+  pmExists: z.boolean(),
+  fundingGuaranteed: z.boolean(),
+  workSchema: workSchema,
+  profile: z.nativeEnum(JobProfile).or(z.any().transform(() => null)),
+  projectStage: z.nativeEnum(ProjectStage).or(z.any().transform(() => null)),
+  projectDuration: z
+    .nativeEnum(ProjectDuration)
+    .or(z.any().transform(() => null)),
+  projectMethodology: z
+    .nativeEnum(ProjectMethodology)
+    .or(z.any().transform(() => null)),
+}) satisfies z.ZodSchema<RequestSchema, any, UDef<RequestSchema>>;
 
 type CompanySchema = Pick<
   Customer,

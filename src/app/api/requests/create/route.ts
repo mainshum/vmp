@@ -6,6 +6,10 @@ import { Request as R } from "@prisma/client";
 export async function POST(req: Request) {
   const parsed = requestPayloadBody.safeParse(await req.json());
 
+  const x = await db.request.findUnique({where: {id: '123'}});
+
+  x.
+
   if (!parsed.success) {
     const errorTxt = JSON.stringify(parsed.error.issues, null, 2);
     return new Response(errorTxt, {

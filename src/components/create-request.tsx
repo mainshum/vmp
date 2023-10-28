@@ -19,6 +19,7 @@ import {
   UseFormProps,
   UseFormReturn,
   useForm,
+  useFormState,
 } from "react-hook-form";
 import { SelectItem } from "@/components/ui/select";
 import { Slider } from "@/components/ui/slider";
@@ -29,10 +30,10 @@ import {
   PopoverContent,
 } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
-import { format, addMonths } from "date-fns";
+import { format, addMonths, addDays, addWeeks } from "date-fns";
 import { CalendarIcon } from "lucide-react";
 import { useAutoAnimate } from "@formkit/auto-animate/react";
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { Textarea } from "@/components/ui/textarea";
 import {
   ProjectStage,
@@ -40,6 +41,7 @@ import {
   ProjectMethodology,
   WorkType,
   JobProfile,
+  Request,
 } from "@prisma/client";
 import { Carousel } from "@/components/carousel";
 import React from "react";
@@ -49,9 +51,10 @@ import { useToast } from "@/hooks/use-toast";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { MyInput, MySelect, MySwitch } from "@/components/forms";
 import {
-  requestPayloadBody,
-  commercialsSchema,
-  projectSchema,
+  RequestMutationInput,
+  draftRequestSchema,
+  pendingRequestSchema,
+  RequestSchema,
 } from "@/types/prisma-types";
 import {
   AlertDialog,
@@ -76,7 +79,7 @@ function InputBrand({ msg }: { msg: string }) {
   );
 }
 
-const submitRequest = async (request: z.infer<typeof requestPayloadBody>) => {
+const submitRequest = async (request: RequestMutationInput) => {
   const res = await fetch("/api/requests/create", {
     body: JSON.stringify(request),
     method: "POST",
@@ -84,30 +87,6 @@ const submitRequest = async (request: z.infer<typeof requestPayloadBody>) => {
 
   return await res.json();
 };
-
-export default function useQueryParams() {
-  const router = useRouter();
-  const pathname = usePathname();
-  const searchParams = useSearchParams();
-  const urlSearchParams = new URLSearchParams(searchParams?.toString());
-
-  function setQueryParams(params: Record<string, string | undefined>) {
-    Object.entries(params).forEach(([key, value]) => {
-      if (value === undefined || value === null) {
-        urlSearchParams.delete(key);
-      } else {
-        urlSearchParams.set(key, String(value));
-      }
-    });
-
-    const search = urlSearchParams.toString();
-    const query = search ? `?${search}` : "";
-    // replace since we don't want to build a history
-    router.replace(`${pathname}${query}`);
-  }
-
-  return { queryParams: searchParams, setQueryParams };
-}
 
 function useDirtyPrevent(...xs: UseFormReturn<any>[]) {
   const [formDialogOpen, setFormDialogOpen] = useState<boolean>(false);
@@ -138,69 +117,33 @@ function useDirtyPrevent(...xs: UseFormReturn<any>[]) {
   };
 }
 
-function useFormWithInitialValues<T extends z.ZodRawShape>(
-  t: z.ZodObject<T>,
-  objName: string,
-  fallbackDefaults: UseFormProps<z.infer<typeof t>>["defaultValues"],
-) {
-  const searchParams = useSearchParams();
-
-  const defaultValues: any = useMemo(() => {
-    const formInit = searchParams.get(objName);
-
-    if (!formInit) return fallbackDefaults;
-
-    try {
-      return t.parse(JSON.parse(formInit));
-    } catch {
-      return fallbackDefaults;
-    }
-  }, [searchParams, t, objName, fallbackDefaults]);
-
-  return useForm<z.infer<typeof t>>({
-    resolver: zodResolver(t),
-    defaultValues: defaultValues,
-  });
-}
-
 export function RequestForm() {
-  const [page, setPage] = useState<"commercials" | "project">("commercials");
+  const { toast } = useToast();
 
-  const commercialsForm = useFormWithInitialValues(
-    commercialsSchema,
-    "commercials",
-    {
-      availability: defaultNumber,
+  const [res, setRes] = useState<z.ZodSchema>(draftRequestSchema);
+
+  const form = useForm<z.infer<typeof pendingRequestSchema>>({
+    resolver: zodResolver(res),
+    defaultValues: {
+      availability: 50,
+      description: "",
+      name: "",
       hourlyRate: defaultNumber,
       noticePeriod: defaultNumber,
       domesticTravel: false,
+      fundingGuaranteed: false,
       internationalTravel: false,
-      // domesticTravel: false,
-      // startDate: addMonths(new Date(), 1),
-      // endDate: addMonths(new Date(), 1),
-      // workSchema: {
-      //   workType: "HYBRID",
-      //   officeLocation: "",
-      //   daysInOffice: 1,
-      // },
+      pmExists: false,
+      workSchema: { workType: "FULLY_REMOTE" },
     },
-  );
-
-  const projectForm = useFormWithInitialValues(projectSchema, "project", {
-    description: "",
-    name: "",
   });
 
-  const router = useRouter();
-
-  const { toast } = useToast();
-
   const { alertOpen, formDialogOpen, onFormDialogOpenChange, onAlertCancel } =
-    useDirtyPrevent(commercialsForm, projectForm);
+    useDirtyPrevent(form);
 
   const { mutate } = useMutation({
     mutationFn: submitRequest,
-    onError: (e) => {
+    onError: () => {
       toast({
         title: "Error saving request",
         description: "Please try resubmitting later",
@@ -217,6 +160,20 @@ export function RequestForm() {
     onSettled: () => {},
   });
 
+  const saveDraft = async () => {
+    //await commercialsForm.trigger();
+  };
+
+  const savePending = async () => {};
+
+  const [availabilityRef] = useAutoAnimate();
+  const [officeLocationRef] = useAutoAnimate();
+
+  const workType = form.watch("workSchema")?.workType;
+
+  const showOfficeLocation = workType !== "FULLY_REMOTE";
+  const showDaysInOffice = workType === "HYBRID";
+
   function PreventFormClose({
     draftName = "",
   }: {
@@ -226,19 +183,6 @@ export function RequestForm() {
       defaultValues: { draftName },
       resolver: zodResolver(z.object({ draftName: stringMin3 })),
     });
-
-    async function getValid<TFieldValues extends FieldValues>(
-      form: UseFormReturn<TFieldValues>,
-    ): Promise<TFieldValues> {
-      await form.trigger();
-
-      return Object.entries(form.getValues()).reduce((acc, [key, val]) => {
-        const state = form.getFieldState(key as Path<TFieldValues>);
-        if (state.isDirty && !state.invalid)
-          acc[key as keyof TFieldValues] = val;
-        return acc;
-      }, {} as TFieldValues);
-    }
 
     return (
       <AlertDialog open={alertOpen}>
@@ -251,21 +195,7 @@ export function RequestForm() {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <Form {...draftForm}>
-            <form
-              noValidate
-              onSubmit={draftForm.handleSubmit(async (f) => {
-                const [pf, cf] = await Promise.all([
-                  getValid(projectForm),
-                  getValid(commercialsForm),
-                ]);
-                mutate({
-                  ...pf,
-                  ...cf,
-                  status: "DRAFT",
-                  name: f.draftName,
-                });
-              })}
-            >
+            <form noValidate onSubmit={draftForm.handleSubmit(saveDraft)}>
               <MyInput
                 placeholder=""
                 control={draftForm.control}
@@ -290,414 +220,322 @@ export function RequestForm() {
       <Button onClick={() => onFormDialogOpenChange(true)}>
         Create new request
       </Button>
-      <PreventFormClose draftName={projectForm.getValues("name")} />
+      <PreventFormClose draftName={form.getValues("name")} />
 
       <Dialog open={formDialogOpen} onOpenChange={onFormDialogOpenChange}>
         <DialogContent className="max-h-full overflow-y-auto overflow-x-hidden sm:max-h-[75%]">
           <DialogHeader>
             <DialogTitle className="pb-4">Job request</DialogTitle>
           </DialogHeader>
-          <Carousel>
-            {page === "commercials" && (
-              <CommercialsForm
-                onNext={() => setPage("project")}
-                form={commercialsForm}
+          <Form {...form}>
+            <form
+              onSubmit={form.handleSubmit(console.log)}
+              noValidate
+              className="space-y-8"
+            >
+              <MySelect
+                control={form.control}
+                name="profile"
+                placeholder="Select profile"
+                label="Consultant's profile"
+              >
+                {Object.values(JobProfile).map((val) => (
+                  <SelectItem key={val} value={val}>
+                    {val}
+                  </SelectItem>
+                ))}
+              </MySelect>
+              <FormField
+                control={form.control}
+                name="hourlyRate"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Hourly rate</FormLabel>
+                    <div className="relative">
+                      <FormControl className="">
+                        <Input placeholder="Hourly rate" {...field} />
+                      </FormControl>
+                      <InputBrand msg="PLN/hour" />
+                    </div>
+                    <FormMessage />
+                  </FormItem>
+                )}
               />
-            )}
-            {page === "project" && (
-              <ProjectForm
-                onSubmit={() =>
-                  mutate({
-                    status: "DRAFT",
-                    ...projectForm.getValues(),
-                    ...commercialsForm.getValues(),
-                  })
-                }
-                form={projectForm}
+              <FormField
+                control={form.control}
+                name="availability"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Consultant&apos;s availability</FormLabel>
+                    <div
+                      ref={availabilityRef}
+                      className="flex items-center gap-4"
+                    >
+                      <FormControl>
+                        <Slider
+                          onValueChange={(e) => field.onChange(e[0])}
+                          defaultValue={[field.value || 50]}
+                          max={100}
+                          step={10}
+                        />
+                      </FormControl>
+                      <span
+                        key={field.value}
+                        className={cn(
+                          "whitespace-nowrap font-normal text-muted-foreground",
+                        )}
+                      >{`${field.value}% FTE`}</span>
+                    </div>
+                    <FormMessage />
+                  </FormItem>
+                )}
               />
-            )}
-          </Carousel>
+              <FormField
+                control={form.control}
+                name="startDate"
+                render={({ field }) => (
+                  <FormItem className="flex flex-col">
+                    <FormLabel>Start date</FormLabel>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <FormControl>
+                          <Button
+                            variant={"outline"}
+                            className={cn(
+                              "w-full pl-3 font-normal",
+                              !field.value && "text-muted-foreground",
+                            )}
+                          >
+                            {field.value ? (
+                              format(field.value, "PPP")
+                            ) : (
+                              <span>Pick a date</span>
+                            )}
+                            <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                          </Button>
+                        </FormControl>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0" align="center">
+                        <Calendar
+                          mode="single"
+                          selected={field.value}
+                          onSelect={field.onChange}
+                          disabled={(date) => date <= new Date()}
+                          initialFocus
+                        />
+                      </PopoverContent>
+                    </Popover>
+                    <FormDescription>
+                      Expected start date of the engagement
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="endDate"
+                render={({ field }) => (
+                  <FormItem className="flex flex-col flex-wrap">
+                    <FormLabel>End date</FormLabel>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <FormControl>
+                          <Button
+                            variant={"outline"}
+                            className={cn(
+                              "w-full pl-3 font-normal",
+                              !field.value && "text-muted-foreground",
+                            )}
+                          >
+                            {field.value ? (
+                              format(field.value, "PPP")
+                            ) : (
+                              <span>Pick a date</span>
+                            )}
+                            <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                          </Button>
+                        </FormControl>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0" align="center">
+                        <Calendar
+                          mode="single"
+                          selected={field.value}
+                          onSelect={field.onChange}
+                          disabled={(date) => date <= new Date()}
+                          initialFocus
+                        />
+                      </PopoverContent>
+                    </Popover>
+                    <FormDescription>
+                      Expected end date of the engagement
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="noticePeriod"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Notice period</FormLabel>
+                    <div className="relative">
+                      <FormControl className="">
+                        <Input placeholder="Notice period" {...field} />
+                      </FormControl>
+                      <InputBrand msg="days" />
+                    </div>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <section ref={officeLocationRef}>
+                <MySelect
+                  control={form.control}
+                  name="workSchema.workType"
+                  label="Work location"
+                  placeholder="Select work location"
+                >
+                  {Object.keys(WorkType).map((key) => (
+                    <SelectItem
+                      className="flex items-center"
+                      key={key}
+                      value={key}
+                    >
+                      <span>{WorkType[key as keyof typeof WorkType]}</span>
+                    </SelectItem>
+                  ))}
+                </MySelect>
+                {showDaysInOffice && (
+                  <MyInput
+                    control={form.control}
+                    name="workSchema.daysInOffice"
+                    label="Days in office"
+                    placeholder="Days in office"
+                  />
+                )}
+                {showOfficeLocation && (
+                  <MyInput
+                    control={form.control}
+                    name="workSchema.officeLocation"
+                    label="Office location"
+                    placeholder="City where the office is located"
+                  />
+                )}
+              </section>
+              <MySwitch
+                control={form.control}
+                name="domesticTravel"
+                label="Domestic travel"
+                description="Check if domestic travels be required"
+              />
+              <MySwitch
+                control={form.control}
+                name="internationalTravel"
+                label="International travel"
+                description="Check if travelling abroad will be required"
+              />
+              <MyInput
+                description=" This name will be visibile to vendors and help you identify the project among all the requests"
+                control={form.control}
+                label="Project name"
+                name="name"
+                placeholder="Give project a name"
+              />
+              <MySelect
+                control={form.control}
+                label="Project maturity"
+                name="projectStage"
+                placeholder="Select stage"
+              >
+                {Object.keys(ProjectStage).map((key) => (
+                  <SelectItem key={key} value={key}>
+                    {ProjectStage[key as keyof typeof ProjectStage]}
+                  </SelectItem>
+                ))}
+              </MySelect>
+              <MySelect
+                control={form.control}
+                label="Project duration"
+                name="projectDuration"
+                placeholder="Select duration"
+              >
+                {Object.keys(ProjectDuration).map((key) => (
+                  <SelectItem key={key} value={key}>
+                    {ProjectDuration[key as keyof typeof ProjectDuration]}
+                  </SelectItem>
+                ))}
+              </MySelect>
+              <MySelect
+                control={form.control}
+                label="Project methodology"
+                name="projectMethodology"
+                placeholder="Select methodology"
+              >
+                {Object.keys(ProjectMethodology).map((key) => (
+                  <SelectItem key={key} value={key}>
+                    {ProjectMethodology[key as keyof typeof ProjectMethodology]}
+                  </SelectItem>
+                ))}
+              </MySelect>
+              <FormField
+                control={form.control}
+                name="description"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Project description</FormLabel>
+                    <FormControl>
+                      <Textarea
+                        placeholder="Describe your project"
+                        className="resize-none"
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <MySwitch
+                control={form.control}
+                name="fundingGuaranteed"
+                label="Funding status"
+                description="Check if project has guaranteed funding for the time of its duration"
+              />
+              <MySwitch
+                control={form.control}
+                name="pmExists"
+                label="Project manager"
+                description="Check if project is managed by a Project Manager"
+              />
+              <Button
+                onClick={(e) => {
+                  setRes(pendingRequestSchema);
+
+                  e.target.dispatchEvent(
+                    new Event("submit", { cancelable: true, bubbles: true }),
+                  );
+                }}
+              >
+                Submit full
+              </Button>
+              <Button
+                onClick={(e) => {
+                  setRes(draftRequestSchema);
+
+                  e.target.dispatchEvent(
+                    new Event("submit", { cancelable: true, bubbles: true }),
+                  );
+                }}
+                type="submit"
+              >
+                Submit draft
+              </Button>
+            </form>
+          </Form>
         </DialogContent>
       </Dialog>
     </React.Fragment>
   );
 }
-
-export function ProjectForm({
-  form,
-  onSubmit,
-}: {
-  form: ReturnType<typeof useForm<z.infer<typeof projectSchema>>>;
-  onSubmit: Noop;
-}) {
-  return (
-    <Form {...form}>
-      <form
-        onSubmit={form.handleSubmit(onSubmit)}
-        noValidate
-        className="space-y-8"
-      >
-        <MyInput
-          description=" This name will be visibile to vendors and help you identify the project among all the requests"
-          control={form.control}
-          label="Project name"
-          name="name"
-          placeholder="Give project a name"
-        />
-        <MySelect
-          control={form.control}
-          label="Project maturity"
-          name="projectStage"
-          placeholder="Select stage"
-        >
-          {Object.keys(ProjectStage).map((key) => (
-            <SelectItem key={key} value={key}>
-              {ProjectStage[key as keyof typeof ProjectStage]}
-            </SelectItem>
-          ))}
-        </MySelect>
-        <MySelect
-          control={form.control}
-          label="Project duration"
-          name="projectDuration"
-          placeholder="Select duration"
-        >
-          {Object.keys(ProjectDuration).map((key) => (
-            <SelectItem key={key} value={key}>
-              {ProjectDuration[key as keyof typeof ProjectDuration]}
-            </SelectItem>
-          ))}
-        </MySelect>
-        <MySelect
-          control={form.control}
-          label="Project methodology"
-          name="projectMethodology"
-          placeholder="Select methodology"
-        >
-          {Object.keys(ProjectMethodology).map((key) => (
-            <SelectItem key={key} value={key}>
-              {ProjectMethodology[key as keyof typeof ProjectMethodology]}
-            </SelectItem>
-          ))}
-        </MySelect>
-        <FormField
-          control={form.control}
-          name="description"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Project description</FormLabel>
-              <FormControl>
-                <Textarea
-                  placeholder="Describe your project"
-                  className="resize-none"
-                  {...field}
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        <MySwitch
-          control={form.control}
-          name="fundingGuaranteed"
-          label="Funding status"
-          description="Check if project has guaranteed funding for the time of its duration"
-        />
-        <MySwitch
-          control={form.control}
-          name="pmExists"
-          label="Project manager"
-          description="Check if project is managed by a Project Manager"
-        />
-        {/* <MySwitch
-          control={form.control}
-          name="teamExists"
-          label="Team"
-          description="Check if there is a team working on this project already"
-        />
-
-        <FormField
-          control={form.control}
-          name="teamCountries"
-          render={({ field }) => (
-            <FormItem className="flex flex-col">
-              <FormLabel>Team countries</FormLabel>
-              <div>
-                {field.value &&
-                  field.value.map((f) => <Button key={f}>{f}</Button>)}
-
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <FormControl>
-                      <Button
-                        variant="outline"
-                        role="combobox"
-                        className={cn(
-                          "w-[200px] justify-between",
-                          !field.value && "text-muted-foreground",
-                        )}
-                      >
-                        Add country
-                        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                      </Button>
-                    </FormControl>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-[200px] p-0">
-                    <Command>
-                      <CommandInput placeholder="Search country..." />
-                      <CommandEmpty>No matching country.</CommandEmpty>
-                      <CommandList className="max-h-[200px] overflow-auto">
-                        {COUNTRIES.map((ctr) => (
-                          <CommandItem
-                            value={ctr.name}
-                            key={ctr.name}
-                            onSelect={() => {
-                              form.setValue("teamCountries", [
-                                ...field.value,
-                                ctr.name,
-                              ]);
-                            }}
-                          >
-                            {ctr.name}
-                          </CommandItem>
-                        ))}
-                      </CommandList>
-                    </Command>{" "}
-                  </PopoverContent>
-                </Popover>
-              </div>
-              <FormMessage />
-            </FormItem>
-          )}
-        /> */}
-        <Button type="submit">Save request</Button>
-      </form>
-    </Form>
-  );
-}
-
-// eslint-disable-next-line react/display-name
-const CommercialsForm = ({
-  form,
-  onNext,
-}: {
-  form: ReturnType<typeof useForm<z.infer<typeof commercialsSchema>>>;
-  onNext: Noop;
-}) => {
-  const [availabilityRef] = useAutoAnimate();
-  const [officeLocationRef] = useAutoAnimate();
-
-  const workType = form.watch("workSchema")?.workType;
-
-  const showOfficeLocation = workType !== "FULLY_REMOTE";
-  const showDaysInOffice = workType === "HYBRID";
-
-  return (
-    <Form {...form}>
-      <form
-        onSubmit={form.handleSubmit(onNext)}
-        noValidate
-        className="space-y-8"
-      >
-        <MySelect
-          control={form.control}
-          name="profile"
-          placeholder="Select profile"
-          label="Consultant's profile"
-        >
-          {Object.values(JobProfile).map((val) => (
-            <SelectItem key={val} value={val}>
-              {val}
-            </SelectItem>
-          ))}
-        </MySelect>
-        <FormField
-          control={form.control}
-          name="hourlyRate"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Hourly rate</FormLabel>
-              <div className="relative">
-                <FormControl className="">
-                  <Input placeholder="Hourly rate" {...field} />
-                </FormControl>
-                <InputBrand msg="PLN/hour" />
-              </div>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <FormField
-          control={form.control}
-          name="availability"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Consultant&apos;s availability</FormLabel>
-              <div ref={availabilityRef} className="flex items-center gap-4">
-                <FormControl>
-                  <Slider
-                    onValueChange={(e) => field.onChange(e[0])}
-                    defaultValue={[field.value]}
-                    max={100}
-                    step={10}
-                  />
-                </FormControl>
-                <span
-                  key={field.value}
-                  className={cn(
-                    "whitespace-nowrap font-normal text-muted-foreground",
-                  )}
-                >{`${field.value}% FTE`}</span>
-              </div>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <FormField
-          control={form.control}
-          name="startDate"
-          render={({ field }) => (
-            <FormItem className="flex flex-col">
-              <FormLabel>Start date</FormLabel>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <FormControl>
-                    <Button
-                      variant={"outline"}
-                      className={cn(
-                        "w-full pl-3 font-normal",
-                        !field.value && "text-muted-foreground",
-                      )}
-                    >
-                      {field.value ? (
-                        format(field.value, "PPP")
-                      ) : (
-                        <span>Pick a date</span>
-                      )}
-                      <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                    </Button>
-                  </FormControl>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="center">
-                  <Calendar
-                    mode="single"
-                    selected={field.value}
-                    onSelect={field.onChange}
-                    disabled={(date) => date <= new Date()}
-                    initialFocus
-                  />
-                </PopoverContent>
-              </Popover>
-              <FormDescription>
-                Expected start date of the engagement
-              </FormDescription>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <FormField
-          control={form.control}
-          name="endDate"
-          render={({ field }) => (
-            <FormItem className="flex flex-col flex-wrap">
-              <FormLabel>End date</FormLabel>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <FormControl>
-                    <Button
-                      variant={"outline"}
-                      className={cn(
-                        "w-full pl-3 font-normal",
-                        !field.value && "text-muted-foreground",
-                      )}
-                    >
-                      {field.value ? (
-                        format(field.value, "PPP")
-                      ) : (
-                        <span>Pick a date</span>
-                      )}
-                      <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                    </Button>
-                  </FormControl>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="center">
-                  <Calendar
-                    mode="single"
-                    selected={field.value}
-                    onSelect={field.onChange}
-                    disabled={(date) => date <= new Date()}
-                    initialFocus
-                  />
-                </PopoverContent>
-              </Popover>
-              <FormDescription>
-                Expected end date of the engagement
-              </FormDescription>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <FormField
-          control={form.control}
-          name="noticePeriod"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Notice period</FormLabel>
-              <div className="relative">
-                <FormControl className="">
-                  <Input placeholder="Notice period" {...field} />
-                </FormControl>
-                <InputBrand msg="days" />
-              </div>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <section ref={officeLocationRef}>
-          <MySelect
-            control={form.control}
-            name="workSchema.workType"
-            label="Work location"
-            placeholder="Select work location"
-          >
-            {Object.keys(WorkType).map((key) => (
-              <SelectItem className="flex items-center" key={key} value={key}>
-                <span>{WorkType[key as keyof typeof WorkType]}</span>
-              </SelectItem>
-            ))}
-          </MySelect>
-          {showDaysInOffice && (
-            <MyInput
-              control={form.control}
-              name="workSchema.daysInOffice"
-              label="Days in office"
-              placeholder="Days in office"
-            />
-          )}
-          {showOfficeLocation && (
-            <MyInput
-              control={form.control}
-              name="workSchema.officeLocation"
-              label="Office location"
-              placeholder="City where the office is located"
-            />
-          )}
-        </section>
-        <MySwitch
-          control={form.control}
-          name="domesticTravel"
-          label="Domestic travel"
-          description="Check if domestic travels be required"
-        />
-        <MySwitch
-          control={form.control}
-          name="internationalTravel"
-          label="International travel"
-          description="Check if travelling abroad will be required"
-        />
-        <Button type="submit">Next</Button>
-      </form>
-    </Form>
-  );
-};
