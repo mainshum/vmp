@@ -1,49 +1,22 @@
 import { db } from "@/lib/db";
-import { requestPayloadBody } from "@/types/prisma-types";
-import { match } from "ts-pattern";
-import { Request as R } from "@prisma/client";
+import { draftRequestSchema, pendingRequestSchema } from "@/types/prisma-types";
+
+const parser = pendingRequestSchema.or(draftRequestSchema);
 
 export async function POST(req: Request) {
-  const parsed = requestPayloadBody.safeParse(await req.json());
+  const body = await req.json();
 
-  const x = await db.request.findUnique({where: {id: '123'}});
+  const parsed = parser.safeParse(body);
 
-  x.
-
-  if (!parsed.success) {
-    const errorTxt = JSON.stringify(parsed.error.issues, null, 2);
-    return new Response(errorTxt, {
+  if (!parsed.success)
+    return new Response(JSON.stringify(parsed.error.issues, null, 2), {
       status: 404,
     });
-  }
-  const { data } = parsed;
 
-  const workSchema: Record<string, string> = match(data.workSchema)
-    .with(undefined, () => ({}))
-    .with({ workType: "FULLY_REMOTE" }, ({ workType }) => ({ workType }))
-    .with(
-      { workType: "HYBRID" },
-      ({ daysInOffice, officeLocation, workType }) => ({
-        officeLocation,
-        daysInOffice,
-        workType,
-      }),
-    )
-    .with({ workType: "ONSITE" }, ({ officeLocation, workType }) => ({
-      officeLocation,
-      workType,
-    }))
-    .exhaustive();
-
-  delete data.workSchema;
-
-  const input: Partial<R> & { status: "DRAFT" | "PENDING" } = {
-    ...data,
-    ...workSchema,
-  };
+  const data = (({ workSchema, ...xs }) => ({ ...xs }))(parsed.data);
 
   const updated = await db.request.create({
-    data: input,
+    data,
     select: { name: true },
   });
 

@@ -13,14 +13,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import {
-  FieldValues,
-  Path,
-  UseFormProps,
-  UseFormReturn,
-  useForm,
-  useFormState,
-} from "react-hook-form";
+import { UseFormReturn, useForm } from "react-hook-form";
 import { SelectItem } from "@/components/ui/select";
 import { Slider } from "@/components/ui/slider";
 import { cn } from "@/lib/utils";
@@ -30,10 +23,10 @@ import {
   PopoverContent,
 } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
-import { format, addMonths, addDays, addWeeks } from "date-fns";
+import { format } from "date-fns";
 import { CalendarIcon } from "lucide-react";
 import { useAutoAnimate } from "@formkit/auto-animate/react";
-import { useMemo, useRef, useState } from "react";
+import { useState } from "react";
 import { Textarea } from "@/components/ui/textarea";
 import {
   ProjectStage,
@@ -41,20 +34,15 @@ import {
   ProjectMethodology,
   WorkType,
   JobProfile,
-  Request,
 } from "@prisma/client";
-import { Carousel } from "@/components/carousel";
 import React from "react";
-import { Noop } from "@/types/shared";
 import { useMutation } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { MyInput, MySelect, MySwitch } from "@/components/forms";
 import {
-  RequestMutationInput,
+  RequestMutationBody,
   draftRequestSchema,
   pendingRequestSchema,
-  RequestSchema,
 } from "@/types/prisma-types";
 import {
   AlertDialog,
@@ -67,7 +55,6 @@ import {
   AlertDialogTitle,
 } from "./ui/alert-dialog";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "./ui/dialog";
-import { stringMin3 } from "@/types/prisma-extensions";
 
 const defaultNumber = "" as unknown as number;
 
@@ -79,7 +66,7 @@ function InputBrand({ msg }: { msg: string }) {
   );
 }
 
-const submitRequest = async (request: RequestMutationInput) => {
+const submitRequest = async (request: RequestMutationBody) => {
   const res = await fetch("/api/requests/create", {
     body: JSON.stringify(request),
     method: "POST",
@@ -117,12 +104,14 @@ function useDirtyPrevent(...xs: UseFormReturn<any>[]) {
   };
 }
 
+type FieldVals = z.infer<typeof pendingRequestSchema>;
+
 export function RequestForm() {
   const { toast } = useToast();
 
   const [res, setRes] = useState<z.ZodSchema>(draftRequestSchema);
 
-  const form = useForm<z.infer<typeof pendingRequestSchema>>({
+  const form = useForm<FieldVals>({
     resolver: zodResolver(res),
     defaultValues: {
       availability: 50,
@@ -142,29 +131,22 @@ export function RequestForm() {
     useDirtyPrevent(form);
 
   const { mutate } = useMutation({
-    mutationFn: submitRequest,
+    mutationFn: (xs: FieldVals) => submitRequest(xs),
     onError: () => {
       toast({
         title: "Error saving request",
         description: "Please try resubmitting later",
       });
     },
-    // TODO research why it is calling on success even though request fails
-    onSuccess: () => {
+    onSuccess: (_x, { name }) => {
       toast({
         title: "Saved successfully",
         // TODO add request name
-        description: "Request has been saved",
+        description: `Request ${name} has been saved`,
       });
     },
     onSettled: () => {},
   });
-
-  const saveDraft = async () => {
-    //await commercialsForm.trigger();
-  };
-
-  const savePending = async () => {};
 
   const [availabilityRef] = useAutoAnimate();
   const [officeLocationRef] = useAutoAnimate();
@@ -174,16 +156,7 @@ export function RequestForm() {
   const showOfficeLocation = workType !== "FULLY_REMOTE";
   const showDaysInOffice = workType === "HYBRID";
 
-  function PreventFormClose({
-    draftName = "",
-  }: {
-    draftName: string | undefined;
-  }) {
-    const draftForm = useForm<{ draftName: string }>({
-      defaultValues: { draftName },
-      resolver: zodResolver(z.object({ draftName: stringMin3 })),
-    });
-
+  function PreventFormClose() {
     return (
       <AlertDialog open={alertOpen}>
         <AlertDialogContent>
@@ -194,22 +167,12 @@ export function RequestForm() {
               will be cleared).
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <Form {...draftForm}>
-            <form noValidate onSubmit={draftForm.handleSubmit(saveDraft)}>
-              <MyInput
-                placeholder=""
-                control={draftForm.control}
-                label="Draft name"
-                name="draftName"
-              />
-              <AlertDialogFooter>
-                <AlertDialogCancel onClick={onAlertCancel}>
-                  Cancel
-                </AlertDialogCancel>
-                <AlertDialogAction type="submit">Save draft</AlertDialogAction>
-              </AlertDialogFooter>
-            </form>
-          </Form>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={onAlertCancel}>
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction type="submit">Save draft</AlertDialogAction>
+          </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
     );
@@ -220,7 +183,7 @@ export function RequestForm() {
       <Button onClick={() => onFormDialogOpenChange(true)}>
         Create new request
       </Button>
-      <PreventFormClose draftName={form.getValues("name")} />
+      <PreventFormClose />
 
       <Dialog open={formDialogOpen} onOpenChange={onFormDialogOpenChange}>
         <DialogContent className="max-h-full overflow-y-auto overflow-x-hidden sm:max-h-[75%]">
@@ -229,7 +192,7 @@ export function RequestForm() {
           </DialogHeader>
           <Form {...form}>
             <form
-              onSubmit={form.handleSubmit(console.log)}
+              onSubmit={form.handleSubmit(() => mutate(form.getValues()))}
               noValidate
               className="space-y-8"
             >

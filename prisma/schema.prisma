@@ -128,7 +128,7 @@ model Request {
   status       RequestStatus
 
   /// @zod.min(3, {message: "Minimum of 3 characters"})
-  name               String?
+  name               String
   workType           WorkType?
   projectStage       ProjectStage?
   projectDuration    ProjectDuration?
