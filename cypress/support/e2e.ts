@@ -18,6 +18,7 @@ import "./commands";
 
 Cypress.on("uncaught:exception", ({ message }) => {
   if (message.includes("NEXT_REDIRECT")) return false;
+  if (message.includes("ResizeObserver")) return false;
   return true;
 });
 
