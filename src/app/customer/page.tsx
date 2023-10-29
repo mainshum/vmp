@@ -28,8 +28,8 @@ const getRequests = () =>
   });
 
 async function PageServer() {
-  const session = await getVMPSession();
-  if (!session) return redirect(ROUTES.SIGIN);
+  // const session = await getVMPSession();
+  // if (!session) return redirect(ROUTES.SIGIN);
 
   const requests = await getRequests();
 
