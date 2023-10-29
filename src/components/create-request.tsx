@@ -13,7 +13,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { UseFormReturn, useForm } from "react-hook-form";
+import { useForm } from "react-hook-form";
 import { SelectItem } from "@/components/ui/select";
 import { Slider } from "@/components/ui/slider";
 import { cn } from "@/lib/utils";
@@ -44,17 +44,8 @@ import {
   draftRequestSchema,
   pendingRequestSchema,
 } from "@/types/prisma-types";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "./ui/alert-dialog";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "./ui/dialog";
+import { NavigationBlocker } from "./navigation-blocker";
 
 const defaultNumber = "" as unknown as number;
 
@@ -75,35 +66,6 @@ const submitRequest = async (request: RequestMutationBody) => {
   return await res.json();
 };
 
-function useDirtyPrevent(...xs: UseFormReturn<any>[]) {
-  const [formDialogOpen, setFormDialogOpen] = useState<boolean>(false);
-  const [alertOpen, setAlertOpen] = useState<boolean>(false);
-
-  const anyFormsDirty = xs.some((x) => x.formState.isDirty);
-
-  const onFormDialogOpenChange = (shouldOpen: boolean) => {
-    if (shouldOpen) return setFormDialogOpen(true);
-    if (anyFormsDirty) return setAlertOpen(true);
-
-    return setFormDialogOpen(false);
-  };
-
-  const onAlertCancel = () => {
-    xs.forEach((x) => x.reset());
-    setAlertOpen(false);
-    setFormDialogOpen(false);
-  };
-  const onAlertContinue = () => {};
-
-  return {
-    alertOpen,
-    formDialogOpen,
-    onFormDialogOpenChange,
-    onAlertCancel,
-    onAlertContinue,
-  };
-}
-
 type FieldVals = z.infer<typeof pendingRequestSchema>;
 
 export function RequestForm() {
@@ -123,29 +85,38 @@ export function RequestForm() {
       fundingGuaranteed: false,
       internationalTravel: false,
       pmExists: false,
-      workSchema: { workType: "FULLY_REMOTE" },
+      workSchema: {
+        workType: "HYBRID",
+        daysInOffice: defaultNumber,
+        officeLocation: "",
+      },
     },
   });
 
-  const { alertOpen, formDialogOpen, onFormDialogOpenChange, onAlertCancel } =
-    useDirtyPrevent(form);
+  const clearFormAndClose = () => {
+    form.reset();
+    setFormOpen(false);
+    setBlockerOpen(false);
+  };
 
   const { mutate } = useMutation({
     mutationFn: (xs: FieldVals) => submitRequest(xs),
+    onMutate: () => {
+      clearFormAndClose();
+      toast({ title: "Saving request..." });
+    },
     onError: () => {
       toast({
         title: "Error saving request",
-        description: "Please try resubmitting later",
+        description: "Please try resubmitting the form",
       });
     },
     onSuccess: (_x, { name }) => {
       toast({
         title: "Saved successfully",
-        // TODO add request name
         description: `Request ${name} has been saved`,
       });
     },
-    onSettled: () => {},
   });
 
   const [availabilityRef] = useAutoAnimate();
@@ -156,36 +127,25 @@ export function RequestForm() {
   const showOfficeLocation = workType !== "FULLY_REMOTE";
   const showDaysInOffice = workType === "HYBRID";
 
-  function PreventFormClose() {
-    return (
-      <AlertDialog open={alertOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-            <AlertDialogDescription>
-              Form is unsaved. Either save as draft or cancel (all the fields
-              will be cleared).
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel onClick={onAlertCancel}>
-              Cancel
-            </AlertDialogCancel>
-            <AlertDialogAction type="submit">Save draft</AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-    );
-  }
+  const [blockerOpen, setBlockerOpen] = useState<boolean>(false);
+  const [formOpen, setFormOpen] = useState<boolean>(false);
+
+  const onFormOpenChange = (direction: boolean) => {
+    // direction = false => form wants to close
+    if (!direction && form.formState.isDirty) return setBlockerOpen(true);
+
+    return setFormOpen(false);
+  };
 
   return (
     <React.Fragment>
-      <Button onClick={() => onFormDialogOpenChange(true)}>
-        Create new request
-      </Button>
-      <PreventFormClose />
-
-      <Dialog open={formDialogOpen} onOpenChange={onFormDialogOpenChange}>
+      <Button onClick={() => setFormOpen(true)}>Create new request</Button>
+      <NavigationBlocker
+        open={blockerOpen}
+        onAction={clearFormAndClose}
+        onCancel={() => setBlockerOpen(false)}
+      />
+      <Dialog open={formOpen} onOpenChange={onFormOpenChange}>
         <DialogContent className="max-h-full overflow-y-auto overflow-x-hidden sm:max-h-[75%]">
           <DialogHeader>
             <DialogTitle className="pb-4">Job request</DialogTitle>
@@ -472,29 +432,32 @@ export function RequestForm() {
                 label="Project manager"
                 description="Check if project is managed by a Project Manager"
               />
-              <Button
-                onClick={(e) => {
-                  setRes(pendingRequestSchema);
+              <section className="flex justify-end gap-4">
+                <Button
+                  variant="subtle"
+                  onClick={(e) => {
+                    setRes(draftRequestSchema);
 
-                  e.target.dispatchEvent(
-                    new Event("submit", { cancelable: true, bubbles: true }),
-                  );
-                }}
-              >
-                Submit full
-              </Button>
-              <Button
-                onClick={(e) => {
-                  setRes(draftRequestSchema);
+                    e.target.dispatchEvent(
+                      new Event("submit", { cancelable: true, bubbles: true }),
+                    );
+                  }}
+                  type="submit"
+                >
+                  Save as draft
+                </Button>
+                <Button
+                  onClick={(e) => {
+                    setRes(pendingRequestSchema);
 
-                  e.target.dispatchEvent(
-                    new Event("submit", { cancelable: true, bubbles: true }),
-                  );
-                }}
-                type="submit"
-              >
-                Submit draft
-              </Button>
+                    e.target.dispatchEvent(
+                      new Event("submit", { cancelable: true, bubbles: true }),
+                    );
+                  }}
+                >
+                  Submit request
+                </Button>
+              </section>
             </form>
           </Form>
         </DialogContent>

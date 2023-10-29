@@ -20,16 +20,13 @@ import {
 } from "./prisma-extensions";
 import { NullableFields, UDef } from "./shared";
 
-export type OutputPending = Omit<
-  Request,
-  "id" | "validUntil" | "creationDate" 
->;
+export type OutputPending = Omit<Request, "id" | "validUntil" | "creationDate">;
 
 export type OutputDraft = NullableFields<OutputPending>;
 
 export type InputPendingDraft = UDef<
   Omit<OutputPending, "daysInOffice" | "workType" | "officeLocation" | "status">
->;
+> & { workSchema: z.infer<typeof workSchema> };
 
 export type RequestMutationBody = OutputDraft & { status: "DRAFT" | "PENDING" };
 
@@ -75,7 +72,7 @@ export const pendingRequestSchema = z
   .transform((x) => ({
     ...x,
     ...transformWork(x.workSchema),
-    status: 'PENDING'
+    status: "PENDING",
   })) satisfies z.Schema<OutputPending, any, InputPendingDraft>;
 
 export const draftRequestSchema = z
@@ -112,7 +109,7 @@ export const draftRequestSchema = z
   .transform((x) => ({
     ...x,
     ...transformWork(x.workSchema),
-    status: 'DRAFT'
+    status: "DRAFT",
   })) satisfies z.ZodSchema<OutputDraft, any, InputPendingDraft>;
 
 type CompanySchema = Pick<
