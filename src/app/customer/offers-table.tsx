@@ -12,7 +12,7 @@ import { createDate } from "./shared";
 import { z } from "zod";
 import { produce } from "immer";
 import { useAutoAnimate } from "@formkit/auto-animate/react";
-import { OfferModel } from "../../../prisma/zod";
+import { OfferSchema } from "@/types/prisma-types";
 
 type MutateStarsPayload = { id: string; matchingGrade: number };
 
@@ -63,7 +63,7 @@ function Stars({
   );
 }
 
-type OfferSchema = z.infer<typeof OfferModel>;
+type OfferSchema = z.infer<typeof OfferSchema>;
 
 const offersColumns: ColumnDef<OfferSchema>[] = [
   {
@@ -115,7 +115,7 @@ const toggleStars = ({
 const getOffers = withMinResolveTime(250, (opId: string) =>
   fetch(`/api/offers/${opId}`)
     .then((res) => res.json())
-    .then((json) => z.array(OfferModel).parse(json)),
+    .then((json) => z.array(OfferSchema).parse(json)),
 );
 
 export function OffersTable({

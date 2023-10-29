@@ -1,46 +1,22 @@
 import { db } from "@/lib/db";
-import { RequestModelPayload } from "@/types/prisma-types";
-import { match } from "ts-pattern";
-import { RequestModel } from "../../../../../prisma/zod/request";
-import { z } from "zod";
+import { draftRequestSchema, pendingRequestSchema } from "@/types/prisma-types";
 
-type Mapped = Pick<
-  z.infer<typeof RequestModel>,
-  "workType" | "officeLocation" | "daysInOffice"
->;
+const parser = pendingRequestSchema.or(draftRequestSchema);
 
 export async function POST(req: Request) {
-  const parsed = RequestModelPayload.safeParse(await req.json());
+  const body = await req.json();
 
-  if (!parsed.success) {
-    const errorTxt = JSON.stringify(parsed.error.issues, null, 2);
-    return new Response(errorTxt, {
+  const parsed = parser.safeParse(body);
+
+  if (!parsed.success)
+    return new Response(JSON.stringify(parsed.error.issues, null, 2), {
       status: 404,
     });
-  }
-  const { data } = parsed;
 
-  const mapped: Mapped = match(data.workType)
-    .with(
-      { workType: "FULLY_REMOTE" },
-      ({ workType }): Mapped => ({ workType }),
-    )
-    .with(
-      { workType: "HYBRID" },
-      ({ daysInOffice, officeLocation, workType }): Mapped => ({
-        officeLocation,
-        daysInOffice,
-        workType,
-      }),
-    )
-    .with(
-      { workType: "ONSITE" },
-      ({ officeLocation, workType }): Mapped => ({ officeLocation, workType }),
-    )
-    .exhaustive();
+  const data = (({ workSchema, ...xs }) => ({ ...xs }))(parsed.data);
 
   const updated = await db.request.create({
-    data: { ...data, ...mapped },
+    data,
     select: { name: true },
   });
 

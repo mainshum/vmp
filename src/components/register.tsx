@@ -10,10 +10,9 @@ import { Button } from "./ui/button";
 import { useForm } from "react-hook-form";
 import * as Typo from "./typography";
 import React, { useState } from "react";
-import { CustomerModel } from "../../prisma/zod";
 import { Dialog, DialogContent } from "./ui/dialog";
 import { Loader2 } from "lucide-react";
-import { redirect, useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { ROUTES } from "@/lib/const";
 import { noop, withTransitionIfExists } from "@/lib/utils";
@@ -21,27 +20,9 @@ import { MyInput, MySelect } from "./forms";
 import { useMutation } from "@tanstack/react-query";
 import { SelectItem } from "./ui/select";
 import { CompanySize, ProjectFor } from "@prisma/client";
+import { BuyerDetailsSchema, CompanySchema } from "@/types/prisma-types";
 
 type FormStep = "company" | "buyer" | "submitting" | "error_submitting";
-
-export const CompanySchema = CustomerModel.pick({
-  companyName: true,
-  companySize: true,
-  projectFor: true,
-  addressLine1: true,
-  addressLine2: true,
-  postalCode: true,
-  city: true,
-  taxId: true,
-});
-
-export const BuyerDetailsSchema = CustomerModel.pick({
-  name: true,
-  surname: true,
-  mail: true,
-  phone: true,
-  position: true,
-});
 
 export type CompanySchemaT = z.infer<typeof CompanySchema>;
 export type BuyerDetailsSchemaT = z.infer<typeof BuyerDetailsSchema>;
@@ -67,8 +48,6 @@ export function RegisterForm() {
 
   const session = useSession();
   const router = useRouter();
-
-  const sp = useSearchParams();
 
   let companyDetailsDefault: CompanySchemaT = {
     companySize: "FROM50TO250",
