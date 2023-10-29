@@ -14,6 +14,7 @@ import {
 
 import { RequestForm } from "@/components/create-request";
 import { buttonVariants } from "@/components/ui/button";
+import { Shell } from "@/components/shell";
 
 const getRequests = () =>
   db.request.findMany({
@@ -33,10 +34,12 @@ async function PageServer() {
   const requests = await getRequests();
 
   return (
-    <section className="flex flex-col py-8">
-      <RequestForm />
-      <RequestsTable requests={requests} />
-    </section>
+    <Shell className="py-8">
+      <section className="flex flex-col">
+        <RequestForm />
+        <RequestsTable requests={requests} />
+      </section>
+    </Shell>
   );
 }
 

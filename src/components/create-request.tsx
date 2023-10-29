@@ -86,9 +86,7 @@ export function RequestForm() {
       internationalTravel: false,
       pmExists: false,
       workSchema: {
-        workType: "HYBRID",
-        daysInOffice: defaultNumber,
-        officeLocation: "",
+        workType: "FULLY_REMOTE",
       },
     },
   });
