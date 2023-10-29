@@ -32,7 +32,7 @@ export default async function RootLayout({
         <NextAuthProvider>
           <TenstackProvider>
             <Navbar />
-            <main className="container h-full pt-14">{children}</main>
+            <main className="container h-full pt-24">{children}</main>
             <Toaster />
           </TenstackProvider>
         </NextAuthProvider>
