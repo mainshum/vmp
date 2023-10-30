@@ -64,7 +64,7 @@ describe("client postings", () => {
   beforeEach(() => {
     cy.intercept({
       method: "POST",
-      url: "/api/requests/create",
+      url: "/api/requests",
     });
 
     cy.visit("/customer");

@@ -18,3 +18,5 @@ export type Noop = () => void;
 export type UDef<T> = {
   [P in keyof T]?: T[P] | undefined | string | "";
 };
+
+export type Action<T> = (arg: T) => void;

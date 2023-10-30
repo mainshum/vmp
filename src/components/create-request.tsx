@@ -34,18 +34,21 @@ import {
   ProjectMethodology,
   WorkType,
   JobProfile,
+  Request,
 } from "@prisma/client";
 import React from "react";
 import { useMutation } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { MyInput, MySelect, MySwitch } from "@/components/forms";
 import {
+  OutputDraft,
   RequestMutationBody,
   draftRequestSchema,
   pendingRequestSchema,
 } from "@/types/prisma-types";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "./ui/dialog";
 import { NavigationBlocker } from "./navigation-blocker";
+import { Noop } from "@/types/shared";
 
 const defaultNumber = "" as unknown as number;
 
@@ -58,7 +61,7 @@ function InputBrand({ msg }: { msg: string }) {
 }
 
 const submitRequest = async (request: RequestMutationBody) => {
-  const res = await fetch("/api/requests/create", {
+  const res = await fetch("/api/requests", {
     body: JSON.stringify(request),
     method: "POST",
   });
@@ -68,7 +71,13 @@ const submitRequest = async (request: RequestMutationBody) => {
 
 type FieldVals = z.infer<typeof pendingRequestSchema>;
 
-export function RequestForm() {
+export function RequestForm({
+  request,
+  onCloseRequest,
+}: {
+  request?: Request;
+  onCloseRequest: Noop;
+}) {
   const { toast } = useToast();
 
   const [res, setRes] = useState<z.ZodSchema>(draftRequestSchema);
@@ -76,15 +85,16 @@ export function RequestForm() {
   const form = useForm<FieldVals>({
     resolver: zodResolver(res),
     defaultValues: {
-      availability: 50,
-      description: "",
-      name: "",
-      hourlyRate: defaultNumber,
-      noticePeriod: defaultNumber,
-      domesticTravel: false,
-      fundingGuaranteed: false,
-      internationalTravel: false,
-      pmExists: false,
+      availability: request?.availability || 50,
+      profile: request?.profile || undefined,
+      description: request?.description || "",
+      name: request?.name || "",
+      hourlyRate: request?.hourlyRate || defaultNumber,
+      noticePeriod: request?.noticePeriod || defaultNumber,
+      domesticTravel: request?.domesticTravel || false,
+      fundingGuaranteed: request?.fundingGuaranteed || false,
+      internationalTravel: request?.internationalTravel || false,
+      pmExists: request?.pmExists || false,
       workSchema: {
         workType: "FULLY_REMOTE",
       },
@@ -93,8 +103,8 @@ export function RequestForm() {
 
   const clearFormAndClose = () => {
     form.reset();
-    setFormOpen(false);
     setBlockerOpen(false);
+    onCloseRequest();
   };
 
   const { mutate } = useMutation({
@@ -126,24 +136,22 @@ export function RequestForm() {
   const showDaysInOffice = workType === "HYBRID";
 
   const [blockerOpen, setBlockerOpen] = useState<boolean>(false);
-  const [formOpen, setFormOpen] = useState<boolean>(false);
 
   const onFormOpenChange = (direction: boolean) => {
     // direction = false => form wants to close
     if (!direction && form.formState.isDirty) return setBlockerOpen(true);
 
-    return setFormOpen(false);
+    onCloseRequest();
   };
 
   return (
     <React.Fragment>
-      <Button onClick={() => setFormOpen(true)}>Create new request</Button>
       <NavigationBlocker
         open={blockerOpen}
         onAction={clearFormAndClose}
         onCancel={() => setBlockerOpen(false)}
       />
-      <Dialog open={formOpen} onOpenChange={onFormOpenChange}>
+      <Dialog defaultOpen onOpenChange={onFormOpenChange}>
         <DialogContent className="max-h-full overflow-y-auto overflow-x-hidden sm:max-h-[75%]">
           <DialogHeader>
             <DialogTitle className="pb-4">Job request</DialogTitle>
