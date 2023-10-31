@@ -33,6 +33,35 @@ export async function POST(req: Request) {
   return new Response(JSON.stringify(updated));
 }
 
+export async function PUT(req: NextRequest) {
+  const body = await req.json();
+
+  const id = idParser.safeParse(req.nextUrl.searchParams.get("id"));
+
+  if (!id.success)
+    return new Response(JSON.stringify({ error: "ID missing" }), {
+      status: 404,
+    });
+
+  const parsed = parser.safeParse(body);
+
+  if (!parsed.success)
+    return new Response(JSON.stringify(parsed.error.issues, null, 2), {
+      status: 404,
+    });
+
+  // eslint-disable-next-line no-unused-vars
+  const data = (({ workSchema, ...xs }) => ({ ...xs }))(parsed.data);
+
+  const updated = await db.request.update({
+    where: { id: id.data },
+    data,
+    select: { name: true },
+  });
+
+  return new Response(JSON.stringify(updated));
+}
+
 export async function DELETE(req: NextRequest) {
   const id = req.nextUrl.searchParams.get("id");
 

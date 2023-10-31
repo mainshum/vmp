@@ -49,7 +49,7 @@ import {
 } from "@/types/prisma-types";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "./ui/dialog";
 import { NavigationBlocker } from "./navigation-blocker";
-import { Noop } from "@/types/shared";
+import { Noop, Nullalble } from "@/types/shared";
 
 const defaultNumber = "" as unknown as number;
 
@@ -61,11 +61,15 @@ function InputBrand({ msg }: { msg: string }) {
   );
 }
 
-const submitRequest = async (request: RequestMutationBody) => {
-  const res = await fetch("/api/requests", {
-    body: JSON.stringify(request),
-    method: "POST",
-  });
+const submitRequest = async (
+  request: RequestMutationBody,
+  id: string | undefined,
+) => {
+  const body = JSON.stringify(request);
+
+  const res = id
+    ? await fetch(`/api/requests?id=${id}`, { method: "PUT", body })
+    : await fetch(`/api/requests`, { method: "POST", body });
 
   return await res.json();
 };
@@ -125,10 +129,7 @@ export function RequestForm({
   };
 
   const { mutate } = useMutation({
-    mutationFn: (xs: InputPendingDraft) =>
-      submitRequest(
-        z.union([pendingRequestSchema, draftRequestSchema]).parse(xs),
-      ),
+    mutationFn: (xs: FieldVals) => submitRequest(xs, request?.id),
     onMutate: () => {
       clearFormAndClose();
       toast({ title: "Saving request..." });
@@ -164,6 +165,8 @@ export function RequestForm({
     onCloseRequest();
   };
 
+  const dialogTitle = request?.id ? "Edit request" : "New job request";
+
   return (
     <React.Fragment>
       <NavigationBlocker
@@ -174,7 +177,7 @@ export function RequestForm({
       <Dialog defaultOpen onOpenChange={onFormOpenChange}>
         <DialogContent className="max-h-full overflow-y-auto overflow-x-hidden sm:max-h-[75%]">
           <DialogHeader>
-            <DialogTitle className="pb-4">Job request</DialogTitle>
+            <DialogTitle className="pb-4">{dialogTitle}</DialogTitle>
           </DialogHeader>
           <Form {...form}>
             <form
