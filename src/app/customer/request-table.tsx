@@ -108,7 +108,6 @@ function Cell({ id }: { id: string }) {
         <DropdownMenuItem onClick={() => handleRequestRemoval(id)}>
           Remove request
         </DropdownMenuItem>
-        <DropdownMenuItem>View payment details</DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
   );

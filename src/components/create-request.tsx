@@ -41,6 +41,7 @@ import { useMutation } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { MyInput, MySelect, MySwitch } from "@/components/forms";
 import {
+  InputPendingDraft,
   OutputDraft,
   RequestMutationBody,
   draftRequestSchema,
@@ -82,6 +83,7 @@ export function RequestForm({
 
   const [res, setRes] = useState<z.ZodSchema>(draftRequestSchema);
 
+  // TODO clean up this mess
   const form = useForm<FieldVals>({
     resolver: zodResolver(res),
     defaultValues: {
@@ -95,10 +97,25 @@ export function RequestForm({
       fundingGuaranteed: request?.fundingGuaranteed || false,
       internationalTravel: request?.internationalTravel || false,
       pmExists: request?.pmExists || false,
-      workSchema: {
-        workType: "FULLY_REMOTE",
-      },
-    },
+      endDate: request?.endDate ? new Date(request.endDate) : undefined,
+      startDate: request?.startDate ? new Date(request.startDate) : undefined,
+      projectStage: request?.projectStage || undefined,
+      projectMethodology: request?.projectMethodology || undefined,
+      projectDuration: request?.projectDuration || undefined,
+      workSchema:
+        request?.workType === "FULLY_REMOTE"
+          ? { workType: "FULLY_REMOTE" }
+          : request?.workType === "HYBRID"
+          ? {
+              workType: "HYBRID",
+              officeLocation: request.officeLocation || "",
+              daysInOffice: defaultNumber,
+            }
+          : {
+              workType: "ONSITE",
+              officeLocation: request?.officeLocation || "",
+            },
+    } satisfies InputPendingDraft,
   });
 
   const clearFormAndClose = () => {
@@ -108,7 +125,10 @@ export function RequestForm({
   };
 
   const { mutate } = useMutation({
-    mutationFn: (xs: FieldVals) => submitRequest(xs),
+    mutationFn: (xs: InputPendingDraft) =>
+      submitRequest(
+        z.union([pendingRequestSchema, draftRequestSchema]).parse(xs),
+      ),
     onMutate: () => {
       clearFormAndClose();
       toast({ title: "Saving request..." });
