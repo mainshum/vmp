@@ -13,6 +13,10 @@ export type NullableFields<T> = {
   [P in keyof T]: Nullalble<T[P]>;
 };
 
+export type FormPrep<T> = {
+  [P in keyof T]: Exclude<T[P], null> | "";
+};
+
 export type Noop = () => void;
 
 export type UDef<T> = {

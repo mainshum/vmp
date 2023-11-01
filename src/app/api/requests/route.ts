@@ -1,9 +1,9 @@
 import { db } from "@/lib/db";
-import { draftRequestSchema, pendingRequestSchema } from "@/types/prisma-types";
+import { draftSchema, pendingSchema } from "@/types/prisma-types";
 import { NextRequest } from "next/server";
 import { z } from "zod";
 
-const parser = pendingRequestSchema.or(draftRequestSchema);
+const parser = pendingSchema.or(draftSchema);
 const idParser = z.string().cuid();
 
 export async function GET() {
@@ -23,7 +23,7 @@ export async function POST(req: Request) {
     });
 
   // eslint-disable-next-line no-unused-vars
-  const data = (({ workSchema, ...xs }) => ({ ...xs }))(parsed.data);
+  const data = parsed.data;
 
   const updated = await db.request.create({
     data,
@@ -51,7 +51,7 @@ export async function PUT(req: NextRequest) {
     });
 
   // eslint-disable-next-line no-unused-vars
-  const data = (({ workSchema, ...xs }) => ({ ...xs }))(parsed.data);
+  const data = parsed.data;
 
   const updated = await db.request.update({
     where: { id: id.data },

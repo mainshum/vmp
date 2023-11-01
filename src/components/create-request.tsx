@@ -37,19 +37,18 @@ import {
   Request,
 } from "@prisma/client";
 import React from "react";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { MyInput, MySelect, MySwitch } from "@/components/forms";
 import {
-  InputPendingDraft,
-  OutputDraft,
-  RequestMutationBody,
-  draftRequestSchema,
-  pendingRequestSchema,
+  RequestFormValues,
+  MutationRequest,
+  draftSchema,
+  pendingSchema,
 } from "@/types/prisma-types";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "./ui/dialog";
 import { NavigationBlocker } from "./navigation-blocker";
-import { Noop, Nullalble } from "@/types/shared";
+import { Noop } from "@/types/shared";
 
 const defaultNumber = "" as unknown as number;
 
@@ -62,9 +61,12 @@ function InputBrand({ msg }: { msg: string }) {
 }
 
 const submitRequest = async (
-  request: RequestMutationBody,
+  request: MutationRequest,
   id: string | undefined,
 ) => {
+  console.log(request);
+  return;
+
   const body = JSON.stringify(request);
 
   const res = id
@@ -73,8 +75,6 @@ const submitRequest = async (
 
   return await res.json();
 };
-
-type FieldVals = z.infer<typeof pendingRequestSchema>;
 
 export function RequestForm({
   request,
@@ -85,41 +85,32 @@ export function RequestForm({
 }) {
   const { toast } = useToast();
 
-  const [res, setRes] = useState<z.ZodSchema>(draftRequestSchema);
+  const [res, setRes] = useState<z.ZodSchema>(draftSchema);
 
-  // TODO clean up this mess
-  const form = useForm<FieldVals>({
+  const client = useQueryClient();
+
+  const form = useForm<RequestFormValues>({
     resolver: zodResolver(res),
     defaultValues: {
       availability: request?.availability || 50,
-      profile: request?.profile || undefined,
+      daysInOffice: request?.daysInOffice || defaultNumber,
       description: request?.description || "",
-      name: request?.name || "",
+      workType: request?.workType || "",
+      domesticTravel: request?.domesticTravel || false,
+      internationalTravel: request?.internationalTravel || false,
+      startDate: request?.startDate || "",
+      endDate: request?.endDate || "",
+      fundingGuaranteed: request?.fundingGuaranteed || false,
       hourlyRate: request?.hourlyRate || defaultNumber,
       noticePeriod: request?.noticePeriod || defaultNumber,
-      domesticTravel: request?.domesticTravel || false,
-      fundingGuaranteed: request?.fundingGuaranteed || false,
-      internationalTravel: request?.internationalTravel || false,
+      name: request?.name || "",
+      officeLocation: request?.officeLocation || "",
       pmExists: request?.pmExists || false,
-      endDate: request?.endDate ? new Date(request.endDate) : undefined,
-      startDate: request?.startDate ? new Date(request.startDate) : undefined,
-      projectStage: request?.projectStage || undefined,
-      projectMethodology: request?.projectMethodology || undefined,
-      projectDuration: request?.projectDuration || undefined,
-      workSchema:
-        request?.workType === "FULLY_REMOTE"
-          ? { workType: "FULLY_REMOTE" }
-          : request?.workType === "HYBRID"
-          ? {
-              workType: "HYBRID",
-              officeLocation: request.officeLocation || "",
-              daysInOffice: defaultNumber,
-            }
-          : {
-              workType: "ONSITE",
-              officeLocation: request?.officeLocation || "",
-            },
-    } satisfies InputPendingDraft,
+      profile: request?.profile || "",
+      projectDuration: request?.projectDuration || "",
+      projectMethodology: request?.projectMethodology || "",
+      projectStage: request?.projectStage || "",
+    } satisfies RequestFormValues,
   });
 
   const clearFormAndClose = () => {
@@ -129,7 +120,11 @@ export function RequestForm({
   };
 
   const { mutate } = useMutation({
-    mutationFn: (xs: FieldVals) => submitRequest(xs, request?.id),
+    mutationFn: (xs: RequestFormValues) => {
+      // check which validator used to figure out the request type
+      const parser = res === draftSchema ? draftSchema : pendingSchema;
+      return submitRequest(parser.parse(xs), request?.id);
+    },
     onMutate: () => {
       clearFormAndClose();
       toast({ title: "Saving request..." });
@@ -145,15 +140,16 @@ export function RequestForm({
         title: "Saved successfully",
         description: `Request ${name} has been saved`,
       });
+      client.invalidateQueries({ queryKey: ["requests"] });
     },
   });
 
   const [availabilityRef] = useAutoAnimate();
   const [officeLocationRef] = useAutoAnimate();
 
-  const workType = form.watch("workSchema")?.workType;
+  const workType = form.watch("workType");
 
-  const showOfficeLocation = workType !== "FULLY_REMOTE";
+  const showOfficeLocation = workType === "ONSITE" || workType === "HYBRID";
   const showDaysInOffice = workType === "HYBRID";
 
   const [blockerOpen, setBlockerOpen] = useState<boolean>(false);
@@ -205,7 +201,11 @@ export function RequestForm({
                     <FormLabel>Hourly rate</FormLabel>
                     <div className="relative">
                       <FormControl className="">
-                        <Input placeholder="Hourly rate" {...field} />
+                        <Input
+                          placeholder="Hourly rate"
+                          {...field}
+                          value={field.value ? field.value : ""}
+                        />
                       </FormControl>
                       <InputBrand msg="PLN/hour" />
                     </div>
@@ -232,7 +232,6 @@ export function RequestForm({
                         />
                       </FormControl>
                       <span
-                        key={field.value}
                         className={cn(
                           "whitespace-nowrap font-normal text-muted-foreground",
                         )}
@@ -270,10 +269,12 @@ export function RequestForm({
                       <PopoverContent className="w-auto p-0" align="center">
                         <Calendar
                           mode="single"
-                          selected={field.value}
                           onSelect={field.onChange}
                           disabled={(date) => date <= new Date()}
                           initialFocus
+                          {...(field.value !== ""
+                            ? { selected: field.value }
+                            : {})}
                         />
                       </PopoverContent>
                     </Popover>
@@ -312,10 +313,12 @@ export function RequestForm({
                       <PopoverContent className="w-auto p-0" align="center">
                         <Calendar
                           mode="single"
-                          selected={field.value}
                           onSelect={field.onChange}
                           disabled={(date) => date <= new Date()}
                           initialFocus
+                          {...(field.value !== ""
+                            ? { selected: field.value }
+                            : {})}
                         />
                       </PopoverContent>
                     </Popover>
@@ -345,7 +348,7 @@ export function RequestForm({
               <section ref={officeLocationRef}>
                 <MySelect
                   control={form.control}
-                  name="workSchema.workType"
+                  name="workType"
                   label="Work location"
                   placeholder="Select work location"
                 >
@@ -362,7 +365,7 @@ export function RequestForm({
                 {showDaysInOffice && (
                   <MyInput
                     control={form.control}
-                    name="workSchema.daysInOffice"
+                    name="daysInOffice"
                     label="Days in office"
                     placeholder="Days in office"
                   />
@@ -370,7 +373,7 @@ export function RequestForm({
                 {showOfficeLocation && (
                   <MyInput
                     control={form.control}
-                    name="workSchema.officeLocation"
+                    name="officeLocation"
                     label="Office location"
                     placeholder="City where the office is located"
                   />
@@ -465,10 +468,13 @@ export function RequestForm({
                 <Button
                   variant="subtle"
                   onClick={(e) => {
-                    setRes(draftRequestSchema);
+                    setRes(draftSchema);
 
                     e.target.dispatchEvent(
-                      new Event("submit", { cancelable: true, bubbles: true }),
+                      new Event("submit", {
+                        cancelable: true,
+                        bubbles: true,
+                      }),
                     );
                   }}
                   type="submit"
@@ -477,10 +483,13 @@ export function RequestForm({
                 </Button>
                 <Button
                   onClick={(e) => {
-                    setRes(pendingRequestSchema);
+                    setRes(pendingSchema);
 
                     e.target.dispatchEvent(
-                      new Event("submit", { cancelable: true, bubbles: true }),
+                      new Event("submit", {
+                        cancelable: true,
+                        bubbles: true,
+                      }),
                     );
                   }}
                 >

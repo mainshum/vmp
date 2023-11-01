@@ -12,105 +12,125 @@ import {
   OfferStatus,
   RequestStatus,
 } from "@prisma/client";
-import { z } from "zod";
+import { EnumLike, number, z } from "zod";
 import {
   positiveInteger,
   positiveInteger15,
   stringMin3,
 } from "./prisma-extensions";
-import { NullableFields, UDef } from "./shared";
+import { FormPrep } from "./shared";
 
-export type OutputPending = Omit<Request, "id" | "validUntil" | "creationDate">;
+export type MutationRequest = Omit<
+  Request,
+  "id" | "validUntil" | "creationDate"
+>;
+export type RequestFormValues = FormPrep<
+  Omit<MutationRequest, "status" | "id">
+>;
 
-export type OutputDraft = NullableFields<OutputPending>;
+const addStatus = (status: RequestStatus) => {
+  return function addExtras<T>(t: T) {
+    return { ...t, status };
+  };
+};
 
-export type InputPendingDraft = UDef<
-  Omit<OutputPending, "daysInOffice" | "workType" | "officeLocation" | "status">
-> & { workSchema: z.infer<typeof workSchema> };
+const anyStringOrNullIfEmpty = z
+  .string()
+  .transform((x) => (x === "" ? null : x));
 
-export type RequestMutationBody = OutputDraft & { status: "DRAFT" | "PENDING" };
+const draftNumberSchema = z
+  .number({ coerce: true })
+  .transform((x) => (x === 0 ? null : x));
 
-const workSchema = z.discriminatedUnion("workType", [
-  z.object({ workType: z.literal(WorkType.FULLY_REMOTE) }),
-  z.object({
-    workType: z.literal(WorkType.ONSITE),
-    officeLocation: stringMin3,
-  }),
-  z.object({
-    workType: z.literal(WorkType.HYBRID),
-    daysInOffice: positiveInteger15,
-    officeLocation: stringMin3,
-  }),
-]);
+function enumWithLiteralErrorMapped<T extends EnumLike>(t: T) {
+  return z.nativeEnum(t, {
+    errorMap: (issue, ctx) => {
+      if (issue.code === "invalid_enum_value" && issue.received === "")
+        return { message: "Required" };
 
-const transformWork = (x: z.infer<typeof workSchema>) => ({
-  workType: x.workType,
-  officeLocation: x.workType !== "FULLY_REMOTE" ? x.officeLocation : null,
-  daysInOffice: x.workType === "HYBRID" ? x.daysInOffice : null,
-});
+      return { message: ctx.defaultError };
+    },
+  });
+}
 
-// form validation
-export const pendingRequestSchema = z
+// db level
+export const pendingSchema = z
   .object({
     name: stringMin3,
     description: stringMin3,
     hourlyRate: positiveInteger,
     availability: positiveInteger,
     noticePeriod: positiveInteger,
+    workType: enumWithLiteralErrorMapped(WorkType),
+    daysInOffice: positiveInteger15,
+    officeLocation: z.string(),
     startDate: z.date({ coerce: true }),
     endDate: z.date({ coerce: true }),
     domesticTravel: z.boolean(),
     internationalTravel: z.boolean(),
     pmExists: z.boolean(),
     fundingGuaranteed: z.boolean(),
-    workSchema: workSchema,
-    profile: z.nativeEnum(JobProfile),
-    projectStage: z.nativeEnum(ProjectStage),
-    projectDuration: z.nativeEnum(ProjectDuration),
-    projectMethodology: z.nativeEnum(ProjectMethodology),
+    profile: enumWithLiteralErrorMapped(JobProfile),
+    projectStage: enumWithLiteralErrorMapped(ProjectStage),
+    projectDuration: enumWithLiteralErrorMapped(ProjectDuration),
+    projectMethodology: enumWithLiteralErrorMapped(ProjectMethodology),
   })
-  .transform((x) => ({
-    ...x,
-    ...transformWork(x.workSchema),
-    status: "PENDING",
-  })) satisfies z.Schema<OutputPending, any, InputPendingDraft>;
+  .transform(addStatus("PENDING")) satisfies z.Schema<
+  MutationRequest,
+  any,
+  RequestFormValues
+>;
 
-export const draftRequestSchema = z
+const emptyStringIntoNull = z.literal("").transform(() => null);
+
+export const draftSchema = z
   .object({
     name: stringMin3,
-    description: z.string().or(z.literal("").transform(() => null)),
-    hourlyRate: z
-      .number({ coerce: true })
-      .or(z.literal("").transform(() => null)),
-    availability: positiveInteger,
-    noticePeriod: z
-      .number({ coerce: true })
-      .or(z.literal("").transform(() => null)),
-    startDate: z
-      .date({ coerce: true, required_error: "Start date is required" })
-      .or(z.any().transform(() => null)),
-    endDate: z
-      .date({ coerce: true, required_error: "End date is required" })
-      .or(z.any().transform(() => null)),
+    description: anyStringOrNullIfEmpty,
+    hourlyRate: draftNumberSchema,
+    availability: draftNumberSchema,
+    noticePeriod: draftNumberSchema,
+    workType: z.nativeEnum(WorkType).or(emptyStringIntoNull),
+    daysInOffice: draftNumberSchema,
+    officeLocation: anyStringOrNullIfEmpty,
+    startDate: z.date({ coerce: true }).or(emptyStringIntoNull),
+    endDate: z.date({ coerce: true }).or(emptyStringIntoNull),
     domesticTravel: z.boolean(),
     internationalTravel: z.boolean(),
     pmExists: z.boolean(),
     fundingGuaranteed: z.boolean(),
-    workSchema: workSchema,
-    profile: z.nativeEnum(JobProfile).or(z.any().transform(() => null)),
-    projectStage: z.nativeEnum(ProjectStage).or(z.any().transform(() => null)),
-    projectDuration: z
-      .nativeEnum(ProjectDuration)
-      .or(z.any().transform(() => null)),
+    profile: z.nativeEnum(JobProfile).or(emptyStringIntoNull),
+    projectStage: z.nativeEnum(ProjectStage).or(emptyStringIntoNull),
+    projectDuration: z.nativeEnum(ProjectDuration).or(emptyStringIntoNull),
     projectMethodology: z
       .nativeEnum(ProjectMethodology)
-      .or(z.any().transform(() => null)),
+      .or(emptyStringIntoNull),
   })
-  .transform((x) => ({
-    ...x,
-    ...transformWork(x.workSchema),
-    status: "DRAFT",
-  })) satisfies z.ZodSchema<OutputDraft, any, InputPendingDraft>;
+  .transform(addStatus("DRAFT")) satisfies z.Schema<
+  MutationRequest,
+  any,
+  RequestFormValues
+>;
+
+// .superRefine(({workType, officeLocation, daysInOffice}, ctx) => {
+//     match(workType)
+//       .with('ONSITE', () => {
+//         const ol = stringMin3.safeParse(officeLocation);
+
+//         if (!ol.success)
+//           ctx.addIssue({path: ['officeLocation'], code: z.ZodIssueCode.custom, message: ol.error.message})
+//       })
+//       .with('HYBRID', () => {
+//         const ol = stringMin3.safeParse(officeLocation);
+//         const dof = stringMin3.safeParse(daysInOffice);
+
+//         if (!ol.success)
+//           ctx.addIssue({path: ['officeLocation'], code: z.ZodIssueCode.custom, message: ol.error.message})
+
+//         if (!dof.success)
+//           ctx.addIssue({path: ['daysInOffice'], code: z.ZodIssueCode.custom, message: dof.error.message})
+//       })
+//   })
 
 type CompanySchema = Pick<
   Customer,
