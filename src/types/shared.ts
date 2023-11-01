@@ -14,7 +14,7 @@ export type NullableFields<T> = {
 };
 
 export type FormPrep<T> = {
-  [P in keyof T]: Exclude<T[P], null> | "";
+  [P in keyof T]: null extends T[P] ? T[P] | undefined : T[P];
 };
 
 export type Noop = () => void;

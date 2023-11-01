@@ -26,7 +26,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { format } from "date-fns";
 import { CalendarIcon } from "lucide-react";
 import { useAutoAnimate } from "@formkit/auto-animate/react";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { Textarea } from "@/components/ui/textarea";
 import {
   ProjectStage,
@@ -35,6 +35,7 @@ import {
   WorkType,
   JobProfile,
   Request,
+  RequestStatus,
 } from "@prisma/client";
 import React from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
@@ -42,15 +43,12 @@ import { useToast } from "@/hooks/use-toast";
 import { MyInput, MySelect, MySwitch } from "@/components/forms";
 import {
   RequestFormValues,
-  MutationRequest,
   draftSchema,
   pendingSchema,
 } from "@/types/prisma-types";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "./ui/dialog";
 import { NavigationBlocker } from "./navigation-blocker";
 import { Noop } from "@/types/shared";
-
-const defaultNumber = "" as unknown as number;
 
 function InputBrand({ msg }: { msg: string }) {
   return (
@@ -61,19 +59,21 @@ function InputBrand({ msg }: { msg: string }) {
 }
 
 const submitRequest = async (
-  request: MutationRequest,
+  request: RequestFormValues,
+  status: RequestStatus,
   id: string | undefined,
 ) => {
-  console.log(request);
-  return;
-
-  const body = JSON.stringify(request);
+  const body = JSON.stringify({ ...request, status });
 
   const res = id
-    ? await fetch(`/api/requests?id=${id}`, { method: "PUT", body })
-    : await fetch(`/api/requests`, { method: "POST", body });
+    ? await fetch(`api/requests?id=${id}`, { method: "PUT", body })
+    : await fetch(`api/requests`, { method: "POST", body });
 
-  return await res.json();
+  if (res.status !== 200) throw new Error(await res.json());
+
+  const json = await res.json();
+
+  return json;
 };
 
 export function RequestForm({
@@ -85,31 +85,45 @@ export function RequestForm({
 }) {
   const { toast } = useToast();
 
-  const [res, setRes] = useState<z.ZodSchema>(draftSchema);
+  const resolverSchema = useRef<z.ZodSchema>(draftSchema);
 
   const client = useQueryClient();
 
   const form = useForm<RequestFormValues>({
-    resolver: zodResolver(res),
+    resolver: (values) => {
+      const parsed = resolverSchema.current.safeParse(values);
+
+      return {
+        values: !parsed.success ? {} : values,
+        errors: parsed.success
+          ? {}
+          : parsed.error.errors.reduce((acc, currentError) => {
+              return {
+                ...acc,
+                [currentError.path[0]]: currentError,
+              };
+            }, {}),
+      };
+    },
     defaultValues: {
       availability: request?.availability || 50,
-      daysInOffice: request?.daysInOffice || defaultNumber,
-      description: request?.description || "",
-      workType: request?.workType || "",
+      description: request?.description,
+      workType: request?.workType,
       domesticTravel: request?.domesticTravel || false,
       internationalTravel: request?.internationalTravel || false,
-      startDate: request?.startDate || "",
-      endDate: request?.endDate || "",
+      startDate: request?.startDate ? new Date(request.startDate) : undefined,
+      endDate: request?.endDate ? new Date(request.endDate) : undefined,
       fundingGuaranteed: request?.fundingGuaranteed || false,
-      hourlyRate: request?.hourlyRate || defaultNumber,
-      noticePeriod: request?.noticePeriod || defaultNumber,
+      hourlyRate: request?.hourlyRate,
+      noticePeriod: request?.noticePeriod,
       name: request?.name || "",
-      officeLocation: request?.officeLocation || "",
       pmExists: request?.pmExists || false,
-      profile: request?.profile || "",
-      projectDuration: request?.projectDuration || "",
-      projectMethodology: request?.projectMethodology || "",
-      projectStage: request?.projectStage || "",
+      profile: request?.profile,
+      projectDuration: request?.projectDuration,
+      projectMethodology: request?.projectMethodology,
+      projectStage: request?.projectStage,
+      officeLocation: request?.officeLocation,
+      daysInOffice: request?.daysInOffice,
     } satisfies RequestFormValues,
   });
 
@@ -120,11 +134,12 @@ export function RequestForm({
   };
 
   const { mutate } = useMutation({
-    mutationFn: (xs: RequestFormValues) => {
-      // check which validator used to figure out the request type
-      const parser = res === draftSchema ? draftSchema : pendingSchema;
-      return submitRequest(parser.parse(xs), request?.id);
-    },
+    mutationFn: (xs: RequestFormValues) =>
+      submitRequest(
+        xs,
+        resolverSchema.current === draftSchema ? "DRAFT" : "PENDING",
+        request?.id,
+      ),
     onMutate: () => {
       clearFormAndClose();
       toast({ title: "Saving request..." });
@@ -154,9 +169,9 @@ export function RequestForm({
 
   const [blockerOpen, setBlockerOpen] = useState<boolean>(false);
 
-  const onFormOpenChange = (direction: boolean) => {
-    // direction = false => form wants to close
-    if (!direction && form.formState.isDirty) return setBlockerOpen(true);
+  const onFormOpenChange = () => {
+    if (!blockerOpen && Object.keys(form.formState.dirtyFields).length > 0)
+      return setBlockerOpen(true);
 
     onCloseRequest();
   };
@@ -272,9 +287,7 @@ export function RequestForm({
                           onSelect={field.onChange}
                           disabled={(date) => date <= new Date()}
                           initialFocus
-                          {...(field.value !== ""
-                            ? { selected: field.value }
-                            : {})}
+                          {...(field.value ? { selected: field.value } : {})}
                         />
                       </PopoverContent>
                     </Popover>
@@ -316,9 +329,7 @@ export function RequestForm({
                           onSelect={field.onChange}
                           disabled={(date) => date <= new Date()}
                           initialFocus
-                          {...(field.value !== ""
-                            ? { selected: field.value }
-                            : {})}
+                          {...(field.value ? { selected: field.value } : {})}
                         />
                       </PopoverContent>
                     </Popover>
@@ -337,7 +348,11 @@ export function RequestForm({
                     <FormLabel>Notice period</FormLabel>
                     <div className="relative">
                       <FormControl className="">
-                        <Input placeholder="Notice period" {...field} />
+                        <Input
+                          placeholder="Notice period"
+                          {...field}
+                          value={field.value || ""}
+                        />
                       </FormControl>
                       <InputBrand msg="days" />
                     </div>
@@ -445,6 +460,7 @@ export function RequestForm({
                         placeholder="Describe your project"
                         className="resize-none"
                         {...field}
+                        value={field.value || ""}
                       />
                     </FormControl>
                     <FormMessage />
@@ -468,7 +484,7 @@ export function RequestForm({
                 <Button
                   variant="subtle"
                   onClick={(e) => {
-                    setRes(draftSchema);
+                    resolverSchema.current = draftSchema;
 
                     e.target.dispatchEvent(
                       new Event("submit", {
@@ -483,7 +499,7 @@ export function RequestForm({
                 </Button>
                 <Button
                   onClick={(e) => {
-                    setRes(pendingSchema);
+                    resolverSchema.current = pendingSchema;
 
                     e.target.dispatchEvent(
                       new Event("submit", {

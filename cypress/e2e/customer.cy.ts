@@ -49,6 +49,8 @@ const fillForm = (skipName: boolean = false, skipProfile: boolean = false) => {
   // notice
   typeIntoInput("Notice period", "18");
 
+  selectFromDrop("Work location", "FULLY_REMOTE");
+
   if (!skipName) {
     typeIntoInput("Project name", "Some project");
   }
@@ -62,10 +64,10 @@ const fillForm = (skipName: boolean = false, skipProfile: boolean = false) => {
 
 describe("client postings", () => {
   beforeEach(() => {
-    cy.intercept({
-      method: "POST",
-      url: "/api/requests",
-    });
+    // cy.intercept({
+    //   method: "POST",
+    //   url: "/api/requests",
+    // });
 
     cy.visit("/customer");
   });
@@ -101,12 +103,21 @@ describe("client postings", () => {
   });
 
   describe("full request filling", () => {
-    it("should fill empty", () => {
-      fillForm();
+    const useTableRows = (fn: (el: JQuery<HTMLElement>) => void) => {
+      cy.findByRole("table").findAllByRole("row").then(fn);
+    };
 
-      cy.findByText("Submit request").click();
+    it.only("should fill empty", () => {
+      useTableRows(($rowsInit) => {
+        const initialCount = $rowsInit.length;
+        cy.log(`Rows init: ${initialCount}`);
+        fillForm();
+        cy.findByText("Submit request").click();
 
-      cy.findByText("Saved successfully").should("exist");
+        cy.findByRole("table")
+          .findAllByRole("row")
+          .should("have.length", initialCount + 1);
+      });
     });
   });
 });

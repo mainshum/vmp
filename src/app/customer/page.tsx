@@ -6,7 +6,7 @@ import { Request } from "@prisma/client";
 
 async function PageServer() {
   const requests = (await (
-    await fetch(`${getBaseUrl()}/api/requests`)
+    await fetch(`${getBaseUrl()}/api/requests`, { cache: "force-cache" })
   ).json()) as Request[];
 
   return (
