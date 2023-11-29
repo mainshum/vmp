@@ -6,15 +6,13 @@ import { Request } from "@prisma/client";
 
 async function PageServer() {
   const requests = (await (
-    await fetch(`${getBaseUrl()}/api/requests`, { cache: "force-cache" })
+    await fetch(`${getBaseUrl()}/api/requests`)
   ).json()) as Request[];
 
   return (
-    <Shell className="py-8">
-      <section className="flex flex-col">
-        <RequestsTable requests={requests} />
-      </section>
-    </Shell>
+    <section className="flex flex-col">
+      <RequestsTable requests={requests} />
+    </section>
   );
 }
 
