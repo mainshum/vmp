@@ -26,7 +26,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { format } from "date-fns";
 import { CalendarIcon } from "lucide-react";
 import { useAutoAnimate } from "@formkit/auto-animate/react";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { Textarea } from "@/components/ui/textarea";
 import {
   ProjectStage,
@@ -34,20 +34,21 @@ import {
   ProjectMethodology,
   WorkType,
   JobProfile,
+  Request,
+  RequestStatus,
 } from "@prisma/client";
 import React from "react";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { MyInput, MySelect, MySwitch } from "@/components/forms";
 import {
-  RequestMutationBody,
-  draftRequestSchema,
-  pendingRequestSchema,
+  RequestFormValues,
+  draftSchema,
+  pendingSchema,
 } from "@/types/prisma-types";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "./ui/dialog";
 import { NavigationBlocker } from "./navigation-blocker";
-
-const defaultNumber = "" as unknown as number;
+import { Noop } from "@/types/shared";
 
 function InputBrand({ msg }: { msg: string }) {
   return (
@@ -57,48 +58,88 @@ function InputBrand({ msg }: { msg: string }) {
   );
 }
 
-const submitRequest = async (request: RequestMutationBody) => {
-  const res = await fetch("/api/requests/create", {
-    body: JSON.stringify(request),
-    method: "POST",
-  });
+const submitRequest = async (
+  request: RequestFormValues,
+  status: RequestStatus,
+  id: string | undefined,
+) => {
+  const body = JSON.stringify({ ...request, status });
 
-  return await res.json();
+  const res = id
+    ? await fetch(`api/requests?id=${id}`, { method: "PUT", body })
+    : await fetch(`api/requests`, { method: "POST", body });
+
+  if (res.status !== 200) throw new Error(await res.json());
+
+  const json = await res.json();
+
+  return json;
 };
 
-type FieldVals = z.infer<typeof pendingRequestSchema>;
-
-export function RequestForm() {
+export function RequestForm({
+  request,
+  onCloseRequest,
+}: {
+  request?: Request;
+  onCloseRequest: Noop;
+}) {
   const { toast } = useToast();
 
-  const [res, setRes] = useState<z.ZodSchema>(draftRequestSchema);
+  const resolverSchema = useRef<z.ZodSchema>(draftSchema);
 
-  const form = useForm<FieldVals>({
-    resolver: zodResolver(res),
-    defaultValues: {
-      availability: 50,
-      description: "",
-      name: "",
-      hourlyRate: defaultNumber,
-      noticePeriod: defaultNumber,
-      domesticTravel: false,
-      fundingGuaranteed: false,
-      internationalTravel: false,
-      pmExists: false,
-      workSchema: {
-        workType: "FULLY_REMOTE",
-      },
+  const client = useQueryClient();
+
+  const form = useForm<RequestFormValues>({
+    resolver: (values) => {
+      const parsed = resolverSchema.current.safeParse(values);
+
+      return {
+        values: !parsed.success ? {} : values,
+        errors: parsed.success
+          ? {}
+          : parsed.error.errors.reduce((acc, currentError) => {
+              return {
+                ...acc,
+                [currentError.path[0]]: currentError,
+              };
+            }, {}),
+      };
     },
+    defaultValues: {
+      availability: request?.availability || 50,
+      description: request?.description,
+      workType: request?.workType,
+      domesticTravel: request?.domesticTravel || false,
+      internationalTravel: request?.internationalTravel || false,
+      startDate: request?.startDate ? new Date(request.startDate) : undefined,
+      endDate: request?.endDate ? new Date(request.endDate) : undefined,
+      fundingGuaranteed: request?.fundingGuaranteed || false,
+      hourlyRate: request?.hourlyRate,
+      noticePeriod: request?.noticePeriod,
+      name: request?.name || "",
+      pmExists: request?.pmExists || false,
+      profile: request?.profile,
+      projectDuration: request?.projectDuration,
+      projectMethodology: request?.projectMethodology,
+      projectStage: request?.projectStage,
+      officeLocation: request?.officeLocation,
+      daysInOffice: request?.daysInOffice,
+    } satisfies RequestFormValues,
   });
 
   const clearFormAndClose = () => {
     form.reset();
-    setFormOpen(false);
     setBlockerOpen(false);
+    onCloseRequest();
   };
 
   const { mutate } = useMutation({
-    mutationFn: (xs: FieldVals) => submitRequest(xs),
+    mutationFn: (xs: RequestFormValues) =>
+      submitRequest(
+        xs,
+        resolverSchema.current === draftSchema ? "DRAFT" : "PENDING",
+        request?.id,
+      ),
     onMutate: () => {
       clearFormAndClose();
       toast({ title: "Saving request..." });
@@ -114,39 +155,40 @@ export function RequestForm() {
         title: "Saved successfully",
         description: `Request ${name} has been saved`,
       });
+      client.invalidateQueries({ queryKey: ["requests"] });
     },
   });
 
   const [availabilityRef] = useAutoAnimate();
   const [officeLocationRef] = useAutoAnimate();
 
-  const workType = form.watch("workSchema")?.workType;
+  const workType = form.watch("workType");
 
-  const showOfficeLocation = workType !== "FULLY_REMOTE";
+  const showOfficeLocation = workType === "ONSITE" || workType === "HYBRID";
   const showDaysInOffice = workType === "HYBRID";
 
   const [blockerOpen, setBlockerOpen] = useState<boolean>(false);
-  const [formOpen, setFormOpen] = useState<boolean>(false);
 
-  const onFormOpenChange = (direction: boolean) => {
-    // direction = false => form wants to close
-    if (!direction && form.formState.isDirty) return setBlockerOpen(true);
+  const onFormOpenChange = () => {
+    if (!blockerOpen && Object.keys(form.formState.dirtyFields).length > 0)
+      return setBlockerOpen(true);
 
-    return setFormOpen(false);
+    onCloseRequest();
   };
+
+  const dialogTitle = request?.id ? "Edit request" : "New job request";
 
   return (
     <React.Fragment>
-      <Button onClick={() => setFormOpen(true)}>Create new request</Button>
       <NavigationBlocker
         open={blockerOpen}
         onAction={clearFormAndClose}
         onCancel={() => setBlockerOpen(false)}
       />
-      <Dialog open={formOpen} onOpenChange={onFormOpenChange}>
+      <Dialog defaultOpen onOpenChange={onFormOpenChange}>
         <DialogContent className="max-h-full overflow-y-auto overflow-x-hidden sm:max-h-[75%]">
           <DialogHeader>
-            <DialogTitle className="pb-4">Job request</DialogTitle>
+            <DialogTitle className="pb-4">{dialogTitle}</DialogTitle>
           </DialogHeader>
           <Form {...form}>
             <form
@@ -174,7 +216,11 @@ export function RequestForm() {
                     <FormLabel>Hourly rate</FormLabel>
                     <div className="relative">
                       <FormControl className="">
-                        <Input placeholder="Hourly rate" {...field} />
+                        <Input
+                          placeholder="Hourly rate"
+                          {...field}
+                          value={field.value ? field.value : ""}
+                        />
                       </FormControl>
                       <InputBrand msg="PLN/hour" />
                     </div>
@@ -201,7 +247,6 @@ export function RequestForm() {
                         />
                       </FormControl>
                       <span
-                        key={field.value}
                         className={cn(
                           "whitespace-nowrap font-normal text-muted-foreground",
                         )}
@@ -239,10 +284,10 @@ export function RequestForm() {
                       <PopoverContent className="w-auto p-0" align="center">
                         <Calendar
                           mode="single"
-                          selected={field.value}
                           onSelect={field.onChange}
                           disabled={(date) => date <= new Date()}
                           initialFocus
+                          {...(field.value ? { selected: field.value } : {})}
                         />
                       </PopoverContent>
                     </Popover>
@@ -281,10 +326,10 @@ export function RequestForm() {
                       <PopoverContent className="w-auto p-0" align="center">
                         <Calendar
                           mode="single"
-                          selected={field.value}
                           onSelect={field.onChange}
                           disabled={(date) => date <= new Date()}
                           initialFocus
+                          {...(field.value ? { selected: field.value } : {})}
                         />
                       </PopoverContent>
                     </Popover>
@@ -303,7 +348,11 @@ export function RequestForm() {
                     <FormLabel>Notice period</FormLabel>
                     <div className="relative">
                       <FormControl className="">
-                        <Input placeholder="Notice period" {...field} />
+                        <Input
+                          placeholder="Notice period"
+                          {...field}
+                          value={field.value || ""}
+                        />
                       </FormControl>
                       <InputBrand msg="days" />
                     </div>
@@ -314,7 +363,7 @@ export function RequestForm() {
               <section ref={officeLocationRef}>
                 <MySelect
                   control={form.control}
-                  name="workSchema.workType"
+                  name="workType"
                   label="Work location"
                   placeholder="Select work location"
                 >
@@ -331,7 +380,7 @@ export function RequestForm() {
                 {showDaysInOffice && (
                   <MyInput
                     control={form.control}
-                    name="workSchema.daysInOffice"
+                    name="daysInOffice"
                     label="Days in office"
                     placeholder="Days in office"
                   />
@@ -339,7 +388,7 @@ export function RequestForm() {
                 {showOfficeLocation && (
                   <MyInput
                     control={form.control}
-                    name="workSchema.officeLocation"
+                    name="officeLocation"
                     label="Office location"
                     placeholder="City where the office is located"
                   />
@@ -411,6 +460,7 @@ export function RequestForm() {
                         placeholder="Describe your project"
                         className="resize-none"
                         {...field}
+                        value={field.value || ""}
                       />
                     </FormControl>
                     <FormMessage />
@@ -434,10 +484,13 @@ export function RequestForm() {
                 <Button
                   variant="subtle"
                   onClick={(e) => {
-                    setRes(draftRequestSchema);
+                    resolverSchema.current = draftSchema;
 
                     e.target.dispatchEvent(
-                      new Event("submit", { cancelable: true, bubbles: true }),
+                      new Event("submit", {
+                        cancelable: true,
+                        bubbles: true,
+                      }),
                     );
                   }}
                   type="submit"
@@ -446,10 +499,13 @@ export function RequestForm() {
                 </Button>
                 <Button
                   onClick={(e) => {
-                    setRes(pendingRequestSchema);
+                    resolverSchema.current = pendingSchema;
 
                     e.target.dispatchEvent(
-                      new Event("submit", { cancelable: true, bubbles: true }),
+                      new Event("submit", {
+                        cancelable: true,
+                        bubbles: true,
+                      }),
                     );
                   }}
                 >

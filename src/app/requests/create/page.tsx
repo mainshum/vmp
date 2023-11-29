@@ -1,5 +1,6 @@
 import { getVMPSession } from "@/lib/auth";
 import { RequestForm } from "../../../components/create-request";
+import { noop } from "@/lib/utils";
 
 async function Page() {
   //console.log(process.env);
@@ -9,7 +10,7 @@ async function Page() {
 
   return (
     <div className="py-8">
-      <RequestForm />
+      <RequestForm onCloseRequest={noop} />
     </div>
   );
 }

@@ -107,7 +107,12 @@ export function MyInput<
         <FormItem>
           <FormLabel>{label}</FormLabel>
           <FormControl>
-            <Input disabled={disabled} placeholder={placeholder} {...field} />
+            <Input
+              disabled={disabled}
+              placeholder={placeholder}
+              {...field}
+              value={field.value || ""}
+            />
           </FormControl>
           {description && <FormDescription>{description}</FormDescription>}
           <FormMessage />

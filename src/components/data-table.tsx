@@ -17,6 +17,7 @@ import {
   TableCell,
 } from "./ui/table";
 import React from "react";
+import { useAutoAnimate } from "@formkit/auto-animate/react";
 
 interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[];
@@ -69,7 +70,10 @@ export function DataTable<TData, TValue>({
               <TableRow data-state={row.getIsSelected() && "selected"}>
                 {row.getVisibleCells().map((cell) => (
                   <TableCell key={cell.id}>
-                    {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                    {flexRender(cell.column.columnDef.cell, {
+                      ...cell.getContext(),
+                      dupa: 13,
+                    })}
                   </TableCell>
                 ))}
               </TableRow>

@@ -13,8 +13,14 @@ export type NullableFields<T> = {
   [P in keyof T]: Nullalble<T[P]>;
 };
 
+export type FormPrep<T> = {
+  [P in keyof T]: null extends T[P] ? T[P] | undefined : T[P];
+};
+
 export type Noop = () => void;
 
 export type UDef<T> = {
   [P in keyof T]?: T[P] | undefined | string | "";
 };
+
+export type Action<T> = (arg: T) => void;
