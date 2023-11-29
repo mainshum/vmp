@@ -6,7 +6,7 @@ async function Page() {
   return (
     <div className="center-absolute">
       <div className="flex h-full w-[500px] flex-col items-center justify-center gap-2">
-        <Icons.logo className="h-6 w-6" />
+        <Icons.logo />
         <h1 className="text-2xl font-semibold tracking-tight">VMP</h1>
         <SignUpForm />
         <p className="text-sm text-zinc-700">
