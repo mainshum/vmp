@@ -50,15 +50,16 @@ export function MySelect<
   name: ControllerProps<TFieldValues, TName>["name"];
   label: string;
   placeholder: string;
+  id?: string;
   children: React.ReactNode;
 }) {
-  const { control, name, children, label, placeholder } = props;
+  const { control, name, children, label, placeholder, id } = props;
   return (
     <FormField
       control={control}
       name={name}
       render={({ field }) => (
-        <FormItem>
+        <FormItem {...(id ? { id } : {})}>
           <FormLabel>{label}</FormLabel>
           <Select onValueChange={field.onChange} defaultValue={field.value}>
             <FormControl>
@@ -84,6 +85,7 @@ type MyIputProps<
   label: string;
   placeholder: string;
   description?: string;
+  id?: string;
   disabled?: boolean;
 };
 
@@ -97,6 +99,7 @@ export function MyInput<
     description,
     label,
     placeholder,
+    id,
     disabled = false,
   } = props;
   return (
@@ -104,7 +107,7 @@ export function MyInput<
       control={control}
       name={name}
       render={({ field }) => (
-        <FormItem>
+        <FormItem {...(id ? { id } : {})}>
           <FormLabel>{label}</FormLabel>
           <FormControl>
             <Input
@@ -212,6 +215,7 @@ export function MySwitch<
   control: ControllerProps<TFieldValues, TName>["control"];
   name: ControllerProps<TFieldValues, TName>["name"];
   label: string;
+  id?: string;
   description?: string;
 }) {
   const { control, name, description, label } = props;
@@ -221,7 +225,10 @@ export function MySwitch<
       name={name}
       render={({ field }) => {
         return (
-          <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+          <FormItem
+            {...(props.id ? { id: props.id } : {})}
+            className="flex flex-row items-center justify-between rounded-lg border p-4"
+          >
             <div className="space-y-0.5">
               <FormLabel className="text-base">{label}</FormLabel>
               {description && <FormDescription>{description}</FormDescription>}

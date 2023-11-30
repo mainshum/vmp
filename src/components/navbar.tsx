@@ -4,7 +4,7 @@ import { UserCircle } from "lucide-react";
 
 function Navbar() {
   return (
-    <header className="fixed inset-x-0 top-0 z-[10] flex justify-center border-b bg-black py-2">
+    <header className="fixed inset-x-0 top-0 z-[10] flex h-[56px] justify-center border-b bg-black py-2">
       <nav className="flex w-full items-center justify-between px-6">
         <Link href="/" className="flex items-center gap-3">
           <Icons.logo />

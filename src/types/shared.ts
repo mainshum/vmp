@@ -23,4 +23,7 @@ export type UDef<T> = {
   [P in keyof T]?: T[P] | undefined | string | "";
 };
 
+// eslint-disable-next-line no-unused-vars
 export type Action<T> = (arg: T) => void;
+
+export type Children = React.ReactNode;
