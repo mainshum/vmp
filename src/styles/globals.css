@@ -76,4 +76,10 @@
   .center-absolute {
     @apply absolute inset-0 flex items-center justify-center py-64;
   }
+  .hop-anchor {
+    position: relative;
+    top: -66px;
+    display: block;
+    visibility: hidden;
+  }
 }

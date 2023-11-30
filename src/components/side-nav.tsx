@@ -1,5 +1,4 @@
 import { cn } from "@/lib/utils";
-import { Children } from "@/types/shared";
 import React from "react";
 
 const SideNav = React.forwardRef<
@@ -11,7 +10,7 @@ const SideNav = React.forwardRef<
       ref={ref}
       {...props}
       className={cn(
-        "fixed top-[56px] hidden h-full flex-col items-center bg-slate-50 md:flex md:w-60",
+        "hidden h-full flex-col items-center bg-slate-50 md:flex md:w-80",
         className,
       )}
     >
