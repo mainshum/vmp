@@ -20,7 +20,7 @@ async function Page({ searchParams }: PageParams) {
   // TODO proper redirects structure
   const session = useCommonRedirects(mSession);
 
-  if (session.user.role !== "NONE") redirect(ROUTES.CUSTOMER.POSTINGS);
+  if (session.user.role !== "NONE") redirect(ROUTES.CUSTOMER.REQUESTS);
 
   if (searchParams["type"] === "vendor") return <VendorRegister />;
 

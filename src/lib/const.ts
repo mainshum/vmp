@@ -6,7 +6,7 @@ export const ROUTES = {
   SIGIN: "/sign-in",
   ROLE_SELECT: "/role-select",
   CUSTOMER: {
-    POSTINGS: "/customer",
+    REQUESTS: "/customer/requests",
     SETTINGS: {
       COMPANY: "/settings/company",
       BUYER: "/settings/buyer",

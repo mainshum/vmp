@@ -14,7 +14,7 @@ async function Page() {
 
   return match(session.user.role)
     .with("NONE", () => <RoleSelect />)
-    .with("CLIENT", () => redirect(ROUTES.CUSTOMER.POSTINGS))
+    .with("CLIENT", () => redirect(ROUTES.CUSTOMER.REQUESTS))
     .otherwise((r) => {
       throw new RoleNotImplementedError(r);
     });
