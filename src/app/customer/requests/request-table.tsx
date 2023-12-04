@@ -18,7 +18,7 @@ import React, { useContext } from "react";
 import { Action } from "@/types/shared";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
-import { RequestForm } from "@/components/request-form";
+import { EditRequestForm } from "@/components/request-form";
 import { Request } from "@prisma/client";
 import { match } from "ts-pattern";
 
@@ -169,8 +169,10 @@ export function RequestsTable({ requests }: { requests: Request[] }) {
       </Button>
       {match(edited)
         .with({ type: "none" }, () => null)
-        .with({ type: "edit" }, ({ data }) => <RequestForm request={data} />)
-        .with({ type: "new" }, () => <RequestForm />)
+        .with({ type: "edit" }, ({ data }) => (
+          <EditRequestForm request={data} />
+        ))
+        .with({ type: "new" }, () => <EditRequestForm />)
         .exhaustive()}
       <DataTable
         columns={opsColumns}

@@ -8,7 +8,7 @@ export const RequestModel = z.object({
   validUntil: z.date().nullish(),
   creationDate: z.date().nullish(),
   status: z.nativeEnum(RequestStatus),
-  name: z.string().min(3, { message: "Minimum of 3 characters" }).nullish(),
+  name: z.string().min(3, { message: "Minimum of 3 characters" }),
   workType: z.nativeEnum(WorkType).nullish(),
   projectStage: z.nativeEnum(ProjectStage).nullish(),
   projectDuration: z.nativeEnum(ProjectDuration).nullish(),

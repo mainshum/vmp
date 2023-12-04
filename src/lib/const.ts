@@ -16,7 +16,9 @@ export const ROUTES = {
   API: {
     CLIENT_REGISTER: "/api/customer/register",
     CUSTOMER: {
-      POSTINGS: "/customer",
+      REQUESTS: {
+        ONE: (id: string) => `/api/customer/requests/${id}`,
+      },
     },
   },
 };

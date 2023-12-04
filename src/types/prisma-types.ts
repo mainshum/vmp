@@ -17,15 +17,12 @@ import {
   positiveInteger15,
   stringMin3,
 } from "./prisma-extensions";
-import { FormPrep } from "./shared";
 
 export type MutationRequest = Omit<
   Request,
   "id" | "validUntil" | "creationDate" | "status"
 >;
-export type RequestFormValues = FormPrep<
-  Omit<MutationRequest, "status" | "id">
->;
+export type RequestFormValues = Omit<MutationRequest, "status" | "id">;
 
 // db level
 export const pendingSchema = z

@@ -38,7 +38,7 @@ import {
   RequestStatus,
 } from "@prisma/client";
 import React from "react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { MyInput, MySelect, MySwitch } from "@/components/forms";
 import {
@@ -48,6 +48,12 @@ import {
 } from "@/types/prisma-types";
 import { NavigationBlocker } from "./navigation-blocker";
 import { Noop } from "@/types/shared";
+import { getRequest } from "@/lib/data";
+import { useSearchParams } from "next/navigation";
+import { is } from "cypress/types/bluebird";
+import { RequestModel } from "../../prisma/zod/request";
+import { ROUTES } from "@/lib/const";
+import Loader from "@/app/customer/loading";
 
 function InputBrand({ msg }: { msg: string }) {
   return (
@@ -57,6 +63,7 @@ function InputBrand({ msg }: { msg: string }) {
   );
 }
 
+//TODO: split innto POST and PUT functions
 const submitRequest = async (
   request: RequestFormValues,
   status: RequestStatus,
@@ -65,8 +72,11 @@ const submitRequest = async (
   const body = JSON.stringify({ ...request, status });
 
   const res = id
-    ? await fetch(`api/requests?id=${id}`, { method: "PUT", body })
-    : await fetch(`api/requests`, { method: "POST", body });
+    ? await fetch(ROUTES.API.CUSTOMER.REQUESTS.ONE(id), { method: "PUT", body })
+    : await fetch(ROUTES.API.CUSTOMER.REQUESTS.ONE(""), {
+        method: "POST",
+        body,
+      });
 
   if (res.status !== 200) throw new Error(await res.json());
 
@@ -75,7 +85,28 @@ const submitRequest = async (
   return json;
 };
 
-export function RequestForm({ request }: { request?: Request }) {
+export function RequestForm() {
+  const requestId = useSearchParams().get("requestId");
+
+  const { data, isLoading } = useQuery({
+    queryKey: ["requests", requestId],
+    queryFn: async () => {
+      if (!requestId) return undefined;
+      const request = await getRequest(requestId);
+      return request;
+    },
+    enabled: !!requestId,
+    throwOnError: true,
+  });
+
+  return isLoading ? <Loader /> : <EditRequestForm data={data} />;
+}
+
+function EditRequestForm({
+  data,
+}: {
+  data: z.infer<typeof RequestModel> | undefined;
+}) {
   const { toast } = useToast();
 
   const resolverSchema = useRef<z.ZodSchema>(draftSchema);
@@ -99,25 +130,25 @@ export function RequestForm({ request }: { request?: Request }) {
       };
     },
     defaultValues: {
-      availability: request?.availability || 50,
-      description: request?.description,
-      workType: request?.workType,
-      domesticTravel: request?.domesticTravel || false,
-      internationalTravel: request?.internationalTravel || false,
-      startDate: request?.startDate ? new Date(request.startDate) : undefined,
-      endDate: request?.endDate ? new Date(request.endDate) : undefined,
-      fundingGuaranteed: request?.fundingGuaranteed || false,
-      hourlyRate: request?.hourlyRate,
-      noticePeriod: request?.noticePeriod,
-      name: request?.name || "",
-      pmExists: request?.pmExists || false,
-      profile: request?.profile,
-      projectDuration: request?.projectDuration,
-      projectMethodology: request?.projectMethodology,
-      projectStage: request?.projectStage,
-      officeLocation: request?.officeLocation,
-      daysInOffice: request?.daysInOffice,
-    } satisfies RequestFormValues,
+      availability: data?.availability || 50,
+      description: data?.description || "",
+      workType: data?.workType || undefined,
+      domesticTravel: data?.domesticTravel || false,
+      internationalTravel: data?.internationalTravel || false,
+      startDate: data?.startDate ? new Date(data.startDate) : undefined,
+      endDate: data?.endDate ? new Date(data.endDate) : new Date(),
+      fundingGuaranteed: data?.fundingGuaranteed || false,
+      hourlyRate: data?.hourlyRate || ("" as unknown as number),
+      noticePeriod: data?.noticePeriod || ("" as unknown as number),
+      name: data?.name || "",
+      pmExists: data?.pmExists || false,
+      profile: data?.profile || undefined,
+      projectDuration: data?.projectDuration || undefined,
+      projectMethodology: data?.projectMethodology || undefined,
+      projectStage: data?.projectStage || undefined,
+      officeLocation: data?.officeLocation,
+      daysInOffice: data?.daysInOffice,
+    },
   });
 
   const clearFormAndClose = () => {
@@ -129,7 +160,7 @@ export function RequestForm({ request }: { request?: Request }) {
       submitRequest(
         xs,
         resolverSchema.current === draftSchema ? "DRAFT" : "PENDING",
-        request?.id,
+        data?.id,
       ),
     onMutate: () => {
       clearFormAndClose();
@@ -142,11 +173,12 @@ export function RequestForm({ request }: { request?: Request }) {
       });
     },
     onSuccess: (_x, { name }) => {
+      debugger;
       toast({
         title: "Saved successfully",
         description: `Request ${name} has been saved`,
       });
-      client.invalidateQueries({ queryKey: ["requests"] });
+      client.invalidateQueries({ queryKey: ["requests", data?.id] });
     },
   });
 
