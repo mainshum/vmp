@@ -24,3 +24,19 @@ export const postNewRequest = async (req: RequestFormModel) => {
 
   return json;
 };
+
+export const putRequest = async (id: string, req: RequestFormModel) => {
+  const res = await fetch(
+    `${getBaseUrl()}${ROUTES.API.CUSTOMER.REQUESTS.PUT(id)}`,
+    {
+      method: "PUT",
+      body: JSON.stringify(req),
+    },
+  );
+
+  const json = await res.json();
+
+  if (res.status !== 200) throw new Error(json);
+
+  return json;
+};

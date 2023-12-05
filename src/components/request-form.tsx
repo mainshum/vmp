@@ -38,7 +38,7 @@ import React from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { MyInput, MySelect, MySwitch } from "@/components/forms";
-import { getRequest, postNewRequest } from "@/lib/data";
+import { getRequest, postNewRequest, putRequest } from "@/lib/data";
 import { useSearchParams } from "next/navigation";
 import { ROUTES } from "@/lib/const";
 import Loader from "@/app/customer/loading";
@@ -101,12 +101,10 @@ function EditRequestForm({ data }: { data: RequestModel | undefined }) {
     },
   });
 
-  console.log(form.formState.errors);
-
   const { mutate } = useMutation({
     mutationFn: (xs: RequestFormModel) => {
-      debugger;
-      // TODO put
+      if (data?.id) return putRequest(data.id, xs);
+
       return postNewRequest(xs);
     },
     onMutate: () => {
