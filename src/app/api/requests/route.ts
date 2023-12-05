@@ -1,5 +1,5 @@
 import { db } from "@/lib/db";
-import { draftSchema, pendingSchema } from "@/types/prisma-types";
+import { draftSchema, RequestFormModel } from "@/types/prisma-types";
 import { RequestStatus } from "@prisma/client";
 import { NextRequest } from "next/server";
 import { z } from "zod";
@@ -29,7 +29,7 @@ export async function POST(req: Request) {
   const data =
     status.data.status === "DRAFT"
       ? draftSchema.safeParse(body)
-      : pendingSchema.safeParse(body);
+      : RequestFormModel.safeParse(body);
 
   if (!data.success)
     return new Response(data.error.message, {
@@ -67,7 +67,7 @@ export async function PUT(req: NextRequest) {
   const data =
     status.data.status === "DRAFT"
       ? draftSchema.safeParse(body)
-      : pendingSchema.safeParse(body);
+      : RequestFormModel.safeParse(body);
 
   if (!data.success)
     return new Response(data.error.message, {

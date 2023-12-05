@@ -1,5 +1,4 @@
 "use client";
-import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 
 import { Button } from "@/components/ui/button";
@@ -14,6 +13,7 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
 import { SelectItem } from "@/components/ui/select";
 import { Slider } from "@/components/ui/slider";
 import { cn } from "@/lib/utils";
@@ -24,9 +24,8 @@ import {
 } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import { format } from "date-fns";
-import { CalendarIcon, Link } from "lucide-react";
+import { CalendarIcon } from "lucide-react";
 import { useAutoAnimate } from "@formkit/auto-animate/react";
-import { useRef, useState } from "react";
 import { Textarea } from "@/components/ui/textarea";
 import {
   ProjectStage,
@@ -34,26 +33,17 @@ import {
   ProjectMethodology,
   WorkType,
   JobProfile,
-  Request,
-  RequestStatus,
 } from "@prisma/client";
 import React from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { MyInput, MySelect, MySwitch } from "@/components/forms";
-import {
-  RequestFormValues,
-  draftSchema,
-  pendingSchema,
-} from "@/types/prisma-types";
-import { NavigationBlocker } from "./navigation-blocker";
-import { Noop } from "@/types/shared";
-import { getRequest } from "@/lib/data";
+import { getRequest, postNewRequest } from "@/lib/data";
 import { useSearchParams } from "next/navigation";
-import { is } from "cypress/types/bluebird";
-import { RequestModel } from "../../prisma/zod/request";
 import { ROUTES } from "@/lib/const";
 import Loader from "@/app/customer/loading";
+import { useRouter } from "next/navigation";
+import { RequestFormModel, RequestModel } from "@/types/request";
 
 function InputBrand({ msg }: { msg: string }) {
   return (
@@ -62,28 +52,6 @@ function InputBrand({ msg }: { msg: string }) {
     </span>
   );
 }
-
-//TODO: split innto POST and PUT functions
-const submitRequest = async (
-  request: RequestFormValues,
-  status: RequestStatus,
-  id: string | undefined,
-) => {
-  const body = JSON.stringify({ ...request, status });
-
-  const res = id
-    ? await fetch(ROUTES.API.CUSTOMER.REQUESTS.ONE(id), { method: "PUT", body })
-    : await fetch(ROUTES.API.CUSTOMER.REQUESTS.ONE(""), {
-        method: "POST",
-        body,
-      });
-
-  if (res.status !== 200) throw new Error(await res.json());
-
-  const json = await res.json();
-
-  return json;
-};
 
 export function RequestForm() {
   const requestId = useSearchParams().get("requestId");
@@ -102,33 +70,14 @@ export function RequestForm() {
   return isLoading ? <Loader /> : <EditRequestForm data={data} />;
 }
 
-function EditRequestForm({
-  data,
-}: {
-  data: z.infer<typeof RequestModel> | undefined;
-}) {
+function EditRequestForm({ data }: { data: RequestModel | undefined }) {
   const { toast } = useToast();
 
-  const resolverSchema = useRef<z.ZodSchema>(draftSchema);
-
   const client = useQueryClient();
+  const router = useRouter();
 
-  const form = useForm<RequestFormValues>({
-    resolver: (values) => {
-      const parsed = resolverSchema.current.safeParse(values);
-
-      return {
-        values: !parsed.success ? {} : values,
-        errors: parsed.success
-          ? {}
-          : parsed.error.errors.reduce((acc, currentError) => {
-              return {
-                ...acc,
-                [currentError.path[0]]: currentError,
-              };
-            }, {}),
-      };
-    },
+  const form = useForm<RequestFormModel>({
+    resolver: zodResolver(RequestFormModel),
     defaultValues: {
       availability: data?.availability || 50,
       description: data?.description || "",
@@ -148,22 +97,19 @@ function EditRequestForm({
       projectStage: data?.projectStage || undefined,
       officeLocation: data?.officeLocation,
       daysInOffice: data?.daysInOffice,
+      status: "PENDING",
     },
   });
 
-  const clearFormAndClose = () => {
-    form.reset();
-  };
+  console.log(form.formState.errors);
 
   const { mutate } = useMutation({
-    mutationFn: (xs: RequestFormValues) =>
-      submitRequest(
-        xs,
-        resolverSchema.current === draftSchema ? "DRAFT" : "PENDING",
-        data?.id,
-      ),
+    mutationFn: (xs: RequestFormModel) => {
+      debugger;
+      // TODO put
+      return postNewRequest(xs);
+    },
     onMutate: () => {
-      clearFormAndClose();
       toast({ title: "Saving request..." });
     },
     onError: () => {
@@ -172,13 +118,14 @@ function EditRequestForm({
         description: "Please try resubmitting the form",
       });
     },
-    onSuccess: (_x, { name }) => {
-      debugger;
+    onSuccess: ({ name, id }) => {
       toast({
         title: "Saved successfully",
         description: `Request ${name} has been saved`,
       });
-      client.invalidateQueries({ queryKey: ["requests", data?.id] });
+      client.invalidateQueries({ queryKey: ["requests", id] });
+
+      router.push(ROUTES.CUSTOMER.REQUESTS.ONE(id));
     },
   });
 
@@ -210,6 +157,11 @@ function EditRequestForm({
             </SelectItem>
           ))}
         </MySelect>
+        <FormField
+          control={form.control}
+          name="status"
+          render={({ field }) => <Input className="hidden" {...field} />}
+        />
         <FormField
           control={form.control}
           name="hourlyRate"
@@ -479,35 +431,8 @@ function EditRequestForm({
           description="Check if project is managed by a Project Manager"
         />
         <section className="flex justify-end gap-4">
-          <Button
-            variant="subtle"
-            onClick={(e) => {
-              resolverSchema.current = draftSchema;
-
-              e.target.dispatchEvent(
-                new Event("submit", {
-                  cancelable: true,
-                  bubbles: true,
-                }),
-              );
-            }}
-            type="submit"
-          >
-            Save as draft
-          </Button>
-          <Button
-            onClick={(e) => {
-              resolverSchema.current = pendingSchema;
-
-              e.target.dispatchEvent(
-                new Event("submit", {
-                  cancelable: true,
-                  bubbles: true,
-                }),
-              );
-            }}
-          >
-            Submit request
+          <Button onClick={form.handleSubmit((e) => mutate(e))}>
+            Next page
           </Button>
         </section>
       </form>

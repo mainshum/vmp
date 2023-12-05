@@ -1,7 +1,6 @@
 import { db } from "@/lib/db";
-import { draftSchema, PendingRequest } from "@/types/prisma-types";
+import { draftSchema, RequestFormModel } from "@/types/prisma-types";
 import { RequestStatus } from "@prisma/client";
-import { revalidatePath } from "next/cache";
 import { NextRequest } from "next/server";
 import { z } from "zod";
 
@@ -32,7 +31,7 @@ export async function PUT(req: NextRequest, { params }: ReqParams) {
   const data =
     status.data.status === "DRAFT"
       ? draftSchema.safeParse(body)
-      : PendingRequest.safeParse(body);
+      : RequestFormModel.safeParse(body);
 
   if (!data.success)
     return new Response(data.error.message, {
