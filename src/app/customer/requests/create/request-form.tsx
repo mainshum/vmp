@@ -1,5 +1,4 @@
 "use client";
-import * as z from "zod";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -38,7 +37,7 @@ import React from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { MyInput, MySelect, MySwitch } from "@/components/forms";
-import { getRequest, postNewRequest, putRequest } from "@/lib/data";
+import { RequestClient } from "@/lib/data";
 import { useSearchParams } from "next/navigation";
 import { ROUTES } from "@/lib/const";
 import Loader from "@/app/customer/loading";
@@ -57,11 +56,10 @@ export function RequestForm() {
   const requestId = useSearchParams().get("requestId");
 
   const { data, isLoading } = useQuery({
-    queryKey: ["requests", requestId],
+    queryKey: ["customer", "requests", requestId],
     queryFn: async () => {
       if (!requestId) return undefined;
-      const request = await getRequest(requestId);
-      return request;
+      return await RequestClient.get(requestId);
     },
     enabled: !!requestId,
     throwOnError: true,
@@ -95,17 +93,17 @@ function EditRequestForm({ data }: { data: RequestModel | undefined }) {
       projectDuration: data?.projectDuration || undefined,
       projectMethodology: data?.projectMethodology || undefined,
       projectStage: data?.projectStage || undefined,
-      officeLocation: data?.officeLocation,
-      daysInOffice: data?.daysInOffice,
+      officeLocation: data?.officeLocation || "",
+      daysInOffice: data?.daysInOffice || ("" as unknown as number),
       status: "PENDING",
     },
   });
 
   const { mutate } = useMutation({
     mutationFn: (xs: RequestFormModel) => {
-      if (data?.id) return putRequest(data.id, xs);
+      if (data?.id) return RequestClient.put(data.id, xs);
 
-      return postNewRequest(xs);
+      return RequestClient.post(xs);
     },
     onMutate: () => {
       toast({ title: "Saving request..." });
@@ -121,7 +119,7 @@ function EditRequestForm({ data }: { data: RequestModel | undefined }) {
         title: "Saved successfully",
         description: `Request ${name} has been saved`,
       });
-      client.invalidateQueries({ queryKey: ["requests", id] });
+      client.invalidateQueries({ queryKey: ["customer", "requests", id] });
 
       router.push(ROUTES.CUSTOMER.REQUESTS.ONE(id));
     },

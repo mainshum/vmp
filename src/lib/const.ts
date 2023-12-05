@@ -20,8 +20,10 @@ export const ROUTES = {
     CLIENT_REGISTER: "/api/customer/register",
     CUSTOMER: {
       REQUESTS: {
-        PUT: (id: string) => `/api/customer/requests/${id}`,
+        LIST: "/api/customer/requests",
         POST: "/api/customer/requests",
+        PUT: (id: string) => `/api/customer/requests/${id}`,
+        DELETE: (id: string) => `/api/customer/requests/${id}`,
       },
     },
   },

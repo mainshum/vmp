@@ -1,4 +1,4 @@
-import { RequestForm } from "@/components/request-form";
+import { RequestForm } from "@/app/customer/requests/create/request-form";
 import SideNav from "@/components/side-nav";
 import { Children } from "@/types/shared";
 import { Circle } from "lucide-react";

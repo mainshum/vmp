@@ -1,13 +1,9 @@
 import { RequestsTable } from "./request-table";
 
-import { Shell } from "@/components/shell";
-import { getBaseUrl } from "@/lib/utils";
-import { Request } from "@prisma/client";
+import { RequestClient } from "@/lib/data";
 
 async function PageServer() {
-  const requests = (await (
-    await fetch(`${getBaseUrl()}/api/requests`)
-  ).json()) as Request[];
+  const requests = await RequestClient.getAll();
 
   return (
     <section className="flex flex-col">
