@@ -31,7 +31,7 @@ export default async function RootLayout({
       <body className="min-h-screen antialiased">
         <NextAuthProvider>
           <TenstackProvider>
-            <Navbar />
+            <Navbar pathName="" />
             <main className="h-full pt-[56px]">{children}</main>
             <Toaster />
           </TenstackProvider>

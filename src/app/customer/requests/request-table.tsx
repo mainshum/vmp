@@ -22,6 +22,7 @@ import { Request } from "@prisma/client";
 import Link from "next/link";
 import { ROUTES } from "@/lib/const";
 import { RequestClient } from "@/lib/data";
+import { Shell } from "@/components/shell";
 
 const chevronClasses = "h-4 w-4";
 
@@ -146,13 +147,15 @@ export function RequestsTable({ requests }: { requests: RequestTableRow[] }) {
         handleRequestRemoval,
       }}
     >
-      <DataTable
-        columns={opsColumns}
-        data={data}
-        renderSubComponent={({ row }) => (
-          <OffersTable opportunityId={row.original.id} />
-        )}
-      />
+      <Shell className="container">
+        <DataTable
+          columns={opsColumns}
+          data={data}
+          renderSubComponent={({ row }) => (
+            <OffersTable opportunityId={row.original.id} />
+          )}
+        />
+      </Shell>
     </ctx.Provider>
   );
 }
