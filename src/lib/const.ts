@@ -6,7 +6,11 @@ export const ROUTES = {
   SIGIN: "/sign-in",
   ROLE_SELECT: "/role-select",
   CUSTOMER: {
-    POSTINGS: "/customer",
+    REQUESTS: {
+      LIST: "/customer/requests",
+      CREATE: "/customer/requests/create",
+      ONE: (id: string) => `/customer/requests/create?requestId=${id}`,
+    },
     SETTINGS: {
       COMPANY: "/settings/company",
       BUYER: "/settings/buyer",
@@ -16,7 +20,12 @@ export const ROUTES = {
   API: {
     CLIENT_REGISTER: "/api/customer/register",
     CUSTOMER: {
-      POSTINGS: "/customer",
+      REQUESTS: {
+        LIST: "/api/customer/requests",
+        POST: "/api/customer/requests",
+        PUT: (id: string) => `/api/customer/requests/${id}`,
+        DELETE: (id: string) => `/api/customer/requests/${id}`,
+      },
     },
   },
 };

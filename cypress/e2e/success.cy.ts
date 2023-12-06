@@ -12,7 +12,7 @@ describe("/success", () => {
       cy.visit("/success?type=customer_registered");
       cy.findByText("Get started").should("exist").click();
 
-      cy.url().should("contain", ROUTES.CUSTOMER.POSTINGS);
+      cy.url().should("contain", ROUTES.CUSTOMER.REQUESTS);
     });
   });
 

@@ -6,25 +6,23 @@ import { ColumnDef } from "@tanstack/react-table";
 import { ChevronDown, ChevronRight, MoreHorizontal } from "lucide-react";
 import { createDate } from "./shared";
 import { z } from "zod";
-import { RequestModel } from "../../../prisma/zod";
+import { RequestModel } from "zod-types";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
 import React, { useContext } from "react";
-import { Action, Noop, Nullalble } from "@/types/shared";
+import { Action } from "@/types/shared";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
-import { RequestForm } from "@/components/request-form";
 import { Request } from "@prisma/client";
-import { match } from "ts-pattern";
-import { delay } from "@/lib/utils";
-import { flushSync } from "react-dom";
+import Link from "next/link";
+import { ROUTES } from "@/lib/const";
+import { RequestClient } from "@/lib/data";
+import { Shell } from "@/components/shell";
 
 const chevronClasses = "h-4 w-4";
 
@@ -35,7 +33,6 @@ type RequestSchemaLight = Pick<
 
 type Ctx = {
   handleRequestRemoval: Action<string>;
-  handleRequestEdit: Action<string>;
 };
 
 const ctx = React.createContext<Ctx>({} as Ctx);
@@ -91,7 +88,7 @@ export const opsColumns: ColumnDef<RequestSchemaLight>[] = [
 ];
 
 function Cell({ id }: { id: string }) {
-  const { handleRequestRemoval, handleRequestEdit } = useContext(ctx);
+  const { handleRequestRemoval } = useContext(ctx);
 
   return (
     <DropdownMenu>
@@ -102,8 +99,8 @@ function Cell({ id }: { id: string }) {
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">
-        <DropdownMenuItem onClick={() => handleRequestEdit(id)}>
-          Edit request
+        <DropdownMenuItem asChild>
+          <Link href={ROUTES.CUSTOMER.REQUESTS.ONE(id)}>Edit request</Link>
         </DropdownMenuItem>
         <DropdownMenuItem onClick={() => handleRequestRemoval(id)}>
           Remove request
@@ -113,33 +110,25 @@ function Cell({ id }: { id: string }) {
   );
 }
 
-type RequestEdit =
-  | { type: "none" }
-  | { type: "new" }
-  | { type: "edit"; data: Request };
+type RequestTableRow = Pick<
+  Request,
+  "id" | "name" | "status" | "creationDate" | "validUntil"
+>;
 
-export function RequestsTable({ requests }: { requests: Request[] }) {
+export function RequestsTable({ requests }: { requests: RequestTableRow[] }) {
   const queryClient = useQueryClient();
-
-  const [edited, setEdited] = React.useState<RequestEdit>({ type: "none" });
 
   const { toast } = useToast();
 
-  const { data } = useQuery<Request[]>({
-    queryKey: ["requests"],
+  const { data } = useQuery({
+    queryKey: ["customer", "requests"],
     initialData: requests,
-    queryFn: async () => await (await fetch(`/api/requests`)).json(),
+    queryFn: () => RequestClient.getAll(),
     staleTime: 1000,
   });
 
   const { mutate: handleRequestRemoval } = useMutation({
-    mutationFn: async (id: string) => {
-      const res = await fetch(`/api/requests?id=${id}`, {
-        method: "DELETE",
-      });
-
-      if (res.status !== 200) throw new Error("Delete failed");
-    },
+    mutationFn: (id: string) => RequestClient.delete(id),
     onError: () => {
       toast({
         title: "Request removal failed",
@@ -148,41 +137,25 @@ export function RequestsTable({ requests }: { requests: Request[] }) {
     },
     onSuccess: () => {
       toast({ title: "Request removed successfully" });
-      queryClient.invalidateQueries({ queryKey: ["requests"] });
+      queryClient.invalidateQueries({ queryKey: ["customer", "requests"] });
     },
   });
-
-  const handleRequestEdit = (id: string) => {
-    document.body.style.pointerEvents = "initial";
-
-    setEdited({
-      type: "edit",
-      data: data.find((d) => d.id === id)!,
-    });
-  };
 
   return (
     <ctx.Provider
       value={{
         handleRequestRemoval,
-        handleRequestEdit,
       }}
     >
-      <Button onClick={() => setEdited({ type: "new" })}>
-        Create new request
-      </Button>
-      {match(edited)
-        .with({ type: "none" }, () => null)
-        .with({ type: "edit" }, ({ data }) => <RequestForm request={data} />)
-        .with({ type: "new" }, () => <RequestForm />)
-        .exhaustive()}
-      <DataTable
-        columns={opsColumns}
-        data={data}
-        renderSubComponent={({ row }) => (
-          <OffersTable opportunityId={row.original.id} />
-        )}
-      />
+      <Shell className="container">
+        <DataTable
+          columns={opsColumns}
+          data={data}
+          renderSubComponent={({ row }) => (
+            <OffersTable opportunityId={row.original.id} />
+          )}
+        />
+      </Shell>
     </ctx.Provider>
   );
 }

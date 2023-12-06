@@ -122,47 +122,52 @@ enum JobProfile {
 
 model Request {
   /// @zod.cuid()
-  id           String        @id @default(cuid())
-  validUntil   DateTime?
-  creationDate DateTime?
+  id String @id @default(cuid())
+
+  /// @zod.custom(z.date({coerce: true}))
+  validUntil DateTime
+
+  /// @zod.custom(z.date({coerce: true}))
+  creationDate DateTime
   status       RequestStatus
 
   /// @zod.min(3, {message: "Minimum of 3 characters"})
   name               String
-  workType           WorkType?
-  projectStage       ProjectStage?
-  projectDuration    ProjectDuration?
-  projectMethodology ProjectMethodology?
+  workType           WorkType
+  projectStage       ProjectStage
+  projectDuration    ProjectDuration
+  projectMethodology ProjectMethodology
 
-  fundingGuaranteed Boolean?
-  pmExists          Boolean?
+  fundingGuaranteed Boolean
+  pmExists          Boolean
 
   /// @zod.min(10, {message: "Minimum 10 characters"})
-  description String?
+  description String
 
-  profile    JobProfile?
+  profile    JobProfile
   /// @zod.custom(imports.positiveInteger)
-  hourlyRate Int?
+  hourlyRate Int
 
   /// @zod.positive({ message: "Needs to be a positive integer" })
-  availability Int?
+  availability Int
 
   /// @zod.custom(z.date({coerce: true, required_error: "Start date is required"}))
-  startDate DateTime?
+  startDate DateTime
 
   /// @zod.custom(z.date({coerce: true, required_error: "End date is required"}))
-  endDate DateTime?
+  endDate DateTime
 
   /// @zod.custom(imports.positiveInteger)
-  noticePeriod Int?
+  noticePeriod Int
 
+  /// @zod.min(3, {message: "Minimum of 3 characters"})
   officeLocation String?
 
   /// @zod.custom(imports.positiveInteger15)
   daysInOffice Int?
 
-  domesticTravel      Boolean?
-  internationalTravel Boolean?
+  domesticTravel      Boolean
+  internationalTravel Boolean
 
   offers Offer[]
 }
