@@ -1,13 +1,13 @@
 import { RequestsTable } from "./request-table";
 
-import { RequestClient } from "@/lib/data";
+import { db } from "@/lib/db";
 
 async function PageServer() {
-  const requests = await RequestClient.getAll();
+  const data = await db.request.findMany();
 
   return (
     <section className="flex flex-col">
-      <RequestsTable requests={requests} />
+      <RequestsTable requests={data} />
     </section>
   );
 }

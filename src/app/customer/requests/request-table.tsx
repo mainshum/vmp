@@ -124,7 +124,6 @@ export function RequestsTable({ requests }: { requests: RequestTableRow[] }) {
     queryKey: ["customer", "requests"],
     initialData: requests,
     queryFn: () => RequestClient.getAll(),
-    staleTime: 1000,
   });
 
   const { mutate: handleRequestRemoval } = useMutation({

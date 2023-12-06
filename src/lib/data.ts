@@ -1,28 +1,25 @@
 import { RequestFormModel } from "@/types/request";
 import { ROUTES } from "./const";
-import { getBaseUrl } from "./utils";
 import { RequestModel } from "zod-types";
 import { z } from "zod";
 
+// onlyt to be used on the client
 export const RequestClient = {
   get: async (id: string) => {
-    return await fetch(`${getBaseUrl()}${ROUTES.API.CUSTOMER.REQUESTS.PUT(id)}`)
+    return await fetch(ROUTES.API.CUSTOMER.REQUESTS.PUT(id))
       .then((res) => res.json())
       .then(RequestModel.parse);
   },
-  getAll: async () => {
-    return await fetch(`${getBaseUrl()}${ROUTES.API.CUSTOMER.REQUESTS.LIST}`)
+  getAll: async (prefix: string = "") => {
+    return await fetch(`${prefix}${ROUTES.API.CUSTOMER.REQUESTS.LIST}`)
       .then((res) => res.json())
       .then(z.array(RequestModel).parse);
   },
   post: async (req: RequestFormModel) => {
-    const res = await fetch(
-      `${getBaseUrl()}${ROUTES.API.CUSTOMER.REQUESTS.POST}`,
-      {
-        method: "POST",
-        body: JSON.stringify(req),
-      },
-    );
+    const res = await fetch(ROUTES.API.CUSTOMER.REQUESTS.POST, {
+      method: "POST",
+      body: JSON.stringify(req),
+    });
 
     const json = await res.json();
 
@@ -31,13 +28,10 @@ export const RequestClient = {
     return json;
   },
   put: async (id: string, req: RequestFormModel) => {
-    const res = await fetch(
-      `${getBaseUrl()}${ROUTES.API.CUSTOMER.REQUESTS.PUT(id)}`,
-      {
-        method: "PUT",
-        body: JSON.stringify(req),
-      },
-    );
+    const res = await fetch(ROUTES.API.CUSTOMER.REQUESTS.PUT(id), {
+      method: "PUT",
+      body: JSON.stringify(req),
+    });
 
     const json = await res.json();
 
