@@ -43,6 +43,7 @@ import { ROUTES } from "@/lib/const";
 import Loader from "@/app/customer/loading";
 import { useRouter } from "next/navigation";
 import { RequestFormModel, RequestModel } from "@/types/request";
+import { RequestModel as RM } from "zod-types";
 
 function InputBrand({ msg }: { msg: string }) {
   return (
@@ -65,7 +66,11 @@ export function RequestForm() {
     throwOnError: true,
   });
 
-  return isLoading ? <Loader /> : <EditRequestForm data={data} />;
+  return isLoading ? (
+    <Loader />
+  ) : (
+    <EditRequestForm key={requestId || "create"} data={data} />
+  );
 }
 
 function EditRequestForm({ data }: { data: RequestModel | undefined }) {
@@ -114,14 +119,18 @@ function EditRequestForm({ data }: { data: RequestModel | undefined }) {
         description: "Please try resubmitting the form",
       });
     },
-    onSuccess: ({ name, id }) => {
+    onSuccess: (data) => {
+      const updated = RM.parse(data);
       toast({
         title: "Saved successfully",
-        description: `Request ${name} has been saved`,
+        description: `Request ${updated.name} has been saved`,
       });
-      client.invalidateQueries({ queryKey: ["customer", "requests", id] });
+      client.setQueryData(["customer", "requests", updated.id], {});
+      client.invalidateQueries({
+        queryKey: ["customer", "requests", updated.id],
+      });
 
-      router.push(ROUTES.CUSTOMER.REQUESTS.ONE(id));
+      router.push(ROUTES.CUSTOMER.REQUESTS.ONE(updated.id));
     },
   });
 

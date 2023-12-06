@@ -25,7 +25,6 @@ export async function PUT(req: NextRequest, { params }: ReqParams) {
   const updated = await db.request.update({
     where: { id: params.reqId },
     data: data.data,
-    select: { name: true, id: true },
   });
 
   return new Response(JSON.stringify(updated));

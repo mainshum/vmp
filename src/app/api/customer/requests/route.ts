@@ -23,7 +23,6 @@ export async function POST(req: Request) {
       creationDate: new Date(),
       validUntil: new Date(),
     },
-    select: { name: true, id: true },
   });
 
   return new Response(JSON.stringify(updated));

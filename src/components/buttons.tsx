@@ -43,7 +43,7 @@ export function SignOut({
             <span>Sign out</span>
           </DropdownMenuItem>
           <DropdownMenuItem asChild>
-            <Link href={ROUTES.CUSTOMER.REQUESTS}>
+            <Link href={ROUTES.CUSTOMER.REQUESTS.LIST}>
               <Megaphone className="mr-2 h-4 w-4" />
               <span>Postings</span>
             </Link>

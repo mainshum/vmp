@@ -12,7 +12,7 @@ export default async function Home() {
     match(session.user.role)
       // in the future we're likely to have some kind of home page,
       // for the time being go to postings
-      .with("CLIENT", () => redirect(ROUTES.CUSTOMER.REQUESTS))
+      .with("CLIENT", () => redirect(ROUTES.CUSTOMER.REQUESTS.LIST))
       .with("NONE", () => redirect(ROUTES.ROLE_SELECT))
       .otherwise((r) => {
         throw Error(`${r} not implemented`);
