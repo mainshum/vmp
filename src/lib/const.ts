@@ -8,7 +8,7 @@ export const ROUTES = {
   CUSTOMER: {
     REQUESTS: {
       LIST: "/customer/requests",
-      CREATE: "/customer/requests/create",
+      CREATE: "/customer/requests/create?page=jpf",
       ONE: (id: string) => `/customer/requests/create?requestId=${id}&page=jpf`,
     },
     SETTINGS: {

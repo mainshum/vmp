@@ -33,7 +33,7 @@ import {
   WorkType,
   JobProfile,
 } from "@prisma/client";
-import React, { useCallback, useContext, useMemo, useState } from "react";
+import React, { memo, useCallback, useContext, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { MyInput, MySelect, MySwitch } from "@/components/forms";
@@ -99,9 +99,11 @@ const WithRequest = ({
   const { data, isLoading } = useQuery({
     queryKey: ["customer", "requests", requestId],
     queryFn: async () => {
+      console.log("call request");
       return await RequestClient.get(requestId);
     },
     throwOnError: true,
+    staleTime: 2000,
   });
 
   if (isLoading) return <Loader />;
@@ -120,19 +122,23 @@ const RequestFormState = z.discriminatedUnion("page", [
   z.object({
     page: z.literal(Page.technical),
     profile: z.nativeEnum(JobProfile),
+    request: RM,
   }),
 ]);
 
-const RequestFormEdit = ({
-  request,
+export const RequestForm = ({
+  initRequest,
 }: {
-  request: RequestModel | undefined;
+  initRequest?: RequestModel;
 }) => {
   const sp = useSearchParams();
+
+  const [request, setRequest] = useState<RequestModel | undefined>(initRequest);
 
   const parsedState = RequestFormState.safeParse({
     page: sp.get("page"),
     profile: sp.get("profile"),
+    request: request,
   });
 
   if (!parsedState.success) {
@@ -145,8 +151,10 @@ const RequestFormEdit = ({
       <div className="flex flex-col items-start py-8">
         <FormNavigation page={parsedState.data.page} />
         {match(parsedState.data)
-          .with({ page: "jpf" }, () => <JobProfileForm data={request} />)
-          .with({ page: "technical" }, ({ profile }) => (
+          .with({ page: "jpf" }, () => (
+            <JobProfileForm onFilled={setRequest} data={request} />
+          ))
+          .with({ page: "technical" }, ({ profile, request }) => (
             <TechnicalForm jobProfile={profile} data={request} />
           ))
           .exhaustive()}
@@ -163,22 +171,6 @@ const RequestFormEdit = ({
     </div>
   );
 };
-
-export function RequestForm() {
-  const sp = useSearchParams();
-  const requestId = sp.get("requestId");
-
-  return (
-    <>
-      {requestId && (
-        <WithRequest requestId={requestId}>
-          {(data) => <RequestFormEdit request={data} />}
-        </WithRequest>
-      )}
-      {!requestId && <RequestFormEdit request={undefined} />}
-    </>
-  );
-}
 
 // this goes into consts
 const technologies = {
@@ -212,7 +204,7 @@ function TechnicalForm({
   data,
   jobProfile,
 }: {
-  data?: RequestModel;
+  data: RequestModel;
   jobProfile: JobProfile;
 }) {
   const form = useForm({
@@ -264,7 +256,13 @@ function TechnicalForm({
   );
 }
 
-function JobProfileForm({ data }: { data: RequestModel | undefined }) {
+const JobProfileForm = ({
+  data,
+  onFilled,
+}: {
+  data: RequestModel | undefined;
+  onFilled: (rm: RequestModel) => void;
+}) => {
   const { toast } = useToast();
 
   const client = useQueryClient();
@@ -314,6 +312,7 @@ function JobProfileForm({ data }: { data: RequestModel | undefined }) {
     onSuccess: (data) => {
       const updated = RM.parse(data);
       client.setQueryData(["customer", "requests", updated.id], updated);
+      onFilled(updated);
 
       const url = new URL(window.location.href);
 
@@ -633,4 +632,4 @@ function JobProfileForm({ data }: { data: RequestModel | undefined }) {
       </form>
     </Form>
   );
-}
+};
