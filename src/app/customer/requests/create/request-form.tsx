@@ -11,7 +11,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { useForm } from "react-hook-form";
+import { useFieldArray, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { SelectItem } from "@/components/ui/select";
 import { Slider } from "@/components/ui/slider";
@@ -23,7 +23,7 @@ import {
 } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import { format } from "date-fns";
-import { CalendarIcon } from "lucide-react";
+import { CalendarIcon, Circle } from "lucide-react";
 import { useAutoAnimate } from "@formkit/auto-animate/react";
 import { Textarea } from "@/components/ui/textarea";
 import {
@@ -33,7 +33,7 @@ import {
   WorkType,
   JobProfile,
 } from "@prisma/client";
-import React from "react";
+import React, { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { MyInput, MySelect, MySwitch } from "@/components/forms";
@@ -44,6 +44,14 @@ import Loader from "@/app/customer/loading";
 import { useRouter } from "next/navigation";
 import { RequestFormModel, RequestModel } from "@/types/request";
 import { RequestModel as RM } from "zod-types";
+import { Checkbox } from "@/components/ui/checkbox";
+import { match } from "ts-pattern";
+import { frontendTech } from "./tech";
+import clsx from "clsx";
+import SideNav from "@/components/side-nav";
+import { Children } from "@/types/shared";
+
+type Page = "jpf" | "technical" | "other";
 
 function InputBrand({ msg }: { msg: string }) {
   return (
@@ -52,9 +60,37 @@ function InputBrand({ msg }: { msg: string }) {
     </span>
   );
 }
+const C = () => <Circle fill="black" className="h-2 w-2 " />;
+
+const A = ({ href, children }: { href: string; children: Children }) => (
+  <a className="block text-slate-500" href={href}>
+    {children}
+  </a>
+);
+
+function FormNavigation({ page }: { page: Page }) {
+  return (
+    <div className="flex items-baseline gap-4">
+      <span className={clsx(page === "jpf" && `text-2xl font-bold`)}>
+        Job profile
+      </span>
+      <C />
+      <span className={clsx(page === "technical" && `text-2xl font-bold`)}>
+        Technical
+      </span>
+      <C />
+      <span className={clsx(page === "other" && `text-2xl font-bold`)}>
+        Other
+      </span>
+    </div>
+  );
+}
 
 export function RequestForm() {
-  const requestId = useSearchParams().get("requestId");
+  const sp = useSearchParams();
+  const requestId = sp.get("requestId");
+
+  const [page, setPage] = useState<Page>("jpf");
 
   const { data, isLoading } = useQuery({
     queryKey: ["customer", "requests", requestId],
@@ -66,18 +102,128 @@ export function RequestForm() {
     throwOnError: true,
   });
 
-  return isLoading ? (
-    <Loader />
-  ) : (
-    <EditRequestForm key={requestId || "create"} data={data} />
+  const handleJobProfileFilled = () => setPage("technical");
+
+  if (isLoading) return <Loader />;
+
+  return (
+    <div className="flex justify-center gap-8 px-8 md:justify-between">
+      <div className="hidden w-10 shrink-[100] md:block"></div>
+      <div className="flex flex-col items-start py-8">
+        <FormNavigation page={page} />
+        {match(page)
+          .with("jpf", () => (
+            <JobProfileForm
+              key={requestId}
+              onFilled={handleJobProfileFilled}
+              data={data}
+            />
+          ))
+          .with("technical", () => <TechnicalForm data={data!} />)
+          .with("other", () => <div>other</div>)
+          .exhaustive()}
+      </div>
+      <SideNav className="sticky top-[56px] h-[calc(100vh-56px)] shrink-0 translate-x-[30px] gap-3 pt-8">
+        <div className="flex flex-col gap-3">
+          <h1 className="text-lg font-semibold">On this page</h1>
+          <A href="#profile">Profile</A>
+          <A href="#availability">Availability</A>
+          <A href="#travel">Travel requirements</A>
+          <A href="#project">Project details</A>
+        </div>
+      </SideNav>
+    </div>
   );
 }
 
-function EditRequestForm({ data }: { data: RequestModel | undefined }) {
+// this goes into consts
+const technologies = {
+  ...frontendTech,
+};
+const user: Record<string, Record<string, boolean>> = {
+  CWT: {
+    HTML: true,
+    DOM: true,
+  },
+  OT: {
+    HTML: false,
+    DOM: true,
+  },
+};
+
+const mergeTechnologiesWithUser = (u: typeof user) => {
+  const retval = {} as typeof user;
+  for (const k of Object.keys(technologies)) {
+    const kl = k as keyof typeof technologies;
+    retval[kl] = {};
+    for (const tech of Object.keys(technologies[kl].tech)) {
+      const v = tech as keyof (typeof technologies)[typeof kl]["tech"];
+      retval[kl][v] = u[kl]?.[v] || false;
+    }
+  }
+  return retval;
+};
+
+function TechnicalForm({ data }: { data: RequestModel }) {
+  console.log(data);
+  const form = useForm({
+    defaultValues: { categories: mergeTechnologiesWithUser(user) },
+  });
+
+  return (
+    <Form {...form}>
+      <form onSubmit={form.handleSubmit(() => {})}>
+        {Object.keys(technologies).map((level0) => {
+          const techs = Object.keys(
+            technologies[level0 as keyof typeof technologies].tech,
+          );
+          const k = level0 as keyof typeof technologies;
+          return (
+            <div key={level0}>
+              <h1>{technologies[level0 as keyof typeof technologies].label}</h1>
+              <ul>
+                {techs.map((tech) => {
+                  const v = tech as keyof ReturnType<
+                    typeof mergeTechnologiesWithUser
+                  >[typeof k];
+                  return (
+                    <FormField
+                      key={`${k}.${v}}`}
+                      control={form.control}
+                      name={`categories.${k}.${v}`}
+                      render={({ field }) => (
+                        <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
+                          <FormControl>
+                            <Checkbox
+                              checked={field.value}
+                              onCheckedChange={field.onChange}
+                            />
+                          </FormControl>
+                          <FormLabel>{technologies[k].tech[v].label}</FormLabel>
+                        </FormItem>
+                      )}
+                    />
+                  );
+                })}
+              </ul>
+            </div>
+          );
+        })}
+      </form>
+    </Form>
+  );
+}
+
+function JobProfileForm({
+  data,
+  onFilled,
+}: {
+  data: RequestModel | undefined;
+  onFilled: CallableFunction;
+}) {
   const { toast } = useToast();
 
   const client = useQueryClient();
-  const router = useRouter();
 
   const form = useForm<RequestFormModel>({
     resolver: zodResolver(RequestFormModel),
@@ -111,7 +257,7 @@ function EditRequestForm({ data }: { data: RequestModel | undefined }) {
       return RequestClient.post(xs);
     },
     onMutate: () => {
-      toast({ title: "Saving request..." });
+      toast({ title: "Saving..." });
     },
     onError: () => {
       toast({
@@ -121,16 +267,9 @@ function EditRequestForm({ data }: { data: RequestModel | undefined }) {
     },
     onSuccess: (data) => {
       const updated = RM.parse(data);
-      toast({
-        title: "Saved successfully",
-        description: `Request ${updated.name} has been saved`,
-      });
-      client.setQueryData(["customer", "requests", updated.id], {});
-      client.invalidateQueries({
-        queryKey: ["customer", "requests", updated.id],
-      });
+      client.setQueryData(["customer", "requests", updated.id], updated);
 
-      router.push(ROUTES.CUSTOMER.REQUESTS.ONE(updated.id));
+      onFilled();
     },
   });
 
