@@ -9,7 +9,7 @@ export const ROUTES = {
     REQUESTS: {
       LIST: "/customer/requests",
       CREATE: "/customer/requests/create",
-      ONE: (id: string) => `/customer/requests/create?requestId=${id}`,
+      ONE: (id: string) => `/customer/requests/create?requestId=${id}&page=jpf`,
     },
     SETTINGS: {
       COMPANY: "/settings/company",

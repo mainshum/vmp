@@ -33,7 +33,7 @@ import {
   WorkType,
   JobProfile,
 } from "@prisma/client";
-import React, { useState } from "react";
+import React, { useCallback, useContext, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { MyInput, MySelect, MySwitch } from "@/components/forms";
@@ -50,8 +50,10 @@ import { frontendTech } from "./tech";
 import clsx from "clsx";
 import SideNav from "@/components/side-nav";
 import { Children } from "@/types/shared";
-
-type Page = "jpf" | "technical" | "other";
+import { set } from "cypress/types/lodash";
+import { ro } from "date-fns/locale";
+import { z } from "zod";
+import { Error } from "@/components/success";
 
 function InputBrand({ msg }: { msg: string }) {
   return (
@@ -86,41 +88,67 @@ function FormNavigation({ page }: { page: Page }) {
   );
 }
 
-export function RequestForm() {
-  const sp = useSearchParams();
-  const requestId = sp.get("requestId");
-
-  const [page, setPage] = useState<Page>("jpf");
-
+const WithRequest = ({
+  requestId,
+  children,
+}: {
+  requestId: string;
+  // eslint-disable-next-line no-unused-vars
+  children: (d: RequestModel | undefined) => Children;
+}) => {
   const { data, isLoading } = useQuery({
     queryKey: ["customer", "requests", requestId],
     queryFn: async () => {
-      if (!requestId) return undefined;
       return await RequestClient.get(requestId);
     },
-    enabled: !!requestId,
     throwOnError: true,
   });
 
-  const handleJobProfileFilled = () => setPage("technical");
-
   if (isLoading) return <Loader />;
+
+  return <>{children(data)}</>;
+};
+
+const Page = {
+  jpf: "jpf",
+  technical: "technical",
+  other: "other",
+} as const;
+
+const RequestFormState = z.discriminatedUnion("page", [
+  z.object({ page: z.literal(Page.jpf) }),
+  z.object({
+    page: z.literal(Page.technical),
+    profile: z.nativeEnum(JobProfile),
+  }),
+]);
+
+const RequestFormEdit = ({
+  request,
+}: {
+  request: RequestModel | undefined;
+}) => {
+  const sp = useSearchParams();
+
+  const parsedState = RequestFormState.safeParse({
+    page: sp.get("page"),
+    profile: sp.get("profile"),
+  });
+
+  if (!parsedState.success) {
+    return <Error reset={() => {}} error={parsedState.error} />;
+  }
 
   return (
     <div className="flex justify-center gap-8 px-8 md:justify-between">
       <div className="hidden w-10 shrink-[100] md:block"></div>
       <div className="flex flex-col items-start py-8">
-        <FormNavigation page={page} />
-        {match(page)
-          .with("jpf", () => (
-            <JobProfileForm
-              key={requestId}
-              onFilled={handleJobProfileFilled}
-              data={data}
-            />
+        <FormNavigation page={parsedState.data.page} />
+        {match(parsedState.data)
+          .with({ page: "jpf" }, () => <JobProfileForm data={request} />)
+          .with({ page: "technical" }, ({ profile }) => (
+            <TechnicalForm jobProfile={profile} data={request} />
           ))
-          .with("technical", () => <TechnicalForm data={data!} />)
-          .with("other", () => <div>other</div>)
           .exhaustive()}
       </div>
       <SideNav className="sticky top-[56px] h-[calc(100vh-56px)] shrink-0 translate-x-[30px] gap-3 pt-8">
@@ -133,6 +161,22 @@ export function RequestForm() {
         </div>
       </SideNav>
     </div>
+  );
+};
+
+export function RequestForm() {
+  const sp = useSearchParams();
+  const requestId = sp.get("requestId");
+
+  return (
+    <>
+      {requestId && (
+        <WithRequest requestId={requestId}>
+          {(data) => <RequestFormEdit request={data} />}
+        </WithRequest>
+      )}
+      {!requestId && <RequestFormEdit request={undefined} />}
+    </>
   );
 }
 
@@ -164,14 +208,20 @@ const mergeTechnologiesWithUser = (u: typeof user) => {
   return retval;
 };
 
-function TechnicalForm({ data }: { data: RequestModel }) {
-  console.log(data);
+function TechnicalForm({
+  data,
+  jobProfile,
+}: {
+  data?: RequestModel;
+  jobProfile: JobProfile;
+}) {
   const form = useForm({
     defaultValues: { categories: mergeTechnologiesWithUser(user) },
   });
 
   return (
     <Form {...form}>
+      {jobProfile}
       <form onSubmit={form.handleSubmit(() => {})}>
         {Object.keys(technologies).map((level0) => {
           const techs = Object.keys(
@@ -214,13 +264,7 @@ function TechnicalForm({ data }: { data: RequestModel }) {
   );
 }
 
-function JobProfileForm({
-  data,
-  onFilled,
-}: {
-  data: RequestModel | undefined;
-  onFilled: CallableFunction;
-}) {
+function JobProfileForm({ data }: { data: RequestModel | undefined }) {
   const { toast } = useToast();
 
   const client = useQueryClient();
@@ -250,6 +294,8 @@ function JobProfileForm({
     },
   });
 
+  const router = useRouter();
+
   const { mutate } = useMutation({
     mutationFn: (xs: RequestFormModel) => {
       if (data?.id) return RequestClient.put(data.id, xs);
@@ -269,7 +315,12 @@ function JobProfileForm({
       const updated = RM.parse(data);
       client.setQueryData(["customer", "requests", updated.id], updated);
 
-      onFilled();
+      const url = new URL(window.location.href);
+
+      url.searchParams.set("profile", updated.profile);
+      url.searchParams.set("page", "technical");
+
+      router.push(url.toString());
     },
   });
 
