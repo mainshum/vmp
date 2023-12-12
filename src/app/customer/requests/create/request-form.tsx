@@ -70,7 +70,13 @@ const A = ({ href, children }: { href: string; children: Children }) => (
   </a>
 );
 
-function FormNavigation({ page }: { page: Page }) {
+const Page = {
+  jpf: "jpf",
+  technical: "technical",
+  other: "other",
+} as const;
+
+function FormNavigation({ page }: { page: keyof typeof Page }) {
   return (
     <div className="flex items-baseline gap-4">
       <span className={clsx(page === "jpf" && `text-2xl font-bold`)}>
@@ -88,94 +94,6 @@ function FormNavigation({ page }: { page: Page }) {
   );
 }
 
-const WithRequest = ({
-  requestId,
-  children,
-}: {
-  requestId: string;
-  // eslint-disable-next-line no-unused-vars
-  children: (d: RequestModel | undefined) => Children;
-}) => {
-  const { data, isLoading } = useQuery({
-    queryKey: ["customer", "requests", requestId],
-    queryFn: async () => {
-      console.log("call request");
-      return await RequestClient.get(requestId);
-    },
-    throwOnError: true,
-    staleTime: 2000,
-  });
-
-  if (isLoading) return <Loader />;
-
-  return <>{children(data)}</>;
-};
-
-const Page = {
-  jpf: "jpf",
-  technical: "technical",
-  other: "other",
-} as const;
-
-const RequestFormState = z.discriminatedUnion("page", [
-  z.object({ page: z.literal(Page.jpf) }),
-  z.object({
-    page: z.literal(Page.technical),
-    profile: z.nativeEnum(JobProfile),
-    request: RM,
-  }),
-]);
-
-export const RequestForm = ({
-  initRequest,
-}: {
-  initRequest?: RequestModel;
-}) => {
-  const sp = useSearchParams();
-
-  const [request, setRequest] = useState<RequestModel | undefined>(initRequest);
-
-  const parsedState = RequestFormState.safeParse({
-    page: sp.get("page"),
-    profile: sp.get("profile"),
-    request: request,
-  });
-
-  if (!parsedState.success) {
-    return <Error reset={() => {}} error={parsedState.error} />;
-  }
-
-  return (
-    <div className="flex justify-center gap-8 px-8 md:justify-between">
-      <div className="hidden w-10 shrink-[100] md:block"></div>
-      <div className="flex flex-col items-start py-8">
-        <FormNavigation page={parsedState.data.page} />
-        {match(parsedState.data)
-          .with({ page: "jpf" }, () => (
-            <JobProfileForm onFilled={setRequest} data={request} />
-          ))
-          .with({ page: "technical" }, ({ profile, request }) => (
-            <TechnicalForm jobProfile={profile} data={request} />
-          ))
-          .exhaustive()}
-      </div>
-      <SideNav className="sticky top-[56px] h-[calc(100vh-56px)] shrink-0 translate-x-[30px] gap-3 pt-8">
-        <div className="flex flex-col gap-3">
-          <h1 className="text-lg font-semibold">On this page</h1>
-          <A href="#profile">Profile</A>
-          <A href="#availability">Availability</A>
-          <A href="#travel">Travel requirements</A>
-          <A href="#project">Project details</A>
-        </div>
-      </SideNav>
-    </div>
-  );
-};
-
-// this goes into consts
-const technologies = {
-  ...frontendTech,
-};
 const user: Record<string, Record<string, boolean>> = {
   CWT: {
     HTML: true,
@@ -200,15 +118,100 @@ const mergeTechnologiesWithUser = (u: typeof user) => {
   return retval;
 };
 
+const RequestFormState = z
+  .discriminatedUnion("page", [
+    z.object({ page: z.literal(Page.jpf) }),
+    z.object({
+      page: z.literal(Page.technical),
+      profile: z.nativeEnum(JobProfile),
+      request: RM,
+    }),
+  ])
+  .transform(({ ...xs }) => {
+    if (xs.page === "jpf") return xs;
+
+    return {
+      ...xs,
+      tech: mergeTechnologiesWithUser(user),
+    };
+  });
+
+export const RequestForm = ({
+  initRequest,
+}: {
+  initRequest?: RequestModel;
+}) => {
+  const sp = useSearchParams();
+
+  const [request, setRequest] = useState<RequestModel | undefined>(initRequest);
+
+  const page = sp.get("page");
+  const profile = sp.get("profile");
+
+  const parsedState = useMemo(() => {
+    return RequestFormState.safeParse({ page, profile, request });
+  }, [request, page, profile]);
+
+  if (!parsedState.success) {
+    return <Error reset={() => {}} error={parsedState.error} />;
+  }
+
+  return (
+    <div className="flex justify-center gap-8 px-8 md:justify-between">
+      <div className="hidden w-10 shrink-[100] md:block"></div>
+      <div className="flex flex-col items-start py-8">
+        <FormNavigation page={parsedState.data.page} />
+        {match(parsedState.data)
+          .with({ page: "jpf" }, () => (
+            <JobProfileForm onFilled={setRequest} data={request} />
+          ))
+          .with({ page: "technical" }, ({ profile, tech }) => (
+            <TechnicalForm jobProfile={profile} tech={tech} />
+          ))
+          .exhaustive()}
+      </div>
+      <SideNav className="sticky top-[56px] h-[calc(100vh-56px)] shrink-0 translate-x-[30px] gap-3 pt-8">
+        <div className="flex flex-col gap-3">
+          {match(parsedState.data)
+            .with({ page: "jpf" }, () => (
+              <>
+                <h1 className="text-lg font-semibold">On this page</h1>
+                <A href="#profile">Profile</A>
+                <A href="#availability">Availability</A>
+                <A href="#travel">Travel requirements</A>
+                <A href="#project">Project details</A>
+              </>
+            ))
+            .with({ page: "technical" }, ({ tech }) => (
+              <>
+                <h1 className="text-lg font-semibold">On this page</h1>
+                {Object.keys(tech).map((level0) => (
+                  <A key={level0} href={`#${level0}`}>
+                    {level0}
+                  </A>
+                ))}
+              </>
+            ))
+            .exhaustive()}
+        </div>
+      </SideNav>
+    </div>
+  );
+};
+
+// this goes into consts
+const technologies = {
+  ...frontendTech,
+};
 function TechnicalForm({
-  data,
+  tech,
   jobProfile,
 }: {
-  data: RequestModel;
+  tech: ReturnType<typeof mergeTechnologiesWithUser>;
   jobProfile: JobProfile;
 }) {
   const form = useForm({
-    defaultValues: { categories: mergeTechnologiesWithUser(user) },
+    defaultValues: { categories: tech },
   });
 
   return (
@@ -221,6 +224,7 @@ function TechnicalForm({
           const k = level0 as keyof typeof technologies;
           return (
             <div key={level0}>
+              <a className="hop-anchor top-[-50px]" id={level0} />
               <h1 className="mb-2 border-b-2 border-slate-100 py-3 text-lg font-bold">
                 {technologies[level0 as keyof typeof technologies].label}
               </h1>

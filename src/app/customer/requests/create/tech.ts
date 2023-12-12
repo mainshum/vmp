@@ -37,15 +37,11 @@ const frontendTech = {
       GitHub: {
         label: "GitHub",
       },
+      Bitbucket: {
+        label: "Bitbucket",
+        tech: {},
+      },
     },
-  },
-  GitLab: {
-    label: "GitLab",
-    tech: {},
-  },
-  Bitbucket: {
-    label: "Bitbucket",
-    tech: {},
   },
   "Frameworks and Libraries": {
     label: "Frameworks and Libraries",
