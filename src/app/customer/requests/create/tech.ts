@@ -1,322 +1,191 @@
 const frontendTech = {
-  "Core Web Technologies": {
+  "mIoZrxCWW2yENm8lmm-yU": {
     label: "Core Web Technologies",
     tech: {
-      HTML: {
-        label: "HTML",
-      },
-      "Semantic HTML, Accessibility (A11y) Standards": {
-        label: "Semantic HTML, Accessibility (A11y) Standards",
-      },
-      CSS: {
-        label: "CSS",
-      },
-      "Responsive Design, CSS Preprocessors (SASS, LESS)": {
-        label: "Responsive Design, CSS Preprocessors (SASS, LESS)",
-      },
-      "JavaScript (ES6+)": {
-        label: "JavaScript (ES6+)",
-      },
-      "DOM Manipulation": {
-        label: "DOM Manipulation",
-      },
-      "AJAX, Fetch API": {
-        label: "AJAX, Fetch API",
-      },
-      JSON: {
-        label: "JSON",
-      },
+      "74MZwOitFGrnjUiPn0b2D": "HTML",
+      vAgZPf2kmUkGGIfsMWVtf: "Semantic HTML, Accessibility (A11y) Standards",
+      "aFqKL5ee7-lrp_nkmiyE-": "CSS",
+      "ikpWdqIY6l21waif--qMm":
+        "Responsive Design, CSS Preprocessors (SASS, LESS)",
+      NVnm2bkmTm6SSF00WpRBk: "JavaScript (ES6+)",
+      "J04a2p-zXWIWSzB7HPH3B": "DOM Manipulation",
+      Mxi8vW49IB_Vd3FxdI3y8: "AJAX, Fetch API",
+      "4bi1MphRS6A_cun9B23Nz": "JSON",
     },
   },
-  "Version Control Systems": {
+  PH226F9Kfbs1UDeQ57O4l: {
     label: "Version Control Systems",
     tech: {
-      Git: {
-        label: "Git",
-      },
-      GitHub: {
-        label: "GitHub",
-      },
-      Bitbucket: {
-        label: "Bitbucket",
-        tech: {},
-      },
+      "86vkCm_X-dfrFoYfCp2uC": "Git",
+      Kk9wPwbOTx1nR_mVWDUHf: "GitHub",
+      "Z-NfSrI6YSHkhreMbXJQu": "GitLab",
+      KE2QHkPNKbKkn6YU27oG4: "Bitbucket",
     },
   },
-  "Frameworks and Libraries": {
+  lWBTku8_GUyPS4vcobp1Y: {
     label: "Frameworks and Libraries",
     tech: {
-      React: {
-        label: "React",
-      },
-      "State Management (Redux, Context API)": {
-        label: "State Management (Redux, Context API)",
-      },
-      Angular: {
-        label: "Angular",
-      },
-      "Vue.js": {
-        label: "Vue.js",
-      },
-      Svelte: {
-        label: "Svelte",
-      },
+      "8SCtYPwmcJP6ODG0Rz1a9": "React",
+      X0Z5gNBxjgMFKiQuxGVMg: "State Management (Redux, Context API)",
+      "7YNMwdUKbZ1el0qUQTyrf": "Angular",
+      W6_k2CuIqdcuhJgtGQNGH: "Vue.js",
+      KRJ6CcdIzXeBgEnIPYJGu: "Svelte",
     },
   },
-  "Package Managers": {
+  IFCgboNeXAH_el2NFXGJM: {
     label: "Package Managers",
     tech: {
-      npm: {
-        label: "npm",
-      },
-      yarn: {
-        label: "yarn",
-      },
+      gtEvsIuz9Omf3AEeKhlvN: "npm",
+      "mfDt-vh8hzTAQ1rTOSQEN": "yarn",
     },
   },
-  "Module Bundlers & Task Runners": {
+  HAHQzIb308qQrM0UzeTTA: {
     label: "Module Bundlers & Task Runners",
     tech: {
-      Webpack: {
-        label: "Webpack",
-      },
-      Rollup: {
-        label: "Rollup",
-      },
-      Gulp: {
-        label: "Gulp",
-      },
+      iXST4HamAkBKezTXl14wN: "Webpack",
+      LIY6uww0yPbz007Mj766V: "Rollup",
+      J_wfInTcjZb_Yx6BLvObq: "Gulp",
     },
   },
-  "CSS Architecture": {
+  Af93og1eTnhWAwmdZnu9m: {
     label: "CSS Architecture",
     tech: {
-      "BEM (Block Element Modifier)": {
-        label: "BEM (Block Element Modifier)",
-      },
-      "SMACSS (Scalable and Modular Architecture for CSS)": {
-        label: "SMACSS (Scalable and Modular Architecture for CSS)",
-      },
+      "H8q0FjdZ-XSe88RRZ01p3": "BEM (Block Element Modifier)",
+      kLsymz6PysSusLplRvanw:
+        "SMACSS (Scalable and Modular Architecture for CSS)",
     },
   },
-  "CSS Frameworks and UI Libraries": {
+  cuapXCyIBGuw51kQ_qSSY: {
     label: "CSS Frameworks and UI Libraries",
     tech: {
-      Bootstrap: {
-        label: "Bootstrap",
-      },
-      "Tailwind CSS": {
-        label: "Tailwind CSS",
-      },
-      "Material UI (for React)": {
-        label: "Material UI (for React)",
-      },
+      "j4iCu32skf-AU1umxDEvD": "Bootstrap",
+      RCxeAUGB7NP3pnQ7imvxQ: "Tailwind CSS",
+      KYdqOZyd5vUl7hENpitre: "Material UI (for React)",
     },
   },
-  "JavaScript Frameworks & Compilers": {
+  tDmRRqJ8obqK9wkfSy4sJ: {
     label: "JavaScript Frameworks & Compilers",
     tech: {
-      TypeScript: {
-        label: "TypeScript",
-      },
-      Babel: {
-        label: "Babel",
-      },
+      ywrgdbhQKpiKx_p0399N_: "TypeScript",
+      lffMp2pi72vO4IjBNaBzl: "Babel",
     },
   },
-  "Front-End Tooling": {
+  iLguZR9gxHRnpUMvwcRDT: {
     label: "Front-End Tooling",
     tech: {
-      ESLint: {
-        label: "ESLint",
-      },
-      Prettier: {
-        label: "Prettier",
-      },
-      PostCSS: {
-        label: "PostCSS",
-      },
+      "3dE44Wdss_ZgmRlBXAk5S": "ESLint",
+      uT3jGniXDXYKHW0BG48Yp: "Prettier",
+      "t-L3dzDZaZSPC2EehuZFB": "PostCSS",
     },
   },
-  "Testing Libraries and Frameworks": {
+  D1ga6h5dW0UaRvXHVB7ry: {
     label: "Testing Libraries and Frameworks",
     tech: {
-      Jest: {
-        label: "Jest",
-      },
-      "Enzyme (for React)": {
-        label: "Enzyme (for React)",
-      },
-      Mocha: {
-        label: "Mocha",
-      },
-      Chai: {
-        label: "Chai",
-      },
-      Cypress: {
-        label: "Cypress",
-      },
+      eiWJRLSQmJ6wZ4Gb5x13h: "Jest",
+      AFdM6vH8n7GBLS61USBbQ: "Enzyme (for React)",
+      halUpz5MkIfOaw5EqMB_C: "Mocha",
+      L4bRHIQ_BsBbXdoTG4l6W: "Chai",
+      "L1xdRh_5R6zh1yEPr-Q6C": "Cypress",
     },
   },
-  "Responsive Design and Cross-Browser Development": {
+  WKL7JCzvyNiCTLyQHJBaO: {
     label: "Responsive Design and Cross-Browser Development",
     tech: {
-      "Media Queries": {
-        label: "Media Queries",
-      },
-      "Flexbox and Grid": {
-        label: "Flexbox and Grid",
-      },
-      "Cross-Browser Testing Tools (BrowserStack, LambdaTest)": {
-        label: "Cross-Browser Testing Tools (BrowserStack, LambdaTest)",
-      },
+      lTSnTj9QdI930JDBKRtWo: "Media Queries",
+      "49F3CbwDpvNS0X0BnNcIV": "Flexbox and Grid",
+      MgZH4QxLxpBI2D7alz68x:
+        "Cross-Browser Testing Tools (BrowserStack, LambdaTest)",
     },
   },
-  "Web Performance Optimization": {
+  dwzsUKIDLw7eknFke3Qyb: {
     label: "Web Performance Optimization",
     tech: {
-      "Code Splitting": {
-        label: "Code Splitting",
-      },
-      "Lazy Loading": {
-        label: "Lazy Loading",
-      },
-      "Service Workers": {
-        label: "Service Workers",
-      },
-      "Performance Testing (Lighthouse, WebPageTest)": {
-        label: "Performance Testing (Lighthouse, WebPageTest)",
-      },
+      z9dgqz1ihs6dzT3uHc6yL: "Code Splitting",
+      "rEN8k6y-dwtITRQt-o829": "Lazy Loading",
+      "j-HD5CcHkDquUmNYrDmXQ": "Service Workers",
+      CdcYE_FZbk8lVMIj2RkeI: "Performance Testing (Lighthouse, WebPageTest)",
     },
   },
-  "Progressive Web Apps (PWAs)": {
+  "JspZiawN-FNLUHdlXrwtn": {
     label: "Progressive Web Apps (PWAs)",
     tech: {
-      "Manifest File, Service Workers, Offline Support": {
-        label: "Manifest File, Service Workers, Offline Support",
-      },
+      xpTNgfpdjD7MTpmyXeOTM: "Manifest File, Service Workers, Offline Support",
     },
   },
-  APIs: {
+  oPxu7wHRwOIlx48nWyTHT: {
     label: "APIs",
     tech: {
-      "RESTful Services": {
-        label: "RESTful Services",
-      },
-      GraphQL: {
-        label: "GraphQL",
-      },
-      WebSockets: {
-        label: "WebSockets",
-      },
+      "1Js4M0CsJLeJ9540YlOT2": "RESTful Services",
+      "8cZ-MIlQhgZwZJCnUD4B3": "GraphQL",
+      TCL7KJYLsJBtZPIQaWvjT: "WebSockets",
     },
   },
-  "SEO Basics": {
+  "9N8b1x9FvP7ACH8BioIxP": {
     label: "SEO Basics",
     tech: {
-      "Structured Data, Meta Tags, URL Structure": {
-        label: "Structured Data, Meta Tags, URL Structure",
-      },
+      m8kdHRmGMENsDRwxQJnBu: "Structured Data, Meta Tags, URL Structure",
     },
   },
-  Accessibility: {
+  "E_Unm7ZRfjbnRg-QX020A": {
     label: "Accessibility",
     tech: {
-      "ARIA roles, WCAG Guidelines": {
-        label: "ARIA roles, WCAG Guidelines",
-      },
+      "AY8wkKyc08-D1vdch_bZv": "ARIA roles, WCAG Guidelines",
     },
   },
-  "State Management": {
+  FY4rK2KeDturzbQFLCXsQ: {
     label: "State Management",
     tech: {
-      Redux: {
-        label: "Redux",
-      },
-      MobX: {
-        label: "MobX",
-      },
-      "VueX (for Vue)": {
-        label: "VueX (for Vue)",
-      },
+      UJP15nqYqAwKyYN8IfAJb: "Redux",
+      UEb3qftrPAWiVuUHQwUcX: "MobX",
+      "2wmSJ3B49D_yFD-lfC3iA": "VueX (for Vue)",
     },
   },
-  Animation: {
+  Rz_35qJhk9LH74AoHEVat: {
     label: "Animation",
     tech: {
-      "CSS Animations": {
-        label: "CSS Animations",
-      },
-      "SVG Animations": {
-        label: "SVG Animations",
-      },
-      "Animation Libraries (Framer Motion for React, GSAP)": {
-        label: "Animation Libraries (Framer Motion for React, GSAP)",
-      },
+      lnQRxfCHHay5JSrtXzst6: "CSS Animations",
+      IhyY3asc7m5Ye6KhqYeQd: "SVG Animations",
+      L_6kfOqYAPncHId72s7sI:
+        "Animation Libraries (Framer Motion for React, GSAP)",
     },
   },
-  "Single-Page Applications (SPAs)": {
+  dZ3MtVAOJZcGxtVbrdMAB: {
     label: "Single-Page Applications (SPAs)",
     tech: {
-      "Client-Side Routing (React-Router, Vue-Router)": {
-        label: "Client-Side Routing (React-Router, Vue-Router)",
-      },
+      naBFfjOWwt2lh8Zq3ATYP: "Client-Side Routing (React-Router, Vue-Router)",
     },
   },
-  "JAMstack Architecture": {
+  "8I8t6rggVmy50W0rANWWb": {
     label: "JAMstack Architecture",
     tech: {
-      "Static Site Generators (Gatsby, Next.js, Nuxt.js)": {
-        label: "Static Site Generators (Gatsby, Next.js, Nuxt.js)",
-      },
-      "Headless CMS (Contentful, Sanity)": {
-        label: "Headless CMS (Contentful, Sanity)",
-      },
+      "9DoErA7tj7C02RNNhpscL":
+        "Static Site Generators (Gatsby, Next.js, Nuxt.js)",
+      _XOfb2GhLSFIHp36Pt9FF: "Headless CMS (Contentful, Sanity)",
     },
   },
-  "Deployment and Hosting": {
+  aoqgETDx8GsjxNNYGJW8b: {
     label: "Deployment and Hosting",
     tech: {
-      Netlify: {
-        label: "Netlify",
-      },
-      Vercel: {
-        label: "Vercel",
-      },
-      "GitHub Pages": {
-        label: "GitHub Pages",
-      },
+      WdlothhiMjI1Uhw7IOJ_J: "Netlify",
+      NMPY3_ofGM2Kc5_S2t7Y8: "Vercel",
+      wbC9cOfTckei5Z5tB3xU7: "GitHub Pages",
     },
   },
-  "Cloud Services and APIs": {
+  "p8IS3levMc07q-utfRaU5": {
     label: "Cloud Services and APIs",
     tech: {
-      Firebase: {
-        label: "Firebase",
-      },
-      "AWS Amplify": {
-        label: "AWS Amplify",
-      },
-      "Azure Static Web Apps": {
-        label: "Azure Static Web Apps",
-      },
+      hVfrDKWRCNvtBSWe4A6Cz: "Firebase",
+      riMphhpnOz8UNZ8I3_3iK: "AWS Amplify",
+      _a17ktSqeOwRKn70NEmtL: "Azure Static Web Apps",
     },
   },
-  Other: {
+  other: {
     label: "Other",
     tech: {
-      "Continuous Professional Development": {
-        label: "Continuous Professional Development",
-      },
-      "Code Reviews": {
-        label: "Code Reviews",
-      },
-      "Open Source Contribution": {
-        label: "Open Source Contribution",
-      },
-      "Keeping Up With the Latest Front-End Trends": {
-        label: "Keeping Up With the Latest Front-End Trends",
-      },
+      hMFA0gagQe4RZJ5tOlbGR: "Keeping Up With the Latest Front-End Trends",
+      "8Ws42nbf_exa_JbGjq7ht": "Continuous Professional Development",
+      _raBHdPfQcvribsJrlYAi: "Code Reviews",
+      fUGhEzYCKuso3R3FFW7vd: "Open Source Contribution",
     },
   },
 };

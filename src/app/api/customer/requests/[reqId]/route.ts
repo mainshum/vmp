@@ -1,6 +1,7 @@
 import { db } from "@/lib/db";
-import { RequestFormModel } from "@/types/request";
+import { RequestPutModel } from "@/types/request";
 import { NextRequest } from "next/server";
+import { Prisma } from "@prisma/client";
 
 type ReqParams = { params: { reqId: string } };
 
@@ -15,7 +16,7 @@ export async function GET(_req: NextRequest, { params }: ReqParams) {
 export async function PUT(req: NextRequest, { params }: ReqParams) {
   const body = await req.json();
 
-  const data = RequestFormModel.safeParse(body);
+  const data = RequestPutModel.safeParse(body);
 
   if (!data.success)
     return new Response(data.error.message, {
@@ -24,7 +25,10 @@ export async function PUT(req: NextRequest, { params }: ReqParams) {
 
   const updated = await db.request.update({
     where: { id: params.reqId },
-    data: data.data,
+    data: {
+      ...data.data,
+      technical: !data.data.technical ? Prisma.DbNull : data.data.technical,
+    },
   });
 
   return new Response(JSON.stringify(updated));

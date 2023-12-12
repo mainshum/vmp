@@ -11,7 +11,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { useFieldArray, useForm } from "react-hook-form";
+import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { SelectItem } from "@/components/ui/select";
 import { Slider } from "@/components/ui/slider";
@@ -33,14 +33,14 @@ import {
   WorkType,
   JobProfile,
 } from "@prisma/client";
-import React, { useEffect, useLayoutEffect, useMemo, useState } from "react";
+import React, { useLayoutEffect, useMemo, useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { MyInput, MySelect, MySwitch } from "@/components/forms";
 import { RequestClient } from "@/lib/data";
 import { useSearchParams } from "next/navigation";
 import { useRouter } from "next/navigation";
-import { RequestFormModel, RequestModel } from "@/types/request";
+import { RequestModel, RequestPutModel } from "@/types/request";
 import { RequestModel as RM } from "zod-types";
 import { Checkbox } from "@/components/ui/checkbox";
 import { match } from "ts-pattern";
@@ -50,6 +50,48 @@ import SideNav from "@/components/side-nav";
 import { Children } from "@/types/shared";
 import { z } from "zod";
 import { Error } from "@/components/success";
+import { stringMin3, positiveInteger15 } from "@/types/prisma-extensions";
+
+const JobProfileModel = RM.omit({
+  id: true,
+  creationDate: true,
+  validUntil: true,
+})
+  .extend({
+    daysInOffice: z.any(),
+    officeLocation: z.any(),
+  })
+  .transform(({ ...rest }, ctx) => {
+    if (rest.workType === "FULLY_REMOTE")
+      return { ...rest, daysInOffice: null, officeLocation: null };
+
+    const ol = stringMin3.safeParse(rest.officeLocation);
+    const dio = positiveInteger15.safeParse(rest.daysInOffice);
+
+    if (!ol.success) {
+      ctx.addIssue({
+        path: ["officeLocation"],
+        message: ol.error.issues[0].message,
+        code: "custom",
+      });
+    }
+
+    if (rest.workType === "HYBRID" && !dio.success) {
+      ctx.addIssue({
+        path: ["daysInOffice"],
+        message: dio.error.issues[0].message,
+        code: "custom",
+      });
+    }
+
+    return {
+      ...rest,
+      daysInOffice: dio.success ? dio.data : null,
+      officeLocation: ol.success ? ol.data : null,
+    };
+  });
+
+type JobProfileModel = z.infer<typeof JobProfileModel>;
 
 function InputBrand({ msg }: { msg: string }) {
   return (
@@ -90,47 +132,14 @@ function FormNavigation({ page }: { page: keyof typeof Page }) {
   );
 }
 
-const user: Record<string, Record<string, boolean>> = {
-  CWT: {
-    HTML: true,
-    DOM: true,
-  },
-  OT: {
-    HTML: false,
-    DOM: true,
-  },
-};
-
-const mergeTechnologiesWithUser = (u: typeof user) => {
-  const retval = {} as typeof user;
-  for (const k of Object.keys(technologies)) {
-    const kl = k as keyof typeof technologies;
-    retval[kl] = {};
-    for (const tech of Object.keys(technologies[kl].tech)) {
-      const v = tech as keyof (typeof technologies)[typeof kl]["tech"];
-      retval[kl][v] = u[kl]?.[v] || false;
-    }
-  }
-  return retval;
-};
-
-const RequestFormState = z
-  .discriminatedUnion("page", [
-    z.object({ page: z.literal(Page.jpf) }),
-    z.object({
-      page: z.literal(Page.technical),
-      profile: z.nativeEnum(JobProfile),
-      request: RM,
-    }),
-  ])
-  .transform(({ ...xs }) => {
-    if (xs.page === "jpf") return xs;
-
-    return {
-      ...xs,
-      tech: mergeTechnologiesWithUser(user),
-    };
-  });
+const RequestFormState = z.discriminatedUnion("page", [
+  z.object({ page: z.literal(Page.jpf) }),
+  z.object({
+    page: z.literal(Page.technical),
+    profile: z.nativeEnum(JobProfile),
+    request: RM,
+  }),
+]);
 
 export const RequestForm = ({
   initRequest,
@@ -148,28 +157,26 @@ export const RequestForm = ({
     return RequestFormState.safeParse({ page, profile, request });
   }, [request, page, profile]);
 
-  const [ref] = useAutoAnimate();
-
   if (!parsedState.success) {
     return <Error reset={() => {}} error={parsedState.error} />;
   }
 
   return (
-    <div className="flex justify-center gap-8 px-8 md:justify-between">
-      <div className="hidden w-10 shrink-[100] md:block"></div>
+    <div className="flex justify-center gap-8 px-8 lg:justify-between">
+      <div className="hidden w-10 shrink-[100] lg:block"></div>
       <div className="flex flex-col items-start py-8">
         <FormNavigation page={parsedState.data.page} />
         {match(parsedState.data)
           .with({ page: "jpf" }, () => (
             <JobProfileForm onFilled={setRequest} data={request} />
           ))
-          .with({ page: "technical" }, ({ profile, tech }) => (
-            <TechnicalForm jobProfile={profile} tech={tech} />
+          .with({ page: "technical" }, ({ profile, request }) => (
+            <TechnicalForm jobProfile={profile} request={request} />
           ))
           .exhaustive()}
       </div>
       <SideNav className="sticky top-[56px] h-[calc(100vh-56px)] shrink-0 translate-x-[30px] gap-3 pt-8">
-        <div ref={ref} className="flex flex-col gap-3">
+        <div className="flex flex-col gap-3">
           <h1 className="text-lg font-semibold">On this page</h1>
           {match(parsedState.data)
             .with({ page: "jpf" }, () => (
@@ -180,11 +187,11 @@ export const RequestForm = ({
                 <A href="#project">Project details</A>
               </>
             ))
-            .with({ page: "technical" }, ({ tech }) => (
+            .with({ page: "technical" }, () => (
               <>
-                {Object.keys(tech).map((level0) => (
+                {Object.entries(technologies).map(([level0, { label }]) => (
                   <A key={level0} href={`#${level0}`}>
-                    {level0}
+                    {label}
                   </A>
                 ))}
               </>
@@ -208,27 +215,73 @@ const technologies = {
   ...frontendTech,
 };
 function TechnicalForm({
-  tech,
+  request,
   jobProfile,
 }: {
-  tech: ReturnType<typeof mergeTechnologiesWithUser>;
+  request: RequestModel;
   jobProfile: JobProfile;
 }) {
   const form = useForm({
-    defaultValues: { categories: tech },
+    defaultValues: request.technical || {},
   });
 
   useScrollTop();
+
+  const { toast } = useToast();
+  const client = useQueryClient();
+
+  const { mutate } = useMutation({
+    mutationFn: (xs: Record<string, Record<string, true | undefined>>) => {
+      const technical = Object.keys(xs).reduce(
+        (acc, key) => ({
+          ...acc,
+          ...Object.entries(xs[key as keyof typeof xs])
+            .filter(([, val]) => val)
+            .flatMap(([key]) => key)
+            .reduce(
+              (acc, tech) => {
+                if (!(key in acc)) {
+                  acc[key] = {};
+                }
+                acc[key][tech] = true;
+                return acc;
+              },
+              {} as Record<string, Record<string, true>>,
+            ),
+        }),
+        {} as Record<string, Record<string, true>>,
+      );
+
+      return RequestClient.put(
+        request.id,
+        RequestPutModel.parse({ technical }),
+      );
+    },
+    throwOnError: true,
+    onMutate: () => {
+      toast({ title: "Saving..." });
+    },
+    onError: () => {
+      toast({
+        title: "Error saving request",
+        description: "Please try resubmitting the form",
+      });
+    },
+    onSuccess: (data) => {
+      const updated = RM.parse(data);
+      client.setQueryData(["customer", "requests", updated.id], updated);
+      toast({ title: "Saved!" });
+    },
+  });
 
   return (
     <Form {...form}>
       <a className="hop-anchor top-[-45px]" id="top" />
       <form className="pt-4" onSubmit={form.handleSubmit(() => {})}>
         {Object.keys(technologies).map((level0) => {
-          const techs = Object.keys(
+          const techs = Object.entries(
             technologies[level0 as keyof typeof technologies].tech,
           );
-          const k = level0 as keyof typeof technologies;
           return (
             <div key={level0}>
               <a className="hop-anchor top-[-50px]" id={level0} />
@@ -236,24 +289,21 @@ function TechnicalForm({
                 {technologies[level0 as keyof typeof technologies].label}
               </h1>
               <ul>
-                {techs.map((tech) => {
-                  const v = tech as keyof ReturnType<
-                    typeof mergeTechnologiesWithUser
-                  >[typeof k];
+                {techs.map(([techKey, techLabel]) => {
                   return (
                     <FormField
-                      key={`${k}.${v}}`}
+                      key={`${level0}.${techKey}}`}
                       control={form.control}
-                      name={`categories.${k}.${v}`}
+                      name={`${level0}.${techKey}`}
                       render={({ field }) => (
                         <FormItem className="flex flex-row items-start space-x-3 space-y-0 py-4">
                           <FormControl>
                             <Checkbox
-                              checked={field.value}
+                              checked={field.value || false}
                               onCheckedChange={field.onChange}
                             />
                           </FormControl>
-                          <FormLabel>{technologies[k].tech[v].label}</FormLabel>
+                          <FormLabel>{techLabel}</FormLabel>
                         </FormItem>
                       )}
                     />
@@ -263,6 +313,9 @@ function TechnicalForm({
             </div>
           );
         })}
+        <section className="flex justify-end gap-4">
+          <Button onClick={form.handleSubmit((e) => mutate(e))}>Submit</Button>
+        </section>
       </form>
     </Form>
   );
@@ -282,8 +335,8 @@ const JobProfileForm = ({
 
   useScrollTop();
 
-  const form = useForm<RequestFormModel>({
-    resolver: zodResolver(RequestFormModel),
+  const form = useForm<JobProfileModel>({
+    resolver: zodResolver(JobProfileModel),
     defaultValues: {
       availability: data?.availability || 50,
       description: data?.description || "",
@@ -310,7 +363,7 @@ const JobProfileForm = ({
   const router = useRouter();
 
   const { mutate } = useMutation({
-    mutationFn: (xs: RequestFormModel) => {
+    mutationFn: (xs: JobProfileModel) => {
       if (data?.id) return RequestClient.put(data.id, xs);
 
       return RequestClient.post(xs);

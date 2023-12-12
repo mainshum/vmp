@@ -3,6 +3,12 @@ import * as imports from "../../src/types/prisma-extensions"
 import { RequestStatus, WorkType, ProjectStage, ProjectDuration, ProjectMethodology, JobProfile } from "@prisma/client"
 import { CompleteOffer, RelatedOfferModel } from "./index"
 
+// Helper schema for JSON fields
+type Literal = boolean | number | string
+type Json = Literal | { [key: string]: Json } | Json[]
+const literalSchema = z.union([z.string(), z.number(), z.boolean()])
+const jsonSchema: z.ZodSchema<Json> = z.lazy(() => z.union([literalSchema, z.array(jsonSchema), z.record(jsonSchema)]))
+
 export const RequestModel = z.object({
   id: z.string().cuid(),
   validUntil: z.date({ coerce: true }),
@@ -26,6 +32,7 @@ export const RequestModel = z.object({
   daysInOffice: imports.positiveInteger15.int().nullish(),
   domesticTravel: z.boolean(),
   internationalTravel: z.boolean(),
+  technical: imports.technicalValidator,
 })
 
 export interface CompleteRequest extends z.infer<typeof RequestModel> {
