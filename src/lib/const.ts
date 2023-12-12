@@ -8,8 +8,8 @@ export const ROUTES = {
   CUSTOMER: {
     REQUESTS: {
       LIST: "/customer/requests",
-      CREATE: "/customer/requests/create",
-      ONE: (id: string) => `/customer/requests/create?requestId=${id}`,
+      CREATE: "/customer/requests/create?page=jpf",
+      ONE: (id: string) => `/customer/requests/create?requestId=${id}&page=jpf`,
     },
     SETTINGS: {
       COMPANY: "/settings/company",

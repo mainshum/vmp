@@ -1,5 +1,6 @@
 import { db } from "@/lib/db";
-import { RequestFormModel } from "@/types/request";
+import { RequestPostModel } from "@/types/request";
+import { Prisma } from "@prisma/client";
 
 export async function GET() {
   const data = await db.request.findMany();
@@ -10,7 +11,7 @@ export async function GET() {
 export async function POST(req: Request) {
   const body = await req.json();
 
-  const data = RequestFormModel.safeParse(body);
+  const data = RequestPostModel.safeParse(body);
 
   if (!data.success)
     return new Response(data.error.message, {
@@ -22,6 +23,7 @@ export async function POST(req: Request) {
       ...data.data,
       creationDate: new Date(),
       validUntil: new Date(),
+      technical: !data.data.technical ? Prisma.DbNull : data.data.technical,
     },
   });
 

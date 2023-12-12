@@ -1,4 +1,4 @@
-import { RequestFormModel } from "@/types/request";
+import { RequestPostModel, RequestPutModel } from "@/types/request";
 import { ROUTES } from "./const";
 import { RequestModel } from "zod-types";
 import { z } from "zod";
@@ -15,7 +15,7 @@ export const RequestClient = {
       .then((res) => res.json())
       .then(z.array(RequestModel).parse);
   },
-  post: async (req: RequestFormModel) => {
+  post: async (req: z.infer<typeof RequestPostModel>) => {
     const res = await fetch(ROUTES.API.CUSTOMER.REQUESTS.POST, {
       method: "POST",
       body: JSON.stringify(req),
@@ -27,7 +27,7 @@ export const RequestClient = {
 
     return json;
   },
-  put: async (id: string, req: RequestFormModel) => {
+  put: async (id: string, req: z.infer<typeof RequestPutModel>) => {
     const res = await fetch(ROUTES.API.CUSTOMER.REQUESTS.PUT(id), {
       method: "PUT",
       body: JSON.stringify(req),

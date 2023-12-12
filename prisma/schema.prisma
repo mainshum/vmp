@@ -170,6 +170,9 @@ model Request {
   domesticTravel      Boolean
   internationalTravel Boolean
 
+  /// @zod.custom(imports.technicalValidator)
+  technical Json?
+
   offers Offer[]
 }
 

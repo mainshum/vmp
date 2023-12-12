@@ -14,3 +14,7 @@ export const availabilitySlider = z.number({ coerce: true });
 export const stringMin3 = z
   .string()
   .min(3, { message: "Minimum length of 3 characters" });
+
+export const technicalValidator = z
+  .record(z.string(), z.record(z.string(), z.literal(true)))
+  .nullish();

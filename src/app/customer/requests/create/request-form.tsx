@@ -23,7 +23,7 @@ import {
 } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import { format } from "date-fns";
-import { CalendarIcon } from "lucide-react";
+import { CalendarIcon, Circle } from "lucide-react";
 import { useAutoAnimate } from "@formkit/auto-animate/react";
 import { Textarea } from "@/components/ui/textarea";
 import {
@@ -33,17 +33,65 @@ import {
   WorkType,
   JobProfile,
 } from "@prisma/client";
-import React from "react";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import React, { useLayoutEffect, useMemo, useState } from "react";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { MyInput, MySelect, MySwitch } from "@/components/forms";
 import { RequestClient } from "@/lib/data";
 import { useSearchParams } from "next/navigation";
-import { ROUTES } from "@/lib/const";
-import Loader from "@/app/customer/loading";
 import { useRouter } from "next/navigation";
-import { RequestFormModel, RequestModel } from "@/types/request";
+import { RequestModel, RequestPutModel } from "@/types/request";
 import { RequestModel as RM } from "zod-types";
+import { Checkbox } from "@/components/ui/checkbox";
+import { match } from "ts-pattern";
+import { frontendTech } from "./tech";
+import clsx from "clsx";
+import SideNav from "@/components/side-nav";
+import { Children } from "@/types/shared";
+import { z } from "zod";
+import { Error } from "@/components/success";
+import { stringMin3, positiveInteger15 } from "@/types/prisma-extensions";
+
+const JobProfileModel = RM.omit({
+  id: true,
+  creationDate: true,
+  validUntil: true,
+})
+  .extend({
+    daysInOffice: z.any(),
+    officeLocation: z.any(),
+  })
+  .transform(({ ...rest }, ctx) => {
+    if (rest.workType === "FULLY_REMOTE")
+      return { ...rest, daysInOffice: null, officeLocation: null };
+
+    const ol = stringMin3.safeParse(rest.officeLocation);
+    const dio = positiveInteger15.safeParse(rest.daysInOffice);
+
+    if (!ol.success) {
+      ctx.addIssue({
+        path: ["officeLocation"],
+        message: ol.error.issues[0].message,
+        code: "custom",
+      });
+    }
+
+    if (rest.workType === "HYBRID" && !dio.success) {
+      ctx.addIssue({
+        path: ["daysInOffice"],
+        message: dio.error.issues[0].message,
+        code: "custom",
+      });
+    }
+
+    return {
+      ...rest,
+      daysInOffice: dio.success ? dio.data : null,
+      officeLocation: ol.success ? ol.data : null,
+    };
+  });
+
+type JobProfileModel = z.infer<typeof JobProfileModel>;
 
 function InputBrand({ msg }: { msg: string }) {
   return (
@@ -52,35 +100,243 @@ function InputBrand({ msg }: { msg: string }) {
     </span>
   );
 }
+const C = () => <Circle fill="black" className="h-2 w-2 " />;
 
-export function RequestForm() {
-  const requestId = useSearchParams().get("requestId");
+const A = ({ href, children }: { href: string; children: Children }) => (
+  <a className="block text-slate-500" href={href}>
+    {children}
+  </a>
+);
 
-  const { data, isLoading } = useQuery({
-    queryKey: ["customer", "requests", requestId],
-    queryFn: async () => {
-      if (!requestId) return undefined;
-      return await RequestClient.get(requestId);
-    },
-    enabled: !!requestId,
-    throwOnError: true,
-  });
+const Page = {
+  jpf: "jpf",
+  technical: "technical",
+  other: "other",
+} as const;
 
-  return isLoading ? (
-    <Loader />
-  ) : (
-    <EditRequestForm key={requestId || "create"} data={data} />
+function FormNavigation({ page }: { page: keyof typeof Page }) {
+  return (
+    <div className="flex items-baseline gap-4">
+      <span className={clsx(page === "jpf" && `text-2xl font-bold`)}>
+        Job profile
+      </span>
+      <C />
+      <span className={clsx(page === "technical" && `text-2xl font-bold`)}>
+        Technical
+      </span>
+      <C />
+      <span className={clsx(page === "other" && `text-2xl font-bold`)}>
+        Other
+      </span>
+    </div>
   );
 }
 
-function EditRequestForm({ data }: { data: RequestModel | undefined }) {
+const RequestFormState = z.discriminatedUnion("page", [
+  z.object({ page: z.literal(Page.jpf) }),
+  z.object({
+    page: z.literal(Page.technical),
+    profile: z.nativeEnum(JobProfile),
+    request: RM,
+  }),
+]);
+
+export const RequestForm = ({
+  initRequest,
+}: {
+  initRequest?: RequestModel;
+}) => {
+  const sp = useSearchParams();
+
+  const [request, setRequest] = useState<RequestModel | undefined>(initRequest);
+
+  const page = sp.get("page");
+  const profile = sp.get("profile");
+
+  const parsedState = useMemo(() => {
+    return RequestFormState.safeParse({ page, profile, request });
+  }, [request, page, profile]);
+
+  if (!parsedState.success) {
+    return <Error reset={() => {}} error={parsedState.error} />;
+  }
+
+  return (
+    <div className="flex justify-center gap-8 px-8 lg:justify-between">
+      <div className="hidden w-10 shrink-[100] lg:block"></div>
+      <div className="flex flex-col items-start py-8">
+        <FormNavigation page={parsedState.data.page} />
+        {match(parsedState.data)
+          .with({ page: "jpf" }, () => (
+            <JobProfileForm onFilled={setRequest} data={request} />
+          ))
+          .with({ page: "technical" }, ({ profile, request }) => (
+            <TechnicalForm jobProfile={profile} request={request} />
+          ))
+          .exhaustive()}
+      </div>
+      <SideNav className="sticky top-[56px] h-[calc(100vh-56px)] shrink-0 translate-x-[30px] gap-3 pt-8">
+        <div className="flex flex-col gap-3">
+          <h1 className="text-lg font-semibold">On this page</h1>
+          {match(parsedState.data)
+            .with({ page: "jpf" }, () => (
+              <>
+                <A href="#profile">Profile</A>
+                <A href="#availability">Availability</A>
+                <A href="#travel">Travel requirements</A>
+                <A href="#project">Project details</A>
+              </>
+            ))
+            .with({ page: "technical" }, () => (
+              <>
+                {Object.entries(technologies).map(([level0, { label }]) => (
+                  <A key={level0} href={`#${level0}`}>
+                    {label}
+                  </A>
+                ))}
+              </>
+            ))
+            .exhaustive()}
+        </div>
+      </SideNav>
+    </div>
+  );
+};
+
+// TODO make it work
+const useScrollTop = () => {
+  return useLayoutEffect(() => {
+    window.scrollTo(0, 0);
+  }, []);
+};
+
+// this goes into consts
+const technologies = {
+  ...frontendTech,
+};
+function TechnicalForm({
+  request,
+  jobProfile,
+}: {
+  request: RequestModel;
+  jobProfile: JobProfile;
+}) {
+  const form = useForm({
+    defaultValues: request.technical || {},
+  });
+
+  useScrollTop();
+
+  const { toast } = useToast();
+  const client = useQueryClient();
+
+  const { mutate } = useMutation({
+    mutationFn: (xs: Record<string, Record<string, true | undefined>>) => {
+      const technical = Object.keys(xs).reduce(
+        (acc, key) => ({
+          ...acc,
+          ...Object.entries(xs[key as keyof typeof xs])
+            .filter(([, val]) => val)
+            .flatMap(([key]) => key)
+            .reduce(
+              (acc, tech) => {
+                if (!(key in acc)) {
+                  acc[key] = {};
+                }
+                acc[key][tech] = true;
+                return acc;
+              },
+              {} as Record<string, Record<string, true>>,
+            ),
+        }),
+        {} as Record<string, Record<string, true>>,
+      );
+
+      return RequestClient.put(
+        request.id,
+        RequestPutModel.parse({ technical }),
+      );
+    },
+    throwOnError: true,
+    onMutate: () => {
+      toast({ title: "Saving..." });
+    },
+    onError: () => {
+      toast({
+        title: "Error saving request",
+        description: "Please try resubmitting the form",
+      });
+    },
+    onSuccess: (data) => {
+      const updated = RM.parse(data);
+      client.setQueryData(["customer", "requests", updated.id], updated);
+      toast({ title: "Saved!" });
+    },
+  });
+
+  return (
+    <Form {...form}>
+      <a className="hop-anchor top-[-45px]" id="top" />
+      <form className="pt-4" onSubmit={form.handleSubmit(() => {})}>
+        {Object.keys(technologies).map((level0) => {
+          const techs = Object.entries(
+            technologies[level0 as keyof typeof technologies].tech,
+          );
+          return (
+            <div key={level0}>
+              <a className="hop-anchor top-[-50px]" id={level0} />
+              <h1 className="mb-2 border-b-2 border-slate-100 py-3 text-lg font-bold">
+                {technologies[level0 as keyof typeof technologies].label}
+              </h1>
+              <ul>
+                {techs.map(([techKey, techLabel]) => {
+                  return (
+                    <FormField
+                      key={`${level0}.${techKey}}`}
+                      control={form.control}
+                      name={`${level0}.${techKey}`}
+                      render={({ field }) => (
+                        <FormItem className="flex flex-row items-start space-x-3 space-y-0 py-4">
+                          <FormControl>
+                            <Checkbox
+                              checked={field.value || false}
+                              onCheckedChange={field.onChange}
+                            />
+                          </FormControl>
+                          <FormLabel>{techLabel}</FormLabel>
+                        </FormItem>
+                      )}
+                    />
+                  );
+                })}
+              </ul>
+            </div>
+          );
+        })}
+        <section className="flex justify-end gap-4">
+          <Button onClick={form.handleSubmit((e) => mutate(e))}>Submit</Button>
+        </section>
+      </form>
+    </Form>
+  );
+}
+
+const JobProfileForm = ({
+  data,
+  onFilled,
+}: {
+  data: RequestModel | undefined;
+  // eslint-disable-next-line no-unused-vars
+  onFilled: (rm: RequestModel) => void;
+}) => {
   const { toast } = useToast();
 
   const client = useQueryClient();
-  const router = useRouter();
 
-  const form = useForm<RequestFormModel>({
-    resolver: zodResolver(RequestFormModel),
+  useScrollTop();
+
+  const form = useForm<JobProfileModel>({
+    resolver: zodResolver(JobProfileModel),
     defaultValues: {
       availability: data?.availability || 50,
       description: data?.description || "",
@@ -104,14 +360,16 @@ function EditRequestForm({ data }: { data: RequestModel | undefined }) {
     },
   });
 
+  const router = useRouter();
+
   const { mutate } = useMutation({
-    mutationFn: (xs: RequestFormModel) => {
+    mutationFn: (xs: JobProfileModel) => {
       if (data?.id) return RequestClient.put(data.id, xs);
 
       return RequestClient.post(xs);
     },
     onMutate: () => {
-      toast({ title: "Saving request..." });
+      toast({ title: "Saving..." });
     },
     onError: () => {
       toast({
@@ -121,16 +379,15 @@ function EditRequestForm({ data }: { data: RequestModel | undefined }) {
     },
     onSuccess: (data) => {
       const updated = RM.parse(data);
-      toast({
-        title: "Saved successfully",
-        description: `Request ${updated.name} has been saved`,
-      });
-      client.setQueryData(["customer", "requests", updated.id], {});
-      client.invalidateQueries({
-        queryKey: ["customer", "requests", updated.id],
-      });
+      client.setQueryData(["customer", "requests", updated.id], updated);
+      onFilled(updated);
 
-      router.push(ROUTES.CUSTOMER.REQUESTS.ONE(updated.id));
+      const url = new URL(window.location.href);
+
+      url.searchParams.set("profile", updated.profile);
+      url.searchParams.set("page", "technical");
+
+      router.push(url.toString());
     },
   });
 
@@ -443,4 +700,4 @@ function EditRequestForm({ data }: { data: RequestModel | undefined }) {
       </form>
     </Form>
   );
-}
+};
