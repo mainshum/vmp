@@ -10,7 +10,7 @@ const SideNav = React.forwardRef<
       ref={ref}
       {...props}
       className={cn(
-        "hidden h-full flex-col items-center bg-slate-50 md:flex md:w-80",
+        "hidden h-full flex-col items-center bg-slate-50 px-20 md:flex",
         className,
       )}
     >

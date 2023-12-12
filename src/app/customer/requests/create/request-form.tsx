@@ -33,14 +33,12 @@ import {
   WorkType,
   JobProfile,
 } from "@prisma/client";
-import React, { memo, useCallback, useContext, useMemo, useState } from "react";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import React, { useEffect, useLayoutEffect, useMemo, useState } from "react";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { MyInput, MySelect, MySwitch } from "@/components/forms";
 import { RequestClient } from "@/lib/data";
 import { useSearchParams } from "next/navigation";
-import { ROUTES } from "@/lib/const";
-import Loader from "@/app/customer/loading";
 import { useRouter } from "next/navigation";
 import { RequestFormModel, RequestModel } from "@/types/request";
 import { RequestModel as RM } from "zod-types";
@@ -50,8 +48,6 @@ import { frontendTech } from "./tech";
 import clsx from "clsx";
 import SideNav from "@/components/side-nav";
 import { Children } from "@/types/shared";
-import { set } from "cypress/types/lodash";
-import { ro } from "date-fns/locale";
 import { z } from "zod";
 import { Error } from "@/components/success";
 
@@ -152,6 +148,8 @@ export const RequestForm = ({
     return RequestFormState.safeParse({ page, profile, request });
   }, [request, page, profile]);
 
+  const [ref] = useAutoAnimate();
+
   if (!parsedState.success) {
     return <Error reset={() => {}} error={parsedState.error} />;
   }
@@ -171,11 +169,11 @@ export const RequestForm = ({
           .exhaustive()}
       </div>
       <SideNav className="sticky top-[56px] h-[calc(100vh-56px)] shrink-0 translate-x-[30px] gap-3 pt-8">
-        <div className="flex flex-col gap-3">
+        <div ref={ref} className="flex flex-col gap-3">
+          <h1 className="text-lg font-semibold">On this page</h1>
           {match(parsedState.data)
             .with({ page: "jpf" }, () => (
               <>
-                <h1 className="text-lg font-semibold">On this page</h1>
                 <A href="#profile">Profile</A>
                 <A href="#availability">Availability</A>
                 <A href="#travel">Travel requirements</A>
@@ -184,7 +182,6 @@ export const RequestForm = ({
             ))
             .with({ page: "technical" }, ({ tech }) => (
               <>
-                <h1 className="text-lg font-semibold">On this page</h1>
                 {Object.keys(tech).map((level0) => (
                   <A key={level0} href={`#${level0}`}>
                     {level0}
@@ -197,6 +194,13 @@ export const RequestForm = ({
       </SideNav>
     </div>
   );
+};
+
+// TODO make it work
+const useScrollTop = () => {
+  return useLayoutEffect(() => {
+    window.scrollTo(0, 0);
+  }, []);
 };
 
 // this goes into consts
@@ -214,8 +218,11 @@ function TechnicalForm({
     defaultValues: { categories: tech },
   });
 
+  useScrollTop();
+
   return (
     <Form {...form}>
+      <a className="hop-anchor top-[-45px]" id="top" />
       <form className="pt-4" onSubmit={form.handleSubmit(() => {})}>
         {Object.keys(technologies).map((level0) => {
           const techs = Object.keys(
@@ -272,6 +279,8 @@ const JobProfileForm = ({
   const { toast } = useToast();
 
   const client = useQueryClient();
+
+  useScrollTop();
 
   const form = useForm<RequestFormModel>({
     resolver: zodResolver(RequestFormModel),
