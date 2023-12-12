@@ -213,8 +213,7 @@ function TechnicalForm({
 
   return (
     <Form {...form}>
-      {jobProfile}
-      <form onSubmit={form.handleSubmit(() => {})}>
+      <form className="pt-4" onSubmit={form.handleSubmit(() => {})}>
         {Object.keys(technologies).map((level0) => {
           const techs = Object.keys(
             technologies[level0 as keyof typeof technologies].tech,
@@ -222,7 +221,9 @@ function TechnicalForm({
           const k = level0 as keyof typeof technologies;
           return (
             <div key={level0}>
-              <h1>{technologies[level0 as keyof typeof technologies].label}</h1>
+              <h1 className="mb-2 border-b-2 border-slate-100 py-3 text-lg font-bold">
+                {technologies[level0 as keyof typeof technologies].label}
+              </h1>
               <ul>
                 {techs.map((tech) => {
                   const v = tech as keyof ReturnType<
@@ -234,7 +235,7 @@ function TechnicalForm({
                       control={form.control}
                       name={`categories.${k}.${v}`}
                       render={({ field }) => (
-                        <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
+                        <FormItem className="flex flex-row items-start space-x-3 space-y-0 py-4">
                           <FormControl>
                             <Checkbox
                               checked={field.value}
@@ -261,6 +262,7 @@ const JobProfileForm = ({
   onFilled,
 }: {
   data: RequestModel | undefined;
+  // eslint-disable-next-line no-unused-vars
   onFilled: (rm: RequestModel) => void;
 }) => {
   const { toast } = useToast();
