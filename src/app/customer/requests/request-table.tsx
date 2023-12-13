@@ -40,7 +40,7 @@ const ctx = React.createContext<Ctx>({} as Ctx);
 export const opsColumns: ColumnDef<RequestSchemaLight>[] = [
   {
     accessorKey: "id",
-    header: "ID",
+    header: "Request ID",
 
     cell: ({ row }) => {
       return (
@@ -146,7 +146,7 @@ export function RequestsTable({ requests }: { requests: RequestTableRow[] }) {
         handleRequestRemoval,
       }}
     >
-      <Shell className="container">
+      <Shell className="container pt-8">
         <DataTable
           columns={opsColumns}
           data={data}

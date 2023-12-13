@@ -68,7 +68,7 @@ type OfferSchema = z.infer<typeof OfferSchema>;
 const offersColumns: ColumnDef<OfferSchema>[] = [
   {
     accessorKey: "id",
-    header: "ID",
+    header: "Offer ID",
     cell: ({ row }) => (
       <span className="pr-[1.6rem]">{row.getValue("id")}</span>
     ),
