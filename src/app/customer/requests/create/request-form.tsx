@@ -1,5 +1,6 @@
 "use client";
 
+import { Software } from "./tech";
 import { Button } from "@/components/ui/button";
 import {
   Form,
@@ -32,6 +33,7 @@ import {
   ProjectMethodology,
   WorkType,
   JobProfile,
+  JobSubProfile,
 } from "@prisma/client";
 import React, { useLayoutEffect, useMemo, useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
@@ -44,7 +46,6 @@ import { RequestModel, RequestPutModel } from "@/types/request";
 import { RequestModel as RM } from "zod-types";
 import { Checkbox } from "@/components/ui/checkbox";
 import { match } from "ts-pattern";
-import { frontendTech } from "./tech";
 import clsx from "clsx";
 import SideNav from "@/components/side-nav";
 import { Children } from "@/types/shared";
@@ -108,13 +109,13 @@ const A = ({ href, children }: { href: string; children: Children }) => (
   </a>
 );
 
-const Page = {
-  jpf: "jpf",
-  technical: "technical",
-  other: "other",
-} as const;
+const Page = z.union([
+  z.literal("jpf"),
+  z.literal("technical"),
+  z.literal("other"),
+]);
 
-function FormNavigation({ page }: { page: keyof typeof Page }) {
+function FormNavigation({ page }: { page: z.infer<typeof Page> }) {
   return (
     <div className="flex items-baseline gap-4">
       <span className={clsx(page === "jpf" && `text-2xl font-bold`)}>
@@ -132,14 +133,15 @@ function FormNavigation({ page }: { page: keyof typeof Page }) {
   );
 }
 
-const RequestFormState = z.discriminatedUnion("page", [
-  z.object({ page: z.literal(Page.jpf) }),
-  z.object({
-    page: z.literal(Page.technical),
-    profile: z.nativeEnum(JobProfile),
-    request: RM,
-  }),
-]);
+type RequestFormState =
+  | { type: "jpf" }
+  | {
+      type: "technical";
+      requestId: string;
+      techTree: TechTree;
+      technical: RequestModel["technical"];
+    }
+  | { type: "error" };
 
 export const RequestForm = ({
   initRequest,
@@ -151,35 +153,61 @@ export const RequestForm = ({
   const [request, setRequest] = useState<RequestModel | undefined>(initRequest);
 
   const page = sp.get("page");
-  const profile = sp.get("profile");
 
-  const parsedState = useMemo(() => {
-    return RequestFormState.safeParse({ page, profile, request });
-  }, [request, page, profile]);
+  const parsedState: RequestFormState = useMemo(() => {
+    const parsedPage = Page.safeParse(page);
+    if (!parsedPage.success) return { type: "error" };
 
-  if (!parsedState.success) {
-    return <Error reset={() => {}} error={parsedState.error} />;
+    if (parsedPage.data == "jpf") return { type: "jpf" };
+
+    if (!request) return { type: "error" };
+
+    const techTree = match(request.profile)
+      .with(JobProfile.SOFTWARE_ENGINEER, () => {
+        return match(request.subProfile)
+          .with(JobSubProfile.BACKEND, () => Software.backend)
+          .with(JobSubProfile.FRONTEND, () => Software.frontend)
+          .with(JobSubProfile.FULLSTACK, () => Software.fullstack)
+          .with(JobSubProfile.MOBILE, () => Software.mobile)
+          .exhaustive();
+      })
+      .otherwise(() => Software.mobile);
+
+    return {
+      type: "technical",
+      requestId: request.id,
+      techTree,
+      technical: request.technical,
+    };
+  }, [request, page]);
+
+  if (parsedState.type === "error") {
+    return <Error />;
   }
 
   return (
     <div className="flex justify-center gap-8 px-8 lg:justify-between">
       <div className="hidden w-10 shrink-[100] lg:block"></div>
       <div className="flex flex-col items-start py-8">
-        <FormNavigation page={parsedState.data.page} />
-        {match(parsedState.data)
-          .with({ page: "jpf" }, () => (
+        <FormNavigation page={parsedState.type} />
+        {match(parsedState)
+          .with({ type: "jpf" }, () => (
             <JobProfileForm onFilled={setRequest} data={request} />
           ))
-          .with({ page: "technical" }, ({ profile, request }) => (
-            <TechnicalForm jobProfile={profile} request={request} />
+          .with({ type: "technical" }, ({ techTree, requestId, technical }) => (
+            <TechnicalForm
+              techTree={techTree}
+              requestId={requestId}
+              technical={technical}
+            />
           ))
           .exhaustive()}
       </div>
       <SideNav className="sticky top-[56px] h-[calc(100vh-56px)] shrink-0 translate-x-[30px] gap-3 pt-8">
         <div className="flex flex-col gap-3">
           <h1 className="text-lg font-semibold">On this page</h1>
-          {match(parsedState.data)
-            .with({ page: "jpf" }, () => (
+          {match(parsedState)
+            .with({ type: "jpf" }, () => (
               <>
                 <A href="#profile">Profile</A>
                 <A href="#availability">Availability</A>
@@ -187,9 +215,9 @@ export const RequestForm = ({
                 <A href="#project">Project details</A>
               </>
             ))
-            .with({ page: "technical" }, () => (
+            .with({ type: "technical" }, ({ techTree }) => (
               <>
-                {Object.entries(technologies).map(([level0, { label }]) => (
+                {Object.entries(techTree).map(([level0, { label }]) => (
                   <A key={level0} href={`#${level0}`}>
                     {label}
                   </A>
@@ -210,19 +238,19 @@ const useScrollTop = () => {
   }, []);
 };
 
-// this goes into consts
-const technologies = {
-  ...frontendTech,
-};
+type TechTree = Record<string, { label: string; tech: Record<string, string> }>;
+
 function TechnicalForm({
-  request,
-  jobProfile,
+  requestId,
+  technical,
+  techTree,
 }: {
-  request: RequestModel;
-  jobProfile: JobProfile;
+  requestId: string;
+  technical: RequestModel["technical"];
+  techTree: TechTree;
 }) {
   const form = useForm({
-    defaultValues: request.technical || {},
+    defaultValues: technical || {},
   });
 
   useScrollTop();
@@ -252,10 +280,7 @@ function TechnicalForm({
         {} as Record<string, Record<string, true>>,
       );
 
-      return RequestClient.put(
-        request.id,
-        RequestPutModel.parse({ technical }),
-      );
+      return RequestClient.put(requestId, RequestPutModel.parse({ technical }));
     },
     throwOnError: true,
     onMutate: () => {
@@ -278,18 +303,15 @@ function TechnicalForm({
     <Form {...form}>
       <a className="hop-anchor top-[-45px]" id="top" />
       <form className="pt-4" onSubmit={form.handleSubmit(() => {})}>
-        {Object.keys(technologies).map((level0) => {
-          const techs = Object.entries(
-            technologies[level0 as keyof typeof technologies].tech,
-          );
+        {Object.entries(techTree).map(([level0, { label, tech }]) => {
           return (
             <div key={level0}>
               <a className="hop-anchor top-[-50px]" id={level0} />
               <h1 className="mb-2 border-b-2 border-slate-100 py-3 text-lg font-bold">
-                {technologies[level0 as keyof typeof technologies].label}
+                {label}
               </h1>
               <ul>
-                {techs.map(([techKey, techLabel]) => {
+                {Object.entries(tech).map(([techKey, techLabel]) => {
                   return (
                     <FormField
                       key={`${level0}.${techKey}}`}
@@ -340,6 +362,7 @@ const JobProfileForm = ({
     defaultValues: {
       availability: data?.availability || 50,
       description: data?.description || "",
+      subProfile: data?.subProfile || undefined,
       workType: data?.workType || undefined,
       domesticTravel: data?.domesticTravel || false,
       internationalTravel: data?.internationalTravel || false,
@@ -395,6 +418,19 @@ const JobProfileForm = ({
   const [officeLocationRef] = useAutoAnimate();
 
   const workType = form.watch("workType");
+  const profile = form.watch("profile");
+
+  const subProfile: JobSubProfile[] = match(profile)
+    .with(JobProfile.SOFTWARE_ENGINEER, () => [
+      JobSubProfile.BACKEND,
+      JobSubProfile.FRONTEND,
+      JobSubProfile.FULLSTACK,
+      JobSubProfile.MOBILE,
+    ])
+    .with(JobProfile.DATA_SPECIALIST, () => [])
+    .with(JobProfile.DEVOPS, () => [])
+    .with(JobProfile.QUALITY_ASSURANCE, () => [])
+    .exhaustive();
 
   const showOfficeLocation = workType === "ONSITE" || workType === "HYBRID";
   const showDaysInOffice = workType === "HYBRID";
@@ -414,6 +450,18 @@ const JobProfileForm = ({
           label="Consultant's profile"
         >
           {Object.values(JobProfile).map((val) => (
+            <SelectItem key={val} value={val}>
+              {val}
+            </SelectItem>
+          ))}
+        </MySelect>
+        <MySelect
+          control={form.control}
+          name="subProfile"
+          placeholder="Select sub-profile"
+          label="Consultant's sub-profile"
+        >
+          {Object.values(subProfile).map((val) => (
             <SelectItem key={val} value={val}>
               {val}
             </SelectItem>

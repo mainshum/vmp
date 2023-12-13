@@ -12,7 +12,7 @@ function Wrap({ children }: { children: React.ReactNode }) {
   return <div className="center-absolute justify-around px-16">{children}</div>;
 }
 
-export function Error({ error, reset }: ErrorComp) {
+export function Error() {
   return (
     <Wrap>
       <Typo.H1 className="text-center">404</Typo.H1>
