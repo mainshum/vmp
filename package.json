@@ -102,6 +102,7 @@
   "devDependencies": {
     "@cypress/webpack-preprocessor": "^6.0.0",
     "@faker-js/faker": "^8.1.0",
+    "@next/bundle-analyzer": "^14.0.4",
     "@testing-library/cypress": "^9.0.0",
     "@types/editorjs__header": "^2.6.0",
     "@types/lodash.debounce": "^4.0.7",
