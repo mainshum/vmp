@@ -1,4 +1,3 @@
-import Icons from "@/components/icons";
 import SignUpForm from "@/components/sign-up-form";
 import Link from "next/link";
 
@@ -6,8 +5,6 @@ async function Page() {
   return (
     <div className="center-absolute">
       <div className="flex h-full w-[500px] flex-col items-center justify-center gap-2">
-        <Icons.logo />
-        <h1 className="text-2xl font-semibold tracking-tight">VMP</h1>
         <SignUpForm />
         <p className="text-sm text-zinc-700">
           New to VMP?{" "}
