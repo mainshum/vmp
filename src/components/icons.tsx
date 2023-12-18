@@ -1,5 +1,3 @@
-import { LucideProps } from "lucide-react";
-
 const Icons = {
   linkedin: () => (
     <svg

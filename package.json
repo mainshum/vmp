@@ -11,7 +11,9 @@
     "test:open": "pnpm dlx cypress open",
     "test:run": "pnpm dlx cypress run",
     "test:e2e:dev": "start-test dev http://localhost:3000/favicon.ico test:open",
-    "test:e2e:ci": "start-test 'pnpm run dev' http://localhost:3000/favicon.ico 'pnpm run test:run'"
+    "test:e2e:ci": "start-test 'pnpm run dev' http://localhost:3000/favicon.ico 'pnpm run test:run'",
+    "storybook": "storybook dev -p 6006",
+    "build-storybook": "storybook build"
   },
   "prisma": {
     "seed": "ts-node --compiler-options {\"module\":\"CommonJS\"} prisma/seed.ts"
@@ -103,12 +105,25 @@
     "@cypress/webpack-preprocessor": "^6.0.0",
     "@faker-js/faker": "^8.1.0",
     "@next/bundle-analyzer": "^14.0.4",
+    "@storybook/addon-essentials": "^7.6.5",
+    "@storybook/addon-interactions": "^7.6.5",
+    "@storybook/addon-links": "^7.6.5",
+    "@storybook/addon-onboarding": "^1.0.10",
+    "@storybook/addon-styling-webpack": "^0.0.5",
+    "@storybook/blocks": "^7.6.5",
+    "@storybook/nextjs": "^7.6.5",
+    "@storybook/react": "^7.6.5",
+    "@storybook/test": "^7.6.5",
     "@testing-library/cypress": "^9.0.0",
     "@types/editorjs__header": "^2.6.0",
     "@types/lodash.debounce": "^4.0.7",
+    "css-loader": "^6.8.1",
     "dotenv": "^16.3.1",
     "eslint-plugin-storybook": "^0.6.13",
+    "postcss-loader": "^7.3.3",
     "start-server-and-test": "^2.0.0",
+    "storybook": "^7.6.5",
+    "style-loader": "^3.3.3",
     "ts-node": "^10.9.1"
   }
 }
