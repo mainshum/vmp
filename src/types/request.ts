@@ -15,4 +15,13 @@ export const RequestPutModel = RequestModel.omit({
   validUntil: true,
 }).partial();
 
+export type RequestPreview = {
+  id: string;
+  status: string;
+  name: string;
+  validUntil: string;
+  creationDate: string;
+  offersCount: number;
+};
+
 // form internal representation

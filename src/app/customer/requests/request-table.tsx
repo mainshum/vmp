@@ -5,8 +5,6 @@ import { OffersTable } from "./offers-table";
 import { ColumnDef } from "@tanstack/react-table";
 import { ChevronDown, ChevronRight, MoreHorizontal } from "lucide-react";
 import { createDate } from "./shared";
-import { z } from "zod";
-import { RequestModel } from "zod-types";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -16,20 +14,18 @@ import {
 import { Button } from "@/components/ui/button";
 import React, { useContext } from "react";
 import { Action } from "@/types/shared";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
-import { Request } from "@prisma/client";
 import Link from "next/link";
 import { ROUTES } from "@/lib/const";
 import { RequestClient } from "@/lib/data";
 import { Shell } from "@/components/shell";
+import { RouterOutputs, trpc } from "@/lib/trpc";
+import { RequestPreview } from "@/types/request";
 
 const chevronClasses = "h-4 w-4";
 
-type RequestSchemaLight = Pick<
-  z.infer<typeof RequestModel>,
-  "id" | "status" | "name" | "creationDate" | "validUntil"
->;
+type RequestsPreviews = RouterOutputs["requestsPreviews"];
 
 type Ctx = {
   handleRequestRemoval: Action<string>;
@@ -37,7 +33,7 @@ type Ctx = {
 
 const ctx = React.createContext<Ctx>({} as Ctx);
 
-export const opsColumns: ColumnDef<RequestSchemaLight>[] = [
+export const opsColumns: ColumnDef<RequestsPreviews[0]>[] = [
   {
     accessorKey: "id",
     header: "Request ID",
@@ -69,6 +65,15 @@ export const opsColumns: ColumnDef<RequestSchemaLight>[] = [
   {
     accessorKey: "status",
     header: "Status",
+  },
+  {
+    accessorKey: "offersCount",
+    header: "Offers count",
+    cell: ({ row }) => {
+      const count = row.getValue("offersCount") as number;
+
+      return count > 0 ? count : "-";
+    },
   },
   {
     accessorKey: "creationDate",
@@ -110,20 +115,13 @@ function Cell({ id }: { id: string }) {
   );
 }
 
-type RequestTableRow = Pick<
-  Request,
-  "id" | "name" | "status" | "creationDate" | "validUntil"
->;
-
-export function RequestsTable({ requests }: { requests: RequestTableRow[] }) {
+export function RequestsTable({ requests }: { requests: RequestPreview[] }) {
   const queryClient = useQueryClient();
 
   const { toast } = useToast();
-
-  const { data } = useQuery({
-    queryKey: ["customer", "requests"],
+  const { data } = trpc.requestsPreviews.useQuery(undefined, {
     initialData: requests,
-    queryFn: () => RequestClient.getAll(),
+    queryKey: ["requestsPreviews", undefined],
   });
 
   const { mutate: handleRequestRemoval } = useMutation({

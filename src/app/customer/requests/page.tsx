@@ -4,7 +4,7 @@ import { RequestsTable } from "./request-table";
 async function PageServer() {
   const caller = appRouter.createCaller({});
 
-  const data = await caller.requests();
+  const data = await caller.requestsPreviews();
 
   return (
     <section className="flex flex-col">
