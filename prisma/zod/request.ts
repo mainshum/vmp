@@ -1,6 +1,6 @@
 import * as z from "zod"
 import * as imports from "../../src/types/prisma-extensions"
-import { RequestStatus, WorkType, ProjectStage, ProjectDuration, ProjectMethodology, JobProfile, JobSubProfile } from "@prisma/client"
+import { RequestStatus, WorkType, ProjectStage, ProjectDuration, ProjectMethodology, JobProfile, JobSubProfile, Seniority } from "@prisma/client"
 import { CompleteOffer, RelatedOfferModel } from "./index"
 
 // Helper schema for JSON fields
@@ -24,6 +24,7 @@ export const RequestModel = z.object({
   description: z.string().min(10, { message: "Minimum 10 characters" }),
   profile: z.nativeEnum(JobProfile),
   subProfile: z.nativeEnum(JobSubProfile),
+  seniority: z.nativeEnum(Seniority),
   hourlyRate: imports.positiveInteger.int(),
   availability: z.number().int().positive({ message: "Needs to be a positive integer" }),
   startDate: z.date({ coerce: true, required_error: "Start date is required" }),
