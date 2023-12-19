@@ -85,6 +85,13 @@ enum CompanySize {
   ABOVE1000
 }
 
+enum Seniority {
+  JUNIOR
+  MID
+  SENIOR
+  PRINCIPAL
+}
+
 model Customer {
   /// @zod.min(3, {message: "Minimum of 3 characters"})
   id           String      @id @default(cuid())
@@ -162,6 +169,7 @@ model Request {
 
   profile    JobProfile
   subProfile JobSubProfile @default(FULLSTACK)
+  seniority  Seniority     @default(JUNIOR)
 
   /// @zod.custom(imports.positiveInteger)
   hourlyRate Int

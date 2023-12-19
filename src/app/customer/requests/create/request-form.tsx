@@ -33,6 +33,7 @@ import {
   ProjectMethodology,
   WorkType,
   JobProfile,
+  Seniority,
   JobSubProfile,
 } from "@prisma/client";
 import React, { useLayoutEffect, useMemo, useState } from "react";
@@ -362,7 +363,9 @@ export const JobProfileForm = ({
     defaultValues: {
       availability: data?.availability || 50,
       description: data?.description || "",
+      profile: data?.profile || undefined,
       subProfile: data?.subProfile || undefined,
+      seniority: data?.seniority || undefined,
       workType: data?.workType || undefined,
       domesticTravel: data?.domesticTravel || false,
       internationalTravel: data?.internationalTravel || false,
@@ -373,7 +376,6 @@ export const JobProfileForm = ({
       noticePeriod: data?.noticePeriod || ("" as unknown as number),
       name: data?.name || "",
       pmExists: data?.pmExists || false,
-      profile: data?.profile || undefined,
       projectDuration: data?.projectDuration || undefined,
       projectMethodology: data?.projectMethodology || undefined,
       projectStage: data?.projectStage || undefined,
@@ -469,6 +471,18 @@ export const JobProfileForm = ({
           label="Consultant's sub-profile"
         >
           {Object.values(subProfile).map((val) => (
+            <SelectItem key={val} value={val}>
+              {val}
+            </SelectItem>
+          ))}
+        </MySelect>
+        <MySelect
+          control={form.control}
+          name="seniority"
+          placeholder="Select seniority"
+          label="Consultant's seniority"
+        >
+          {Object.values(Seniority).map((val) => (
             <SelectItem key={val} value={val}>
               {val}
             </SelectItem>
