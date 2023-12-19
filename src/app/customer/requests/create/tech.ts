@@ -693,3 +693,120 @@ export const Software = {
   fullstack,
   mobile,
 };
+
+// new tech
+
+type Ala = {
+  label: string;
+  tech: Ala[] | null | string[];
+};
+
+const X: Ala = {
+  label: "Tech tree",
+  tech: [
+    {
+      label: "core math",
+      tech: [{ label: "probability and statistics", tech: null }],
+    },
+    {
+      label: "programming",
+      tech: [
+        {
+          label: "python",
+          tech: ["pandas", "numpy", "scikit-learn", "tensorflow", "pytorch"],
+        },
+        { label: "r", tech: ["ggplot2", "dplyr", "caret"] },
+      ],
+    },
+  ],
+};
+
+export const dataScientistTechTree = {
+  "Core Mathematics and Statistics": {
+    "Probability and Statistics": null,
+    "Linear Algebra": null,
+    Calculus: null,
+  },
+  "Programming and Software Skills": {
+    Python: {
+      Libraries: ["Pandas", "NumPy", "Scikit-learn", "TensorFlow", "PyTorch"],
+    },
+    R: {
+      Libraries: ["ggplot2", "dplyr", "caret"],
+    },
+    SQL: {
+      "Data Manipulation and Querying": null,
+    },
+  },
+  "Data Analysis and Visualization": {
+    "Exploratory Data Analysis (EDA)": null,
+    "Data Visualization Tools": [
+      "Tableau",
+      "Power BI",
+      "Matplotlib",
+      "Seaborn",
+    ],
+    "Reporting and Presentation Techniques": null,
+  },
+  "Machine Learning": {
+    "Supervised Learning": null,
+    "Unsupervised Learning": null,
+    "Reinforcement Learning": null,
+    "Deep Learning": null,
+  },
+  "Big Data Technologies": {
+    Hadoop: ["HDFS", "MapReduce"],
+    "Apache Spark": ["PySpark"],
+    "Big Data Platforms": ["AWS", "Azure", "GCP"],
+  },
+  "Natural Language Processing (NLP)": {
+    "Text Preprocessing": null,
+    "Sentiment Analysis": null,
+    "Language Models": ["BERT", "GPT"],
+  },
+  "Computer Vision": {
+    "Image Processing Techniques": null,
+    "Convolutional Neural Networks (CNN)": null,
+    "Image Classification and Object Detection": null,
+  },
+  "Time Series Analysis": {
+    "Forecasting Models": null,
+    "ARIMA, SARIMA": null,
+    "LSTM (Long Short-Term Memory Networks)": null,
+  },
+  "AI Ethics and Fairness": {
+    "Bias Detection and Correction": null,
+    "Ethical AI Development": null,
+    "Privacy Concerns": ["GDPR Compliance"],
+  },
+  "Advanced Statistical Methods": {
+    "Bayesian Statistics": null,
+    "Hypothesis Testing": null,
+    "Experimental Design": null,
+  },
+  "Data Engineering Basics": {
+    "Data Cleaning and Preprocessing": null,
+    "ETL Processes": null,
+    "Data Warehousing Concepts": null,
+  },
+  "Cloud Computing and Big Data Tools": {
+    AWS: ["S3", "EMR", "Lambda"],
+    "Microsoft Azure": ["Azure Machine Learning", "HDInsight"],
+    "Google Cloud Platform": ["BigQuery", "AI Platform"],
+  },
+  "Model Deployment and MLOps": {
+    Containerization: ["Docker"],
+    "Model Monitoring and Maintenance": null,
+    "CI/CD Pipelines for Machine Learning": ["Jenkins", "GitHub Actions"],
+  },
+  "Advanced Machine Learning Techniques": {
+    "Ensemble Methods": null,
+    "Recommendation Systems": null,
+    "Reinforcement Learning": null,
+  },
+  "Specialized AI Applications": {
+    "Robotics and Automation": null,
+    "Internet of Things (IoT) Data Analysis": null,
+    "Edge AI": null,
+  },
+};
