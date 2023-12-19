@@ -9,31 +9,33 @@ const config: StorybookConfig = {
     "@storybook/addon-onboarding",
     "@storybook/addon-interactions",
     "@storybook/addon-styling-webpack",
-    ({
+    {
       name: "@storybook/addon-styling-webpack",
 
       options: {
-        rules: [{
-      test: /\.css$/,
-      sideEffects: true,
-      use: [
-          require.resolve("style-loader"),
+        rules: [
           {
-              loader: require.resolve("css-loader"),
-              options: {
-                  
+            test: /\.css$/,
+            sideEffects: true,
+            use: [
+              require.resolve("style-loader"),
+              {
+                loader: require.resolve("css-loader"),
+                options: {
                   importLoaders: 1,
+                },
               },
-          },{
-    loader: require.resolve("postcss-loader"),
-    options: {
-    implementation: require.resolve("postcss"),
+              {
+                loader: require.resolve("postcss-loader"),
+                options: {
+                  implementation: require.resolve("postcss"),
+                },
+              },
+            ],
+          },
+        ],
+      },
     },
-    },
-      ],
-    },],
-      }
-    })
   ],
   framework: {
     name: "@storybook/nextjs",
@@ -48,6 +50,7 @@ const config: StorybookConfig = {
     config.resolve.alias = {
       ...config.resolve.alias,
       "@": path.resolve(__dirname, "../src"),
+      "zod-types": path.resolve(__dirname, "../prisma/zod"),
     };
 
     return config;

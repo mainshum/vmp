@@ -240,7 +240,7 @@ const useScrollTop = () => {
 
 type TechTree = Record<string, { label: string; tech: Record<string, string> }>;
 
-function TechnicalForm({
+export function TechnicalForm({
   requestId,
   technical,
   techTree,
@@ -343,7 +343,7 @@ function TechnicalForm({
   );
 }
 
-const JobProfileForm = ({
+export const JobProfileForm = ({
   data,
   onFilled,
 }: {
@@ -430,7 +430,7 @@ const JobProfileForm = ({
     .with(JobProfile.DATA_SPECIALIST, () => [])
     .with(JobProfile.DEVOPS, () => [])
     .with(JobProfile.QUALITY_ASSURANCE, () => [])
-    .exhaustive();
+    .otherwise(() => []);
 
   const showOfficeLocation = workType === "ONSITE" || workType === "HYBRID";
   const showDaysInOffice = workType === "HYBRID";
@@ -443,6 +443,13 @@ const JobProfileForm = ({
         className="space-y-8"
       >
         <a className="hop-anchor top-[-45px]" id="profile" />
+        <MyInput
+          description=" This name will be visibile to vendors and help you identify the project among all the requests."
+          control={form.control}
+          label="Request name"
+          name="name"
+          placeholder="Give request a name"
+        />
         <MySelect
           control={form.control}
           name="profile"
@@ -666,13 +673,6 @@ const JobProfileForm = ({
           description="Check if travelling abroad will be required"
         />
         <a className="hop-anchor" id="project" />
-        <MyInput
-          description=" This name will be visibile to vendors and help you identify the project among all the requests"
-          control={form.control}
-          label="Project name"
-          name="name"
-          placeholder="Give project a name"
-        />
         <MySelect
           control={form.control}
           label="Project maturity"
