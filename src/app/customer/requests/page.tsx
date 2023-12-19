@@ -1,9 +1,10 @@
+import { appRouter } from "@/server/trpc-server";
 import { RequestsTable } from "./request-table";
 
-import { db } from "@/lib/db";
-
 async function PageServer() {
-  const data = await db.request.findMany();
+  const caller = appRouter.createCaller({});
+
+  const data = await caller.requests();
 
   return (
     <section className="flex flex-col">
