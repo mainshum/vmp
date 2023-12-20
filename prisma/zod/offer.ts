@@ -7,8 +7,8 @@ export const OfferModel = z.object({
   id: z.string(),
   matchingGrade: z.number().int().nullish(),
   offerStatus: z.nativeEnum(OfferStatus),
-  validUntil: z.date().nullish(),
-  creationDate: z.date().nullish(),
+  validUntil: z.date(),
+  creationDate: z.date(),
   requestId: z.string(),
 })
 
