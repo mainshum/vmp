@@ -14,11 +14,9 @@ import {
 import { Button } from "@/components/ui/button";
 import React, { useContext } from "react";
 import { Action } from "@/types/shared";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import Link from "next/link";
 import { ROUTES } from "@/lib/const";
-import { RequestClient } from "@/lib/data";
 import { Shell } from "@/components/shell";
 import { RouterOutputs, trpc } from "@/lib/trpc";
 import { RequestPreview } from "@/types/request";
@@ -116,38 +114,32 @@ function Cell({ id }: { id: string }) {
 }
 
 export function RequestsTable({ requests }: { requests: RequestPreview[] }) {
-  const queryClient = useQueryClient();
-
   const { toast } = useToast();
+  const utils = trpc.useUtils();
+
   const { data } = trpc.requestsPreviews.useQuery(undefined, {
     initialData: requests,
-    queryKey: ["requestsPreviews", undefined],
   });
 
-  const { mutate: handleRequestRemoval } = useMutation({
-    mutationFn: (id: string) => RequestClient.delete(id),
+  const { mutate: handleRequestRemoval } = trpc.requestDelete.useMutation({
     onError: () => {
       toast({
         title: "Request removal failed",
         description: "Try again later",
       });
     },
-    onSuccess: () => {
-      toast({ title: "Request removed successfully" });
-      queryClient.invalidateQueries({ queryKey: ["customer", "requests"] });
+    onSuccess: (x) => {
+      toast({ title: `Request ${x.name} removed successfully` });
+      utils.requestsPreviews.invalidate();
     },
   });
 
   return (
-    <ctx.Provider
-      value={{
-        handleRequestRemoval,
-      }}
-    >
+    <ctx.Provider value={{ handleRequestRemoval }}>
       <Shell className="container pt-8">
         <DataTable
           columns={opsColumns}
-          data={data}
+          data={data || []}
           renderSubComponent={({ row }) => (
             <OffersTable opportunityId={row.original.id} />
           )}

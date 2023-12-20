@@ -7,8 +7,11 @@ const t = initTRPC.create();
 
 // this is our data store, used to respond to incoming RPCs from the client
 
+const requestId = z.object({ requestId: z.string() });
+
 // this is our RPC API
 export const appRouter = t.router({
+  // requests
   requests: t.procedure.query(() => {
     return db.request.findMany({});
   }),
@@ -21,14 +24,15 @@ export const appRouter = t.router({
       group by req.id
   `;
   }),
-  offers: t.procedure
-    .input(z.object({ requestId: z.string() }))
-    .query(({ input }) => {
-      return db.offer.findMany({
-        where: { requestId: input.requestId },
-        orderBy: { id: "asc" },
-      });
-    }),
+  requestDelete: t.procedure.input(z.string()).mutation(({ input: id }) => {
+    return db.request.delete({ where: { id } });
+  }),
+  offers: t.procedure.input(requestId).query(({ input }) => {
+    return db.offer.findMany({
+      where: { requestId: input.requestId },
+      orderBy: { id: "asc" },
+    });
+  }),
 });
 
 export type AppRouter = typeof appRouter;

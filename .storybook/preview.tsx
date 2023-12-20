@@ -2,9 +2,7 @@ import type { Preview } from "@storybook/react";
 
 import "../src/styles/globals.css";
 import React from "react";
-import { QueryClientProvider, QueryClient } from "@tanstack/react-query";
-
-const queryClient = new QueryClient();
+import { TrpcProvider } from "@/components/trpc-provider";
 
 const preview: Preview = {
   parameters: {
@@ -21,9 +19,9 @@ const preview: Preview = {
   },
   decorators: [
     (Story) => (
-      <QueryClientProvider client={queryClient}>
+      <TrpcProvider>
         <Story />
-      </QueryClientProvider>
+      </TrpcProvider>
     ),
   ],
 };

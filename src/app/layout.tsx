@@ -4,7 +4,7 @@ import { getVMPSession } from "@/lib/auth";
 import { cn } from "@/lib/utils";
 import "@/styles/globals.css";
 import { Inter } from "next/font/google";
-import { NextAuthProvider, TenstackProvider } from "./providers";
+import { NextAuthProvider } from "./providers";
 import { TrpcProvider } from "@/components/trpc-provider";
 
 export const metadata = {
@@ -32,11 +32,9 @@ export default async function RootLayout({
       >
         <body className="min-h-screen antialiased">
           <NextAuthProvider>
-            <TenstackProvider>
-              <Navbar />
-              <main className="h-full pt-[56px]">{children}</main>
-              <Toaster />
-            </TenstackProvider>
+            <Navbar />
+            <main className="h-full pt-[56px]">{children}</main>
+            <Toaster />
           </NextAuthProvider>
         </body>
       </html>
