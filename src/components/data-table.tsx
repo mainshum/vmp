@@ -17,7 +17,6 @@ import {
   TableCell,
 } from "./ui/table";
 import React from "react";
-import { useAutoAnimate } from "@formkit/auto-animate/react";
 
 interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[];

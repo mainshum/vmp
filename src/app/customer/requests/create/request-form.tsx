@@ -196,11 +196,7 @@ export const RequestForm = ({
             <JobProfileForm onFilled={setRequest} data={request} />
           ))
           .with({ type: "technical" }, ({ techTree, requestId, technical }) => (
-            <TechnicalForm
-              techTree={techTree}
-              requestId={requestId}
-              technical={technical}
-            />
+            <div>Placeholder</div>
           ))
           .exhaustive()}
       </div>
@@ -241,108 +237,108 @@ const useScrollTop = () => {
 
 type TechTree = Record<string, { label: string; tech: Record<string, string> }>;
 
-export function TechnicalForm({
-  requestId,
-  technical,
-  techTree,
-}: {
-  requestId: string;
-  technical: RequestModel["technical"];
-  techTree: TechTree;
-}) {
-  const form = useForm({
-    defaultValues: technical || {},
-  });
+// export function TechnicalForm({
+//   requestId,
+//   technical,
+//   techTree,
+// }: {
+//   requestId: string;
+//   technical: RequestModel["technical"];
+//   techTree: TechTree;
+// }) {
+//   const form = useForm({
+//     defaultValues: technical || {},
+//   });
 
-  useScrollTop();
+//   useScrollTop();
 
-  const { toast } = useToast();
-  const client = useQueryClient();
+//   const { toast } = useToast();
+//   const client = useQueryClient();
 
-  const { mutate } = useMutation({
-    mutationFn: (xs: Record<string, Record<string, true | undefined>>) => {
-      const technical = Object.keys(xs).reduce(
-        (acc, key) => ({
-          ...acc,
-          ...Object.entries(xs[key as keyof typeof xs])
-            .filter(([, val]) => val)
-            .flatMap(([key]) => key)
-            .reduce(
-              (acc, tech) => {
-                if (!(key in acc)) {
-                  acc[key] = {};
-                }
-                acc[key][tech] = true;
-                return acc;
-              },
-              {} as Record<string, Record<string, true>>,
-            ),
-        }),
-        {} as Record<string, Record<string, true>>,
-      );
+//   const { mutate } = useMutation({
+//     mutationFn: (xs: Record<string, Record<string, true | undefined>>) => {
+//       const technical = Object.keys(xs).reduce(
+//         (acc, key) => ({
+//           ...acc,
+//           ...Object.entries(xs[key as keyof typeof xs])
+//             .filter(([, val]) => val)
+//             .flatMap(([key]) => key)
+//             .reduce(
+//               (acc, tech) => {
+//                 if (!(key in acc)) {
+//                   acc[key] = {};
+//                 }
+//                 acc[key][tech] = true;
+//                 return acc;
+//               },
+//               {} as Record<string, Record<string, true>>,
+//             ),
+//         }),
+//         {} as Record<string, Record<string, true>>,
+//       );
 
-      return RequestClient.put(requestId, RequestPutModel.parse({ technical }));
-    },
-    throwOnError: true,
-    onMutate: () => {
-      toast({ title: "Saving..." });
-    },
-    onError: () => {
-      toast({
-        title: "Error saving request",
-        description: "Please try resubmitting the form",
-      });
-    },
-    onSuccess: (data) => {
-      const updated = RM.parse(data);
-      client.setQueryData(["customer", "requests", updated.id], updated);
-      toast({ title: "Saved!" });
-    },
-  });
+//       return RequestClient.put(requestId, RequestPutModel.parse({ technical }));
+//     },
+//     throwOnError: true,
+//     onMutate: () => {
+//       toast({ title: "Saving..." });
+//     },
+//     onError: () => {
+//       toast({
+//         title: "Error saving request",
+//         description: "Please try resubmitting the form",
+//       });
+//     },
+//     onSuccess: (data) => {
+//       const updated = RM.parse(data);
+//       client.setQueryData(["customer", "requests", updated.id], updated);
+//       toast({ title: "Saved!" });
+//     },
+//   });
 
-  return (
-    <Form {...form}>
-      <a className="hop-anchor top-[-45px]" id="top" />
-      <form className="pt-4" onSubmit={form.handleSubmit(() => {})}>
-        {Object.entries(techTree).map(([level0, { label, tech }]) => {
-          return (
-            <div key={level0}>
-              <a className="hop-anchor top-[-50px]" id={level0} />
-              <h1 className="mb-2 border-b-2 border-slate-100 py-3 text-lg font-bold">
-                {label}
-              </h1>
-              <ul>
-                {Object.entries(tech).map(([techKey, techLabel]) => {
-                  return (
-                    <FormField
-                      key={`${level0}.${techKey}}`}
-                      control={form.control}
-                      name={`${level0}.${techKey}`}
-                      render={({ field }) => (
-                        <FormItem className="flex flex-row items-start space-x-3 space-y-0 py-4">
-                          <FormControl>
-                            <Checkbox
-                              checked={field.value || false}
-                              onCheckedChange={field.onChange}
-                            />
-                          </FormControl>
-                          <FormLabel>{techLabel}</FormLabel>
-                        </FormItem>
-                      )}
-                    />
-                  );
-                })}
-              </ul>
-            </div>
-          );
-        })}
-        <section className="flex justify-end gap-4">
-          <Button onClick={form.handleSubmit((e) => mutate(e))}>Submit</Button>
-        </section>
-      </form>
-    </Form>
-  );
-}
+//   return (
+//     <Form {...form}>
+//       <a className="hop-anchor top-[-45px]" id="top" />
+//       <form className="pt-4" onSubmit={form.handleSubmit(() => {})}>
+//         {Object.entries(techTree).map(([level0, { label, tech }]) => {
+//           return (
+//             <div key={level0}>
+//               <a className="hop-anchor top-[-50px]" id={level0} />
+//               <h1 className="mb-2 border-b-2 border-slate-100 py-3 text-lg font-bold">
+//                 {label}
+//               </h1>
+//               <ul>
+//                 {Object.entries(tech).map(([techKey, techLabel]) => {
+//                   return (
+//                     <FormField
+//                       key={`${level0}.${techKey}}`}
+//                       control={form.control}
+//                       name={`${level0}.${techKey}`}
+//                       render={({ field }) => (
+//                         <FormItem className="flex flex-row items-start space-x-3 space-y-0 py-4">
+//                           <FormControl>
+//                             <Checkbox
+//                               checked={field.value || false}
+//                               onCheckedChange={field.onChange}
+//                             />
+//                           </FormControl>
+//                           <FormLabel>{techLabel}</FormLabel>
+//                         </FormItem>
+//                       )}
+//                     />
+//                   );
+//                 })}
+//               </ul>
+//             </div>
+//           );
+//         })}
+//         <section className="flex justify-end gap-4">
+//           <Button onClick={form.handleSubmit((e) => mutate(e))}>Submit</Button>
+//         </section>
+//       </form>
+//     </Form>
+//   );
+// }
 
 export const JobProfileForm = ({
   data,

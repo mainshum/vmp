@@ -5,6 +5,7 @@ import { cn } from "@/lib/utils";
 import "@/styles/globals.css";
 import { Inter } from "next/font/google";
 import { NextAuthProvider, TenstackProvider } from "./providers";
+import { TrpcProvider } from "@/components/trpc-provider";
 
 export const metadata = {
   title: "VMP",
@@ -21,22 +22,24 @@ export default async function RootLayout({
   const session = await getVMPSession();
 
   return (
-    <html
-      lang="en"
-      className={cn(
-        "light bg-white text-slate-900 antialiased",
-        inter.className,
-      )}
-    >
-      <body className="min-h-screen antialiased">
-        <NextAuthProvider>
-          <TenstackProvider>
-            <Navbar />
-            <main className="h-full pt-[56px]">{children}</main>
-            <Toaster />
-          </TenstackProvider>
-        </NextAuthProvider>
-      </body>
-    </html>
+    <TrpcProvider>
+      <html
+        lang="en"
+        className={cn(
+          "light bg-white text-slate-900 antialiased",
+          inter.className,
+        )}
+      >
+        <body className="min-h-screen antialiased">
+          <NextAuthProvider>
+            <TenstackProvider>
+              <Navbar />
+              <main className="h-full pt-[56px]">{children}</main>
+              <Toaster />
+            </TenstackProvider>
+          </NextAuthProvider>
+        </body>
+      </html>
+    </TrpcProvider>
   );
 }

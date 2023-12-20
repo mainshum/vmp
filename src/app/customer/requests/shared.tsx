@@ -10,8 +10,8 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 
-export const createDate = (val: Nullalble<Date>) => {
-  if (val) return val.getTime();
+export const createDate = (val: Nullalble<String>) => {
+  if (val) return val;
 
   return (
     <TooltipProvider>

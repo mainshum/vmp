@@ -218,8 +218,8 @@ model Offer {
   id            String      @id @default(cuid())
   matchingGrade Int?
   offerStatus   OfferStatus @default(PENDING)
-  validUntil    DateTime?
-  creationDate  DateTime?
+  validUntil    DateTime
+  creationDate  DateTime
   request       Request?    @relation(fields: [requestId], references: [id])
   requestId     String
 }
