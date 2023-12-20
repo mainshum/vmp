@@ -158,6 +158,9 @@ dependencies:
   date-fns:
     specifier: ^2.30.0
     version: 2.30.0
+  dotenv:
+    specifier: ^16.3.1
+    version: 16.3.1
   editorjs-react-renderer:
     specifier: ^3.5.1
     version: 3.5.1
@@ -298,9 +301,6 @@ devDependencies:
   css-loader:
     specifier: ^6.8.1
     version: 6.8.1(webpack@5.89.0)
-  dotenv:
-    specifier: ^16.3.1
-    version: 16.3.1
   eslint-plugin-storybook:
     specifier: ^0.6.13
     version: 0.6.13(eslint@8.41.0)(typescript@5.0.4)
@@ -7569,7 +7569,6 @@ packages:
   /dotenv@16.3.1:
     resolution: {integrity: sha512-IPzF4w4/Rd94bA9imS68tZBaYyBWSCE47V1RGuMrB94iyTOIEwRmVL2x/4An+6mETpLrKJ5hQkB8W4kFAadeIQ==}
     engines: {node: '>=12'}
-    dev: true
 
   /duplexer@0.1.2:
     resolution: {integrity: sha512-jtD6YG370ZCIi/9GTaJKQxWTZD045+4R4hTk/x1UyoqadyJ9x9CgSi1RlVDQF8U2sxLLSnFkCaMihqljHIWgMg==}
