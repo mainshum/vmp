@@ -2,10 +2,10 @@
 
 import { DataTable } from "@/components/data-table";
 import { useToast } from "@/hooks/use-toast";
-import { useQueryClient, useQuery, useMutation } from "@tanstack/react-query";
+import { useQueryClient, useMutation } from "@tanstack/react-query";
 import { ColumnDef } from "@tanstack/react-table";
 import React, { createContext, useContext, useState } from "react";
-import { cn, noop, withMinResolveTime } from "@/lib/utils";
+import { cn, noop } from "@/lib/utils";
 import { Nullalble } from "@/types/shared";
 import { Loader2, StarIcon } from "lucide-react";
 import { createDate } from "./shared";
@@ -13,6 +13,7 @@ import { z } from "zod";
 import { produce } from "immer";
 import { useAutoAnimate } from "@formkit/auto-animate/react";
 import { OfferSchema } from "@/types/prisma-types";
+import { RouterOutputs, trpc } from "@/lib/trpc";
 
 type MutateStarsPayload = { id: string; matchingGrade: number };
 
@@ -63,7 +64,7 @@ function Stars({
   );
 }
 
-type OfferSchema = z.infer<typeof OfferSchema>;
+type OfferSchema = RouterOutputs["offers"][0];
 
 const offersColumns: ColumnDef<OfferSchema>[] = [
   {
@@ -112,12 +113,6 @@ const toggleStars = ({
     body: JSON.stringify({ id, matchingGrade }),
   });
 
-const getOffers = withMinResolveTime(250, (opId: string) =>
-  fetch(`/api/offers/${opId}`)
-    .then((res) => res.json())
-    .then((json) => z.array(OfferSchema).parse(json)),
-);
-
 export function OffersTable({
   opportunityId: opId,
 }: {
@@ -129,11 +124,7 @@ export function OffersTable({
 
   const key = ["offers", opId];
 
-  const { data } = useQuery({
-    queryFn: () => getOffers(opId),
-    queryKey: key,
-    placeholderData: (d) => d,
-  });
+  const { data } = trpc.offers.useQuery({ requestId: opId });
 
   const [divRef] = useAutoAnimate();
 

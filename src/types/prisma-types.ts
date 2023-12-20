@@ -47,7 +47,7 @@ export const OfferSchema = z.object({
   id: z.string().cuid(),
   matchingGrade: z.number(),
   offerStatus: z.nativeEnum(OfferStatus),
-  validUntil: z.date({ coerce: true }).nullable(),
-  creationDate: z.date({ coerce: true }).nullable(),
+  validUntil: z.date({ coerce: true }),
+  creationDate: z.date({ coerce: true }),
   requestId: z.string().cuid(),
 }) satisfies z.ZodType<Offer>;

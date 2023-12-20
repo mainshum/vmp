@@ -1,6 +1,7 @@
 import { initTRPC } from "@trpc/server";
 import { db } from "@/lib/db";
 import { RequestPreview } from "@/types/request";
+import { z } from "zod";
 
 const t = initTRPC.create();
 
@@ -20,6 +21,14 @@ export const appRouter = t.router({
       group by req.id
   `;
   }),
+  offers: t.procedure
+    .input(z.object({ requestId: z.string() }))
+    .query(({ input }) => {
+      return db.offer.findMany({
+        where: { requestId: input.requestId },
+        orderBy: { id: "asc" },
+      });
+    }),
 });
 
 export type AppRouter = typeof appRouter;
