@@ -5,13 +5,6 @@ generator client {
   provider = "prisma-client-js"
 }
 
-generator zod {
-  provider              = "zod-prisma"
-  prismaJsonNullability = false
-  output                = "./zod" // (default) the directory where generated zod schemas will be saved
-  imports               = "../src/types/prisma-extensions"
-}
-
 datasource db {
   provider  = "postgresql"
   url       = env("POSTGRES_PRISMA_URL") // uses connection pooling
