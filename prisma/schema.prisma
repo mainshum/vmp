@@ -6,9 +6,10 @@ generator client {
 }
 
 generator zod {
-  provider = "zod-prisma"
-  output   = "./zod" // (default) the directory where generated zod schemas will be saved
-  imports  = "../src/types/prisma-extensions"
+  provider              = "zod-prisma"
+  prismaJsonNullability = false
+  output                = "./zod" // (default) the directory where generated zod schemas will be saved
+  imports               = "../src/types/prisma-extensions"
 }
 
 datasource db {
@@ -195,7 +196,6 @@ model Request {
   domesticTravel      Boolean
   internationalTravel Boolean
 
-  /// @zod.custom(imports.technicalValidator)
   technical Json?
 
   offers Offer[]

@@ -1,13 +1,16 @@
 import { initTRPC } from "@trpc/server";
 import { db } from "@/lib/db";
 import { RequestPreview } from "@/types/request";
+import { RequestInput } from "@/lib/validation";
 import { z } from "zod";
+import { Prisma } from "@prisma/client";
+import superjson from "superjson";
 
-const t = initTRPC.create();
+const t = initTRPC.create({
+  transformer: superjson,
+});
 
-// this is our data store, used to respond to incoming RPCs from the client
-
-const requestId = z.object({ requestId: z.string() });
+const requestId = z.object({ requestId: z.string().cuid() });
 
 // this is our RPC API
 export const appRouter = t.router({
@@ -15,6 +18,31 @@ export const appRouter = t.router({
   requests: t.procedure.query(() => {
     return db.request.findMany({});
   }),
+  request: t.procedure.input(requestId).query(({ input }) => {
+    return db.request.findFirst({ where: { id: input.requestId } });
+  }),
+  upsertRequest: t.procedure
+    .input(
+      z.object({
+        requestPostModel: RequestInput,
+        id: z.string().optional(),
+      }),
+    )
+    .mutation(({ input }) => {
+      const { requestPostModel, id } = input;
+      const data = {
+        ...requestPostModel,
+        technical: !requestPostModel.technical
+          ? Prisma.DbNull
+          : requestPostModel.technical,
+      };
+
+      if (id) return db.request.update({ where: { id }, data });
+
+      return db.request.create({
+        data: { ...data, creationDate: new Date(), validUntil: new Date() },
+      });
+    }),
   requestsPreviews: t.procedure.query(() => {
     return db.$queryRaw<RequestPreview[]>`
       select req.id, req.status, req.name, CAST(req."validUntil" as TEXT), CAST(req."creationDate" as TEXT), CAST(COUNT(ofe.id) as INT) as "offersCount"

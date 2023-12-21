@@ -6,7 +6,7 @@ import {
   OfferStatus,
 } from "@prisma/client";
 import { z } from "zod";
-import { stringMin3 } from "./prisma-extensions";
+import { stringMin3 } from "@/lib/validation";
 
 type CompanySchema = Pick<
   Customer,
