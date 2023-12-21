@@ -70,6 +70,7 @@
     "cmdk": "^0.2.0",
     "cypress": "^12.17.4",
     "date-fns": "^2.30.0",
+    "dotenv": "^16.3.1",
     "editorjs-react-renderer": "^3.5.1",
     "eslint": "8.41.0",
     "eslint-config-next": "13.4.4",
@@ -91,6 +92,7 @@
     "react-textarea-autosize": "^8.4.1",
     "server-only": "^0.0.1",
     "sharp": "^0.32.1",
+    "superjson": "^2.2.1",
     "tailwind-merge": "^1.12.0",
     "tailwindcss": "3.3.2",
     "tailwindcss-animate": "^1.0.5",
@@ -99,8 +101,7 @@
     "uploadthing": "^4.0.0",
     "xstate": "^4.38.2",
     "zod": "^3.21.4",
-    "zod-prisma": "^0.5.4",
-    "dotenv": "^16.3.1"
+    "zod-prisma": "^0.5.4"
   },
   "devDependencies": {
     "@cypress/webpack-preprocessor": "^6.0.0",

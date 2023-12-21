@@ -1,25 +1,15 @@
 import { RequestForm } from "@/app/customer/requests/create/request-form";
-import { db } from "@/lib/db";
-import { RequestModel } from "zod-types";
-
-const getRequest = async (id: string) => {
-  const res = await db.request.findFirst({
-    where: {
-      id: id,
-    },
-  });
-
-  return RequestModel.parse(res);
-};
+import { appRouter } from "@/server/trpc-server";
 
 async function RequestCreate({
   searchParams,
 }: {
   searchParams: { requestId: string };
 }) {
-  if (!searchParams.requestId) return <RequestForm />;
+  if (!searchParams.requestId) return <RequestForm initRequest={null} />;
 
-  const data = await getRequest(searchParams.requestId);
+  const caller = appRouter.createCaller({});
+  const data = await caller.request({ requestId: searchParams.requestId });
 
   return <RequestForm initRequest={data} />;
 }

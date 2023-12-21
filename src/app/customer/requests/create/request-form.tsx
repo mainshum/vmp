@@ -37,63 +37,20 @@ import {
   JobSubProfile,
 } from "@prisma/client";
 import React, { useLayoutEffect, useMemo, useState } from "react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { MyInput, MySelect, MySwitch } from "@/components/forms";
-import { RequestClient } from "@/lib/data";
 import { useSearchParams } from "next/navigation";
 import { useRouter } from "next/navigation";
-import { RequestModel, RequestPutModel } from "@/types/request";
-import { RequestModel as RM } from "zod-types";
-import { Checkbox } from "@/components/ui/checkbox";
 import { match } from "ts-pattern";
 import clsx from "clsx";
 import SideNav from "@/components/side-nav";
 import { Children } from "@/types/shared";
 import { z } from "zod";
 import { Error } from "@/components/success";
-import { stringMin3, positiveInteger15 } from "@/types/prisma-extensions";
+import { RouterOutputs, trpc } from "@/lib/trpc";
+import { RequestInput } from "@/lib/validation";
 
-const JobProfileModel = RM.omit({
-  id: true,
-  creationDate: true,
-  validUntil: true,
-})
-  .extend({
-    daysInOffice: z.any(),
-    officeLocation: z.any(),
-  })
-  .transform(({ ...rest }, ctx) => {
-    if (rest.workType === "FULLY_REMOTE")
-      return { ...rest, daysInOffice: null, officeLocation: null };
-
-    const ol = stringMin3.safeParse(rest.officeLocation);
-    const dio = positiveInteger15.safeParse(rest.daysInOffice);
-
-    if (!ol.success) {
-      ctx.addIssue({
-        path: ["officeLocation"],
-        message: ol.error.issues[0].message,
-        code: "custom",
-      });
-    }
-
-    if (rest.workType === "HYBRID" && !dio.success) {
-      ctx.addIssue({
-        path: ["daysInOffice"],
-        message: dio.error.issues[0].message,
-        code: "custom",
-      });
-    }
-
-    return {
-      ...rest,
-      daysInOffice: dio.success ? dio.data : null,
-      officeLocation: ol.success ? ol.data : null,
-    };
-  });
-
-type JobProfileModel = z.infer<typeof JobProfileModel>;
+type RequestData = RouterOutputs["request"];
 
 function InputBrand({ msg }: { msg: string }) {
   return (
@@ -139,19 +96,14 @@ type RequestFormState =
   | {
       type: "technical";
       requestId: string;
-      techTree: TechTree;
-      technical: RequestModel["technical"];
+      technical: Exclude<RequestData, null>["technical"];
     }
   | { type: "error" };
 
-export const RequestForm = ({
-  initRequest,
-}: {
-  initRequest?: RequestModel;
-}) => {
+export const RequestForm = ({ initRequest }: { initRequest: RequestData }) => {
   const sp = useSearchParams();
 
-  const [request, setRequest] = useState<RequestModel | undefined>(initRequest);
+  const [request, setRequest] = useState<RequestData>(initRequest);
 
   const page = sp.get("page");
 
@@ -195,9 +147,7 @@ export const RequestForm = ({
           .with({ type: "jpf" }, () => (
             <JobProfileForm onFilled={setRequest} data={request} />
           ))
-          .with({ type: "technical" }, ({ techTree, requestId, technical }) => (
-            <div>Placeholder</div>
-          ))
+          .with({ type: "technical" }, () => <div>Placeholder</div>)
           .exhaustive()}
       </div>
       <SideNav className="sticky top-[56px] h-[calc(100vh-56px)] shrink-0 translate-x-[30px] gap-3 pt-8">
@@ -212,15 +162,7 @@ export const RequestForm = ({
                 <A href="#project">Project details</A>
               </>
             ))
-            .with({ type: "technical" }, ({ techTree }) => (
-              <>
-                {Object.entries(techTree).map(([level0, { label }]) => (
-                  <A key={level0} href={`#${level0}`}>
-                    {label}
-                  </A>
-                ))}
-              </>
-            ))
+            .with({ type: "technical" }, () => <div>Placeholder</div>)
             .exhaustive()}
         </div>
       </SideNav>
@@ -235,127 +177,22 @@ const useScrollTop = () => {
   }, []);
 };
 
-type TechTree = Record<string, { label: string; tech: Record<string, string> }>;
-
-// export function TechnicalForm({
-//   requestId,
-//   technical,
-//   techTree,
-// }: {
-//   requestId: string;
-//   technical: RequestModel["technical"];
-//   techTree: TechTree;
-// }) {
-//   const form = useForm({
-//     defaultValues: technical || {},
-//   });
-
-//   useScrollTop();
-
-//   const { toast } = useToast();
-//   const client = useQueryClient();
-
-//   const { mutate } = useMutation({
-//     mutationFn: (xs: Record<string, Record<string, true | undefined>>) => {
-//       const technical = Object.keys(xs).reduce(
-//         (acc, key) => ({
-//           ...acc,
-//           ...Object.entries(xs[key as keyof typeof xs])
-//             .filter(([, val]) => val)
-//             .flatMap(([key]) => key)
-//             .reduce(
-//               (acc, tech) => {
-//                 if (!(key in acc)) {
-//                   acc[key] = {};
-//                 }
-//                 acc[key][tech] = true;
-//                 return acc;
-//               },
-//               {} as Record<string, Record<string, true>>,
-//             ),
-//         }),
-//         {} as Record<string, Record<string, true>>,
-//       );
-
-//       return RequestClient.put(requestId, RequestPutModel.parse({ technical }));
-//     },
-//     throwOnError: true,
-//     onMutate: () => {
-//       toast({ title: "Saving..." });
-//     },
-//     onError: () => {
-//       toast({
-//         title: "Error saving request",
-//         description: "Please try resubmitting the form",
-//       });
-//     },
-//     onSuccess: (data) => {
-//       const updated = RM.parse(data);
-//       client.setQueryData(["customer", "requests", updated.id], updated);
-//       toast({ title: "Saved!" });
-//     },
-//   });
-
-//   return (
-//     <Form {...form}>
-//       <a className="hop-anchor top-[-45px]" id="top" />
-//       <form className="pt-4" onSubmit={form.handleSubmit(() => {})}>
-//         {Object.entries(techTree).map(([level0, { label, tech }]) => {
-//           return (
-//             <div key={level0}>
-//               <a className="hop-anchor top-[-50px]" id={level0} />
-//               <h1 className="mb-2 border-b-2 border-slate-100 py-3 text-lg font-bold">
-//                 {label}
-//               </h1>
-//               <ul>
-//                 {Object.entries(tech).map(([techKey, techLabel]) => {
-//                   return (
-//                     <FormField
-//                       key={`${level0}.${techKey}}`}
-//                       control={form.control}
-//                       name={`${level0}.${techKey}`}
-//                       render={({ field }) => (
-//                         <FormItem className="flex flex-row items-start space-x-3 space-y-0 py-4">
-//                           <FormControl>
-//                             <Checkbox
-//                               checked={field.value || false}
-//                               onCheckedChange={field.onChange}
-//                             />
-//                           </FormControl>
-//                           <FormLabel>{techLabel}</FormLabel>
-//                         </FormItem>
-//                       )}
-//                     />
-//                   );
-//                 })}
-//               </ul>
-//             </div>
-//           );
-//         })}
-//         <section className="flex justify-end gap-4">
-//           <Button onClick={form.handleSubmit((e) => mutate(e))}>Submit</Button>
-//         </section>
-//       </form>
-//     </Form>
-//   );
-// }
+type CreateUpdateRequestOutput = RouterOutputs["upsertRequest"];
 
 export const JobProfileForm = ({
   data,
   onFilled,
 }: {
-  data: RequestModel | undefined;
+  data: RequestData;
   // eslint-disable-next-line no-unused-vars
-  onFilled: (rm: RequestModel) => void;
+  onFilled: (rm: CreateUpdateRequestOutput) => void;
 }) => {
   const { toast } = useToast();
 
-  const client = useQueryClient();
-
   useScrollTop();
 
-  const form = useForm<JobProfileModel>({
-    resolver: zodResolver(JobProfileModel),
+  const form = useForm<RequestInput>({
+    resolver: zodResolver(RequestInput),
     defaultValues: {
       availability: data?.availability || 50,
       description: data?.description || "",
@@ -366,7 +203,7 @@ export const JobProfileForm = ({
       domesticTravel: data?.domesticTravel || false,
       internationalTravel: data?.internationalTravel || false,
       startDate: data?.startDate ? new Date(data.startDate) : undefined,
-      endDate: data?.endDate ? new Date(data.endDate) : new Date(),
+      endDate: data?.endDate ? new Date(data.endDate) : undefined,
       fundingGuaranteed: data?.fundingGuaranteed || false,
       hourlyRate: data?.hourlyRate || ("" as unknown as number),
       noticePeriod: data?.noticePeriod || ("" as unknown as number),
@@ -383,12 +220,7 @@ export const JobProfileForm = ({
 
   const router = useRouter();
 
-  const { mutate } = useMutation({
-    mutationFn: (xs: JobProfileModel) => {
-      if (data?.id) return RequestClient.put(data.id, xs);
-
-      return RequestClient.post(xs);
-    },
+  const { mutate } = trpc.upsertRequest.useMutation({
     onMutate: () => {
       toast({ title: "Saving..." });
     },
@@ -399,13 +231,11 @@ export const JobProfileForm = ({
       });
     },
     onSuccess: (data) => {
-      const updated = RM.parse(data);
-      client.setQueryData(["customer", "requests", updated.id], updated);
-      onFilled(updated);
+      onFilled(data);
 
       const url = new URL(window.location.href);
 
-      url.searchParams.set("profile", updated.profile);
+      url.searchParams.set("profile", data.profile);
       url.searchParams.set("page", "technical");
 
       router.push(url.toString());
@@ -433,10 +263,14 @@ export const JobProfileForm = ({
   const showOfficeLocation = workType === "ONSITE" || workType === "HYBRID";
   const showDaysInOffice = workType === "HYBRID";
 
+  console.log(form.formState.errors);
+
   return (
     <Form {...form}>
       <form
-        onSubmit={form.handleSubmit(() => mutate(form.getValues()))}
+        onSubmit={form.handleSubmit(() =>
+          mutate({ id: data?.id, requestPostModel: form.getValues() }),
+        )}
         noValidate
         className="space-y-8"
       >
@@ -751,9 +585,7 @@ export const JobProfileForm = ({
           description="Check if project is managed by a Project Manager"
         />
         <section className="flex justify-end gap-4">
-          <Button onClick={form.handleSubmit((e) => mutate(e))}>
-            Next page
-          </Button>
+          <Button type="submit">Next page</Button>
         </section>
       </form>
     </Form>
