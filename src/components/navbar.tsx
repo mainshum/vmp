@@ -1,14 +1,15 @@
-"use client";
-
 import Link from "next/link";
 import Icons from "./icons";
 import { UserCircle } from "lucide-react";
 import { ROUTES } from "@/lib/const";
-import { usePathname } from "next/navigation";
 import { buttonVariants } from "./ui/button";
+import { headers } from "next/headers";
+import { NextSession } from "@/lib/auth";
+import { Nullalble } from "@/types/shared";
 
-function Navbar() {
-  const pathname = usePathname();
+function Navbar({ session }: { session: Nullalble<NextSession> }) {
+  const headersList = headers();
+  const pathname = headersList.get("x-invoke-path");
   return (
     <header className="fixed inset-x-0 top-0 z-[10] flex h-[56px] justify-center border-b bg-black py-2">
       <nav className="flex w-full items-center justify-between px-6">
@@ -27,8 +28,13 @@ function Navbar() {
               New request
             </Link>
           )}
-
-          <UserCircle className="h-8 w-8 text-white" />
+          {session ? (
+            <UserCircle className="h-8 w-8 text-white" />
+          ) : (
+            <Link className={buttonVariants()} href={ROUTES.SIGIN}>
+              Sign in
+            </Link>
+          )}
         </div>
       </nav>
     </header>
