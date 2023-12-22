@@ -16,7 +16,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { SelectItem } from "@/components/ui/select";
 import { Slider } from "@/components/ui/slider";
-import { cn } from "@/lib/utils";
+import { cn, noop } from "@/lib/utils";
 import {
   Popover,
   PopoverTrigger,
@@ -49,6 +49,7 @@ import { z } from "zod";
 import { Error } from "@/components/success";
 import { RouterOutputs, trpc } from "@/lib/trpc";
 import { RequestInput } from "@/lib/validation";
+import dynamic from "next/dynamic";
 
 type RequestData = RouterOutputs["request"];
 
@@ -100,6 +101,23 @@ type RequestFormState =
     }
   | { type: "error" };
 
+const Editor = dynamic(() => import("../../../../components/editor"), {
+  ssr: false,
+});
+
+const INITIAL_DATA = {
+  time: new Date().getTime(),
+  blocks: [
+    {
+      type: "header",
+      data: {
+        text: "This is my awesome editor!",
+        level: 1,
+      },
+    },
+  ],
+};
+
 export const RequestForm = ({ initRequest }: { initRequest: RequestData }) => {
   const sp = useSearchParams();
 
@@ -131,7 +149,15 @@ export const RequestForm = ({ initRequest }: { initRequest: RequestData }) => {
           .with({ type: "jpf" }, () => (
             <JobProfileForm onFilled={setRequest} data={request} />
           ))
-          .with({ type: "technical" }, () => <div>Placeholder</div>)
+          .with({ type: "technical" }, () => (
+            <>
+              <Editor
+                onChange={noop}
+                editorblock="editorjs-container"
+                initialData={INITIAL_DATA}
+              />
+            </>
+          ))
           .exhaustive()}
       </div>
       <SideNav

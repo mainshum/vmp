@@ -64,7 +64,6 @@ export const RequestInput = z
     ),
   })
   .transform(({ ...rest }, ctx) => {
-    debugger;
     if (rest.workType === "FULLY_REMOTE")
       return { ...rest, daysInOffice: null, officeLocation: null };
 
