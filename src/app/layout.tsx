@@ -32,7 +32,7 @@ export default async function RootLayout({
       >
         <body className="min-h-screen antialiased">
           <NextAuthProvider>
-            <Navbar />
+            <Navbar session={session} />
             <main className="h-[100vh] pt-[56px]">{children}</main>
             <Toaster />
           </NextAuthProvider>

@@ -75,3 +75,5 @@ export const nextAuthOptions: NextAuthOptions = {
 
 export const getVMPSession = async () =>
   await getServerSession(nextAuthOptions);
+
+export type NextSession = Awaited<ReturnType<typeof getVMPSession>>;
