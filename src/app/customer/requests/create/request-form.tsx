@@ -95,8 +95,8 @@ type RequestFormState =
   | { type: "jpf" }
   | {
       type: "technical";
-      requestId: string;
-      technical: Exclude<RequestData, null>["technical"];
+      // requestId: string;
+      // technical: Exclude<RequestData, null>["technical"];
     }
   | { type: "error" };
 
@@ -115,23 +115,7 @@ export const RequestForm = ({ initRequest }: { initRequest: RequestData }) => {
 
     if (!request) return { type: "error" };
 
-    const techTree = match(request.profile)
-      .with(JobProfile.SOFTWARE_ENGINEER, () => {
-        return match(request.subProfile)
-          .with(JobSubProfile.BACKEND, () => Software.backend)
-          .with(JobSubProfile.FRONTEND, () => Software.frontend)
-          .with(JobSubProfile.FULLSTACK, () => Software.fullstack)
-          .with(JobSubProfile.MOBILE, () => Software.mobile)
-          .exhaustive();
-      })
-      .otherwise(() => Software.mobile);
-
-    return {
-      type: "technical",
-      requestId: request.id,
-      techTree,
-      technical: request.technical,
-    };
+    return { type: "technical" };
   }, [request, page]);
 
   if (parsedState.type === "error") {
@@ -139,7 +123,7 @@ export const RequestForm = ({ initRequest }: { initRequest: RequestData }) => {
   }
 
   return (
-    <div className="flex justify-center gap-8 px-8 lg:justify-between">
+    <div className="flex justify-center gap-8 overflow-x-clip px-8 lg:justify-between">
       <div className="hidden w-10 shrink-[100] lg:block"></div>
       <div className="flex flex-col items-start py-8">
         <FormNavigation page={parsedState.type} />
@@ -150,31 +134,22 @@ export const RequestForm = ({ initRequest }: { initRequest: RequestData }) => {
           .with({ type: "technical" }, () => <div>Placeholder</div>)
           .exhaustive()}
       </div>
-      <SideNav className="sticky top-[56px] h-[calc(100vh-56px)] shrink-0 translate-x-[30px] gap-3 pt-8">
+      <SideNav
+        className={clsx(
+          "sticky top-[56px] h-[calc(100vh-56px)] shrink-0 translate-x-[30px] gap-3 pt-8 transition-transform duration-300 ",
+          parsedState.type === "technical" && "translate-x-[110%]",
+        )}
+      >
         <div className="flex flex-col gap-3">
           <h1 className="text-lg font-semibold">On this page</h1>
-          {match(parsedState)
-            .with({ type: "jpf" }, () => (
-              <>
-                <A href="#profile">Profile</A>
-                <A href="#availability">Availability</A>
-                <A href="#travel">Travel requirements</A>
-                <A href="#project">Project details</A>
-              </>
-            ))
-            .with({ type: "technical" }, () => <div>Placeholder</div>)
-            .exhaustive()}
+          <A href="#profile">Profile</A>
+          <A href="#availability">Availability</A>
+          <A href="#travel">Travel requirements</A>
+          <A href="#project">Project details</A>
         </div>
       </SideNav>
     </div>
   );
-};
-
-// TODO make it work
-const useScrollTop = () => {
-  return useLayoutEffect(() => {
-    window.scrollTo(0, 0);
-  }, []);
 };
 
 type CreateUpdateRequestOutput = RouterOutputs["upsertRequest"];
@@ -188,8 +163,6 @@ export const JobProfileForm = ({
   onFilled: (rm: CreateUpdateRequestOutput) => void;
 }) => {
   const { toast } = useToast();
-
-  useScrollTop();
 
   const form = useForm<RequestInput>({
     resolver: zodResolver(RequestInput),
