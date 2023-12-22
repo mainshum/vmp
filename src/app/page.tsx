@@ -1,7 +1,7 @@
 export default async function Home() {
   return (
-    <>
-      <section className="p-32">
+    <section className="relative h-full overflow-hidden p-32">
+      <section>
         <h1 className="text-3xl font-bold">
           IT procurement platform driven by technology
         </h1>
@@ -12,12 +12,12 @@ export default async function Home() {
           use AI to help you choose
         </p>
       </section>
-      <div className="fixed bottom-0 flex aspect-square w-[300%] translate-x-[-32.5%] translate-y-[95%] justify-center rounded-full bg-black pt-32">
-        <p className="basis-[50vw] text-center text-2xl text-white">
+      <div className="absolute bottom-0 right-0 hidden aspect-square w-[500px] -translate-x-32 translate-y-32 items-center justify-center rounded-full bg-black p-16 lg:flex">
+        <p className="text-center text-2xl text-white">
           post anonymized IT job requests and receive a wide selection of offers
           from our <b>trusted vendors</b>
         </p>
       </div>
-    </>
+    </section>
   );
 }
