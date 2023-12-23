@@ -1,7 +1,10 @@
 "use client";
 
-import React, { memo } from "react";
+import React from "react";
 import EditorJS, { OutputData } from "@editorjs/editorjs";
+import Header from "@editorjs/header";
+import List from "@editorjs/list";
+import Paragraph from "@editorjs/paragraph";
 
 interface EditorProps {
   onChange: (data: any) => void;
@@ -15,13 +18,22 @@ const Editor = ({ initialData, onChange, editorblock }: EditorProps) => {
   React.useEffect(() => {
     if (ref.current) return;
 
-    if (typeof window === "undefined") return;
-
     const editor = new EditorJS({
       holder: editorblock,
       data: initialData,
       async onChange(api, event) {
         const data = await api.saver.save();
+      },
+      tools: {
+        header: Header,
+        Paragraph: Paragraph,
+        list: {
+          class: List,
+          inlineToolbar: true,
+          config: {
+            defaultStyle: "unordered",
+          },
+        },
       },
     });
 

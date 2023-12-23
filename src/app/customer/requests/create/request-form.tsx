@@ -1,5 +1,4 @@
 "use client";
-
 import { Software } from "./tech";
 import { Button } from "@/components/ui/button";
 import {
@@ -76,7 +75,7 @@ const Page = z.union([
 
 function FormNavigation({ page }: { page: z.infer<typeof Page> }) {
   return (
-    <div className="flex items-baseline gap-4">
+    <div className="sticky top-[56px] z-10 mt-4 flex items-baseline justify-center gap-4 bg-white py-8">
       <span className={clsx(page === "jpf" && `text-2xl font-bold`)}>
         Job profile
       </span>
@@ -111,8 +110,40 @@ const INITIAL_DATA = {
     {
       type: "header",
       data: {
-        text: "This is my awesome editor!",
-        level: 1,
+        text: "Technical requirements form",
+        level: 2,
+      },
+    },
+    {
+      type: "paragraph",
+      data: {
+        text: "Provide detailed information on technologies used in the project and we will use it to match you with the best candidates.",
+      },
+    },
+    {
+      type: "header",
+      data: {
+        text: "Programming languages",
+        level: 4,
+      },
+    },
+    {
+      type: "list",
+      data: {
+        items: ["Node JS", "TypeScript", "Python"],
+      },
+    },
+    {
+      type: "header",
+      data: {
+        text: "Version Control Systems",
+        level: 4,
+      },
+    },
+    {
+      type: "list",
+      data: {
+        items: ["Git", "Bitbucket", "Github"],
       },
     },
   ],
@@ -141,10 +172,9 @@ export const RequestForm = ({ initRequest }: { initRequest: RequestData }) => {
   }
 
   return (
-    <div className="flex justify-center gap-8 overflow-x-clip px-8 lg:justify-between">
-      <div className="hidden w-10 shrink-[100] lg:block"></div>
-      <div className="flex flex-col items-start py-8">
-        <FormNavigation page={parsedState.type} />
+    <>
+      <FormNavigation page={parsedState.type} />
+      <div className="flex flex-col items-center justify-center gap-8 px-16">
         {match(parsedState)
           .with({ type: "jpf" }, () => (
             <JobProfileForm onFilled={setRequest} data={request} />
@@ -160,9 +190,9 @@ export const RequestForm = ({ initRequest }: { initRequest: RequestData }) => {
           ))
           .exhaustive()}
       </div>
-      <SideNav
+      {/* <SideNav
         className={clsx(
-          "sticky top-[56px] h-[calc(100vh-56px)] shrink-0 translate-x-[30px] gap-3 pt-8 transition-transform duration-300 ",
+          "sticky right-0 top-[56px] h-[calc(100vh-56px)] shrink-0 translate-x-[30px] gap-3 pt-8 transition-transform duration-300 ",
           parsedState.type === "technical" && "translate-x-[110%]",
         )}
       >
@@ -173,8 +203,8 @@ export const RequestForm = ({ initRequest }: { initRequest: RequestData }) => {
           <A href="#travel">Travel requirements</A>
           <A href="#project">Project details</A>
         </div>
-      </SideNav>
-    </div>
+      </SideNav> */}
+    </>
   );
 };
 
@@ -271,7 +301,7 @@ export const JobProfileForm = ({
           mutate({ id: data?.id, requestPostModel: form.getValues() }),
         )}
         noValidate
-        className="space-y-8"
+        className="relative bottom-8 space-y-8"
       >
         <a className="hop-anchor top-[-45px]" id="profile" />
         <MyInput
