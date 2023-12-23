@@ -65,7 +65,23 @@
     --ring: 24 5.7% 82.9%;
   }
 }
+/* editor js */
 
+#editorjs-container {
+  position: relative;
+  top: 15px;
+  background-color: #f9f9f9;
+  width: 100%;
+  padding: 56px 10px;
+  min-height: 500px;
+}
+.ce-paragraph {
+  padding: 2em 0;
+}
+
+.codex-editor__redactor {
+  padding-bottom: 0 !important;
+}
 @layer base {
   * {
     @apply border-border;
@@ -76,6 +92,28 @@
   .center-absolute {
     @apply absolute inset-0 flex items-center justify-center py-64;
   }
+
+  /* shadcn typography */
+  h1 {
+    @apply scroll-m-20 text-4xl font-extrabold tracking-tight lg:text-5xl;
+  }
+  h2 {
+    @apply scroll-m-20 border-b pb-2 text-3xl font-semibold tracking-tight first:mt-0;
+  }
+  h3 {
+    @apply scroll-m-20 text-2xl font-semibold tracking-tight;
+  }
+  h4 {
+    @apply scroll-m-20 text-xl font-semibold tracking-tight;
+  }
+
+  ul {
+    @apply my-6 ml-6 list-disc [&>li]:mt-2;
+  }
+  .cdx-block {
+    padding: 1.2em 0;
+  }
+
   .hop-anchor {
     position: relative;
     top: -66px;

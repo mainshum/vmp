@@ -122,6 +122,9 @@ dependencies:
   '@trpc/server':
     specifier: ^10.41.0
     version: 10.41.0
+  '@types/editorjs__header':
+    specifier: ^2.6.0
+    version: 2.6.0
   '@types/node':
     specifier: 20.2.5
     version: 20.2.5
@@ -292,9 +295,6 @@ devDependencies:
   '@testing-library/cypress':
     specifier: ^9.0.0
     version: 9.0.0(cypress@12.17.4)
-  '@types/editorjs__header':
-    specifier: ^2.6.0
-    version: 2.6.0
   '@types/lodash.debounce':
     specifier: ^4.0.7
     version: 4.0.7
@@ -5281,7 +5281,7 @@ packages:
 
   /@types/editorjs__header@2.6.0:
     resolution: {integrity: sha512-J9TyO/BjNVddi+syyXpvMRMtVz5Z62pwmFKynWsgP+wnJYdWF8ABqgomokIsAvuEwH5NHa/YxsTltYcPPGCRRQ==}
-    dev: true
+    dev: false
 
   /@types/ejs@3.1.5:
     resolution: {integrity: sha512-nv+GSx77ZtXiJzwKdsASqi+YQ5Z7vwHsTP0JY2SiQgjGckkBRKZnk8nIM+7oUZ1VCtuTz0+By4qVR7fqzp/Dfg==}

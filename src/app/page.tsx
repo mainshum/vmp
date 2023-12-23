@@ -1,6 +1,6 @@
-export default async function Home() {
+export default function Home() {
   return (
-    <section className="relative h-full overflow-hidden p-32">
+    <section className="relative h-[calc(100vh-56px)] overflow-hidden p-32">
       <section>
         <h1 className="text-3xl font-bold">
           IT procurement platform driven by technology

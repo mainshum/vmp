@@ -1,5 +1,4 @@
 "use client";
-
 import { Software } from "./tech";
 import { Button } from "@/components/ui/button";
 import {
@@ -16,7 +15,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { SelectItem } from "@/components/ui/select";
 import { Slider } from "@/components/ui/slider";
-import { cn } from "@/lib/utils";
+import { cn, noop } from "@/lib/utils";
 import {
   Popover,
   PopoverTrigger,
@@ -49,6 +48,8 @@ import { z } from "zod";
 import { Error } from "@/components/success";
 import { RouterOutputs, trpc } from "@/lib/trpc";
 import { RequestInput } from "@/lib/validation";
+import dynamic from "next/dynamic";
+import { OutputData } from "@editorjs/editorjs";
 
 type RequestData = RouterOutputs["request"];
 
@@ -75,7 +76,7 @@ const Page = z.union([
 
 function FormNavigation({ page }: { page: z.infer<typeof Page> }) {
   return (
-    <div className="flex items-baseline gap-4">
+    <div className="sticky top-[56px] z-10 mt-4 flex items-baseline justify-center gap-4 bg-white py-8">
       <span className={clsx(page === "jpf" && `text-2xl font-bold`)}>
         Job profile
       </span>
@@ -95,10 +96,103 @@ type RequestFormState =
   | { type: "jpf" }
   | {
       type: "technical";
-      requestId: string;
-      technical: Exclude<RequestData, null>["technical"];
+      request: Exclude<RequestData, null>;
     }
   | { type: "error" };
+
+const Editor = dynamic(() => import("../../../../components/editor"), {
+  ssr: false,
+});
+
+const INITIAL_DATA: OutputData = {
+  time: new Date().getTime(),
+  blocks: [
+    {
+      type: "header",
+      data: {
+        text: "Technical requirements form",
+        level: 2,
+      },
+    },
+    {
+      type: "paragraph",
+      data: {
+        text: "Provide detailed information on technologies used in the project and we will use it to match you with the best candidates.",
+      },
+    },
+    {
+      type: "header",
+      data: {
+        text: "Programming languages",
+        level: 4,
+      },
+    },
+    {
+      type: "list",
+      data: {
+        items: ["Node JS", "TypeScript", "Python"],
+      },
+    },
+    {
+      type: "header",
+      data: {
+        text: "Version Control Systems",
+        level: 4,
+      },
+    },
+    {
+      type: "list",
+      data: {
+        items: ["Git", "Bitbucket", "Github"],
+      },
+    },
+  ],
+};
+
+const TechnicalForm = ({
+  request,
+}: {
+  request: Exclude<RequestData, null>;
+}) => {
+  const { toast } = useToast();
+  const router = useRouter();
+
+  const { mutate } = trpc.upsertRequest.useMutation({
+    onMutate: () => {
+      toast({ title: "Saving..." });
+    },
+    onError: () => {
+      toast({
+        title: "Error saving request",
+        description: "Please try resubmitting the form",
+      });
+    },
+    onSuccess: () => {
+      toast({ title: "Saved successfully" });
+
+      router.push("/customer/requests");
+    },
+  });
+
+  return (
+    <Editor
+      onSave={async (data) => {
+        if (!data) return;
+
+        const result = await data;
+
+        if (!result) return;
+
+        mutate({
+          id: request.id,
+          requestPostModel: { ...request, technical: result },
+        });
+      }}
+      editorblock="editorjs-container"
+      initialData={(request.technical as unknown as OutputData) || INITIAL_DATA}
+    />
+  );
+};
 
 export const RequestForm = ({ initRequest }: { initRequest: RequestData }) => {
   const sp = useSearchParams();
@@ -109,29 +203,12 @@ export const RequestForm = ({ initRequest }: { initRequest: RequestData }) => {
 
   const parsedState: RequestFormState = useMemo(() => {
     const parsedPage = Page.safeParse(page);
-    if (!parsedPage.success) return { type: "error" };
 
-    if (parsedPage.data == "jpf") return { type: "jpf" };
+    if (!parsedPage.success || parsedPage.data == "jpf") return { type: "jpf" };
 
     if (!request) return { type: "error" };
 
-    const techTree = match(request.profile)
-      .with(JobProfile.SOFTWARE_ENGINEER, () => {
-        return match(request.subProfile)
-          .with(JobSubProfile.BACKEND, () => Software.backend)
-          .with(JobSubProfile.FRONTEND, () => Software.frontend)
-          .with(JobSubProfile.FULLSTACK, () => Software.fullstack)
-          .with(JobSubProfile.MOBILE, () => Software.mobile)
-          .exhaustive();
-      })
-      .otherwise(() => Software.mobile);
-
-    return {
-      type: "technical",
-      requestId: request.id,
-      techTree,
-      technical: request.technical,
-    };
+    return { type: "technical", request };
   }, [request, page]);
 
   if (parsedState.type === "error") {
@@ -139,42 +216,20 @@ export const RequestForm = ({ initRequest }: { initRequest: RequestData }) => {
   }
 
   return (
-    <div className="flex justify-center gap-8 px-8 lg:justify-between">
-      <div className="hidden w-10 shrink-[100] lg:block"></div>
-      <div className="flex flex-col items-start py-8">
-        <FormNavigation page={parsedState.type} />
+    <div className="pb-8">
+      <FormNavigation page={parsedState.type} />
+      <div className="flex flex-col items-center justify-center gap-8 px-16">
         {match(parsedState)
           .with({ type: "jpf" }, () => (
             <JobProfileForm onFilled={setRequest} data={request} />
           ))
-          .with({ type: "technical" }, () => <div>Placeholder</div>)
+          .with({ type: "technical" }, ({ request }) => (
+            <TechnicalForm request={request} />
+          ))
           .exhaustive()}
       </div>
-      <SideNav className="sticky top-[56px] h-[calc(100vh-56px)] shrink-0 translate-x-[30px] gap-3 pt-8">
-        <div className="flex flex-col gap-3">
-          <h1 className="text-lg font-semibold">On this page</h1>
-          {match(parsedState)
-            .with({ type: "jpf" }, () => (
-              <>
-                <A href="#profile">Profile</A>
-                <A href="#availability">Availability</A>
-                <A href="#travel">Travel requirements</A>
-                <A href="#project">Project details</A>
-              </>
-            ))
-            .with({ type: "technical" }, () => <div>Placeholder</div>)
-            .exhaustive()}
-        </div>
-      </SideNav>
     </div>
   );
-};
-
-// TODO make it work
-const useScrollTop = () => {
-  return useLayoutEffect(() => {
-    window.scrollTo(0, 0);
-  }, []);
 };
 
 type CreateUpdateRequestOutput = RouterOutputs["upsertRequest"];
@@ -188,8 +243,6 @@ export const JobProfileForm = ({
   onFilled: (rm: CreateUpdateRequestOutput) => void;
 }) => {
   const { toast } = useToast();
-
-  useScrollTop();
 
   const form = useForm<RequestInput>({
     resolver: zodResolver(RequestInput),
@@ -263,13 +316,17 @@ export const JobProfileForm = ({
   const showOfficeLocation = workType === "ONSITE" || workType === "HYBRID";
   const showDaysInOffice = workType === "HYBRID";
 
-  console.log(form.formState.errors);
-
   return (
     <Form {...form}>
       <form
         onSubmit={form.handleSubmit(() =>
-          mutate({ id: data?.id, requestPostModel: form.getValues() }),
+          mutate({
+            id: data?.id,
+            // eslint-disable-next-line no-unused-vars
+            requestPostModel: (({ technical, ...rest }): any => ({ ...rest }))(
+              form.getValues(),
+            ),
+          }),
         )}
         noValidate
         className="space-y-8"
@@ -584,7 +641,7 @@ export const JobProfileForm = ({
           label="Project manager"
           description="Check if project is managed by a Project Manager"
         />
-        <section className="flex justify-end gap-4">
+        <section className="flex justify-center">
           <Button type="submit">Next page</Button>
         </section>
       </form>
