@@ -100,7 +100,8 @@
     "typescript": "5.0.4",
     "uploadthing": "^4.0.0",
     "xstate": "^4.38.2",
-    "zod": "^3.21.4"
+    "zod": "^3.21.4",
+    "@types/editorjs__header": "^2.6.0"
   },
   "devDependencies": {
     "@cypress/webpack-preprocessor": "^6.0.0",
@@ -116,7 +117,6 @@
     "@storybook/react": "^7.6.5",
     "@storybook/test": "^7.6.5",
     "@testing-library/cypress": "^9.0.0",
-    "@types/editorjs__header": "^2.6.0",
     "@types/lodash.debounce": "^4.0.7",
     "css-loader": "^6.8.1",
     "eslint-plugin-storybook": "^0.6.13",
