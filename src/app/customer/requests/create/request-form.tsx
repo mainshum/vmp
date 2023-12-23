@@ -49,6 +49,7 @@ import { Error } from "@/components/success";
 import { RouterOutputs, trpc } from "@/lib/trpc";
 import { RequestInput } from "@/lib/validation";
 import dynamic from "next/dynamic";
+import { OutputData } from "@editorjs/editorjs";
 
 type RequestData = RouterOutputs["request"];
 
@@ -95,8 +96,7 @@ type RequestFormState =
   | { type: "jpf" }
   | {
       type: "technical";
-      // requestId: string;
-      // technical: Exclude<RequestData, null>["technical"];
+      request: Exclude<RequestData, null>;
     }
   | { type: "error" };
 
@@ -104,7 +104,7 @@ const Editor = dynamic(() => import("../../../../components/editor"), {
   ssr: false,
 });
 
-const INITIAL_DATA = {
+const INITIAL_DATA: OutputData = {
   time: new Date().getTime(),
   blocks: [
     {
@@ -149,6 +149,51 @@ const INITIAL_DATA = {
   ],
 };
 
+const TechnicalForm = ({
+  request,
+}: {
+  request: Exclude<RequestData, null>;
+}) => {
+  const { toast } = useToast();
+  const router = useRouter();
+
+  const { mutate } = trpc.upsertRequest.useMutation({
+    onMutate: () => {
+      toast({ title: "Saving..." });
+    },
+    onError: () => {
+      toast({
+        title: "Error saving request",
+        description: "Please try resubmitting the form",
+      });
+    },
+    onSuccess: () => {
+      toast({ title: "Saved successfully" });
+
+      router.push("/customer/requests");
+    },
+  });
+
+  return (
+    <Editor
+      onSave={async (data) => {
+        if (!data) return;
+
+        const result = await data;
+
+        if (!result) return;
+
+        mutate({
+          id: request.id,
+          requestPostModel: { ...request, technical: result },
+        });
+      }}
+      editorblock="editorjs-container"
+      initialData={(request.technical as unknown as OutputData) || INITIAL_DATA}
+    />
+  );
+};
+
 export const RequestForm = ({ initRequest }: { initRequest: RequestData }) => {
   const sp = useSearchParams();
 
@@ -158,13 +203,12 @@ export const RequestForm = ({ initRequest }: { initRequest: RequestData }) => {
 
   const parsedState: RequestFormState = useMemo(() => {
     const parsedPage = Page.safeParse(page);
-    if (!parsedPage.success) return { type: "error" };
 
-    if (parsedPage.data == "jpf") return { type: "jpf" };
+    if (!parsedPage.success || parsedPage.data == "jpf") return { type: "jpf" };
 
     if (!request) return { type: "error" };
 
-    return { type: "technical" };
+    return { type: "technical", request };
   }, [request, page]);
 
   if (parsedState.type === "error") {
@@ -172,39 +216,19 @@ export const RequestForm = ({ initRequest }: { initRequest: RequestData }) => {
   }
 
   return (
-    <>
+    <div className="pb-8">
       <FormNavigation page={parsedState.type} />
       <div className="flex flex-col items-center justify-center gap-8 px-16">
         {match(parsedState)
           .with({ type: "jpf" }, () => (
             <JobProfileForm onFilled={setRequest} data={request} />
           ))
-          .with({ type: "technical" }, () => (
-            <>
-              <Editor
-                onChange={noop}
-                editorblock="editorjs-container"
-                initialData={INITIAL_DATA}
-              />
-            </>
+          .with({ type: "technical" }, ({ request }) => (
+            <TechnicalForm request={request} />
           ))
           .exhaustive()}
       </div>
-      {/* <SideNav
-        className={clsx(
-          "sticky right-0 top-[56px] h-[calc(100vh-56px)] shrink-0 translate-x-[30px] gap-3 pt-8 transition-transform duration-300 ",
-          parsedState.type === "technical" && "translate-x-[110%]",
-        )}
-      >
-        <div className="flex flex-col gap-3">
-          <h1 className="text-lg font-semibold">On this page</h1>
-          <A href="#profile">Profile</A>
-          <A href="#availability">Availability</A>
-          <A href="#travel">Travel requirements</A>
-          <A href="#project">Project details</A>
-        </div>
-      </SideNav> */}
-    </>
+    </div>
   );
 };
 
@@ -292,16 +316,20 @@ export const JobProfileForm = ({
   const showOfficeLocation = workType === "ONSITE" || workType === "HYBRID";
   const showDaysInOffice = workType === "HYBRID";
 
-  console.log(form.formState.errors);
-
   return (
     <Form {...form}>
       <form
         onSubmit={form.handleSubmit(() =>
-          mutate({ id: data?.id, requestPostModel: form.getValues() }),
+          mutate({
+            id: data?.id,
+            // eslint-disable-next-line no-unused-vars
+            requestPostModel: (({ technical, ...rest }): any => ({ ...rest }))(
+              form.getValues(),
+            ),
+          }),
         )}
         noValidate
-        className="relative bottom-8 space-y-8"
+        className="space-y-8"
       >
         <a className="hop-anchor top-[-45px]" id="profile" />
         <MyInput
@@ -613,7 +641,7 @@ export const JobProfileForm = ({
           label="Project manager"
           description="Check if project is managed by a Project Manager"
         />
-        <section className="flex justify-end gap-4">
+        <section className="flex justify-center">
           <Button type="submit">Next page</Button>
         </section>
       </form>

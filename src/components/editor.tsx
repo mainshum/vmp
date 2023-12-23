@@ -5,14 +5,16 @@ import EditorJS, { OutputData } from "@editorjs/editorjs";
 import Header from "@editorjs/header";
 import List from "@editorjs/list";
 import Paragraph from "@editorjs/paragraph";
+import { Button } from "./ui/button";
 
 interface EditorProps {
-  onChange: (data: any) => void;
+  // eslint-disable-next-line no-unused-vars
+  onSave: (data?: Promise<OutputData>) => void;
   initialData: OutputData;
   editorblock: string;
 }
 
-const Editor = ({ initialData, onChange, editorblock }: EditorProps) => {
+const Editor = ({ initialData, onSave, editorblock }: EditorProps) => {
   const ref = React.useRef<EditorJS | null>();
 
   React.useEffect(() => {
@@ -21,8 +23,8 @@ const Editor = ({ initialData, onChange, editorblock }: EditorProps) => {
     const editor = new EditorJS({
       holder: editorblock,
       data: initialData,
-      async onChange(api, event) {
-        const data = await api.saver.save();
+      async onChange(api) {
+        await api.saver.save();
       },
       tools: {
         header: Header,
@@ -44,7 +46,14 @@ const Editor = ({ initialData, onChange, editorblock }: EditorProps) => {
     };
   }, [editorblock, initialData]);
 
-  return <div id={editorblock} />;
+  return (
+    <>
+      <div id={editorblock} />
+      <Button onClick={() => onSave(ref.current?.saver.save())}>
+        Next page
+      </Button>
+    </>
+  );
 };
 
 export default Editor;

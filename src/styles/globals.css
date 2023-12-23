@@ -65,7 +65,23 @@
     --ring: 24 5.7% 82.9%;
   }
 }
+/* editor js */
 
+#editorjs-container {
+  position: relative;
+  top: 15px;
+  background-color: #f9f9f9;
+  width: 100%;
+  padding: 56px 10px;
+  min-height: 500px;
+}
+.ce-paragraph {
+  padding: 2em 0;
+}
+
+.codex-editor__redactor {
+  padding-bottom: 0 !important;
+}
 @layer base {
   * {
     @apply border-border;
@@ -94,10 +110,6 @@
   ul {
     @apply my-6 ml-6 list-disc [&>li]:mt-2;
   }
-  p,
-  .ce-paragraph {
-    @apply leading-7 [&:not(:first-child)]:mt-6;
-  }
   .cdx-block {
     padding: 1.2em 0;
   }
@@ -107,25 +119,5 @@
     top: -66px;
     display: block;
     visibility: hidden;
-  }
-
-  #editorjs-container {
-    position: relative;
-    top: 15px;
-    background-color: #f9f9f9;
-    width: 100%;
-    padding: 56px 10px;
-    min-height: 500px;
-  }
-
-  .ce-toolbar__content,
-  .ce-block__content {
-    max-width: unset;
-    width: 92% !important;
-  }
-
-  .editorjs-codeFlask_Wrapper .editorjs-codeFlask_LangDisplay {
-    max-width: unset;
-    height: unset !important;
   }
 }

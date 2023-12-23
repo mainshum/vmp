@@ -30,17 +30,16 @@ export const appRouter = t.router({
     )
     .mutation(({ input }) => {
       const { requestPostModel, id } = input;
-      const data = {
-        ...requestPostModel,
-        technical: !requestPostModel.technical
-          ? Prisma.DbNull
-          : requestPostModel.technical,
-      };
 
-      if (id) return db.request.update({ where: { id }, data });
+      if (id)
+        return db.request.update({ where: { id }, data: requestPostModel });
 
       return db.request.create({
-        data: { ...data, creationDate: new Date(), validUntil: new Date() },
+        data: {
+          ...requestPostModel,
+          creationDate: new Date(),
+          validUntil: new Date(),
+        },
       });
     }),
   requestsPreviews: t.procedure.query(() => {
