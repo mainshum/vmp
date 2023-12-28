@@ -27,6 +27,16 @@ export const stringMin3 = z
 
 export const emptyStringLiteral = z.literal("");
 
+const RequestOfferShared = z.object({
+  profile: z.nativeEnum(JobProfile),
+  subProfile: z.nativeEnum(JobSubProfile),
+  seniority: z.nativeEnum(Seniority),
+  startDate: z.date({
+    coerce: true,
+    required_error: "Start date is required",
+  }),
+});
+
 export const RequestInput = z
   .object({
     status: z.nativeEnum(RequestStatus),
@@ -38,18 +48,11 @@ export const RequestInput = z
     fundingGuaranteed: z.boolean(),
     pmExists: z.boolean(),
     description: z.string().min(10, { message: "Minimum 10 characters" }),
-    profile: z.nativeEnum(JobProfile),
-    subProfile: z.nativeEnum(JobSubProfile),
-    seniority: z.nativeEnum(Seniority),
     hourlyRate: positiveInteger,
     availability: z
       .number()
       .int()
       .positive({ message: "Needs to be a positive integer" }),
-    startDate: z.date({
-      coerce: true,
-      required_error: "Start date is required",
-    }),
     endDate: z.date({ coerce: true, required_error: "End date is required" }),
     noticePeriod: positiveInteger,
     officeLocation: z.any(),
@@ -63,6 +66,7 @@ export const RequestInput = z
       { message: "Technical validation failed", path: ["technical"] },
     ),
   })
+  .extend(RequestOfferShared.shape)
   .transform(({ ...rest }, ctx) => {
     if (rest.workType === "FULLY_REMOTE")
       return { ...rest, daysInOffice: null, officeLocation: null };
@@ -94,3 +98,9 @@ export const RequestInput = z
   });
 
 export type RequestInput = z.infer<typeof RequestInput>;
+
+export const OfferInput = RequestOfferShared.extend({
+  cv: z.string(),
+});
+
+export type OfferInput = z.infer<typeof OfferInput>;

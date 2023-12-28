@@ -9,7 +9,9 @@ export const ROUTES = {
     REQUESTS: {
       LIST: "/vendor/requests",
       CREATE: "/vendor/requests/create?page=jpf",
-      ONE: (id: string) => `/vendor/requests/create?requestId=${id}&page=jpf`,
+    },
+    OFFERS: {
+      CREATE: (id: string) => `/vendor/offers/create?requestId=${id}`,
     },
   },
   CUSTOMER: {

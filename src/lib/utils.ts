@@ -1,6 +1,7 @@
-import { VMPRole } from "@prisma/client";
+import { JobProfile, JobSubProfile, VMPRole } from "@prisma/client";
 import { type ClassValue, clsx } from "clsx";
 import { twMerge } from "tailwind-merge";
+import { match } from "ts-pattern";
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -22,20 +23,6 @@ export const startViewTransitionIfExists = (fn: CallableFunction) => {
 
   document.startViewTransition(fn);
 };
-
-class MyError extends Error {
-  constructor(message: string) {
-    super(message);
-    this.name = this.constructor.name;
-    this.message = message;
-  }
-}
-
-export class RoleNotImplementedError extends MyError {
-  constructor(role: VMPRole) {
-    super(`Role not implemented for ${role}`);
-  }
-}
 
 export const withTransitionIfExists = (fn: CallableFunction) => {
   if (!document.startViewTransition) {
@@ -61,3 +48,16 @@ export function withMinResolveTime<TVar, TRes>(
     );
   };
 }
+
+export const getSubProfile = (profile: JobProfile): JobSubProfile[] =>
+  match(profile)
+    .with(JobProfile.SOFTWARE_ENGINEER, () => [
+      JobSubProfile.BACKEND,
+      JobSubProfile.FRONTEND,
+      JobSubProfile.FULLSTACK,
+      JobSubProfile.MOBILE,
+    ])
+    .with(JobProfile.DATA_SPECIALIST, () => [])
+    .with(JobProfile.DEVOPS, () => [])
+    .with(JobProfile.QUALITY_ASSURANCE, () => [])
+    .otherwise(() => []);
