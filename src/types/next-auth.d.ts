@@ -1,6 +1,7 @@
+/* eslint-disable no-unused-vars */
 import { DefaultSession, AdapterUser } from "next-auth";
 import { CompanyDetails, type BuyerDetails } from "../components/register";
-import { VMPRoleType } from "../../prisma/generated/zod";
+import { VMPRole } from "@prisma/client";
 
 declare module "next-auth" {
   /**
@@ -9,11 +10,11 @@ declare module "next-auth" {
   interface Session {
     user: DefaultSession["user"] & {
       id: string;
-      role: VMPRoleType;
+      role: VMPRole;
     };
   }
   interface User {
-    role: VMPRoleType;
+    role: VMPRole;
   }
 }
 

@@ -1,13 +1,20 @@
 import Link from "next/link";
 import Icons from "./icons";
-import { UserCircle } from "lucide-react";
+import { LogOutIcon, Megaphone, UserCircle } from "lucide-react";
 import { ROUTES } from "@/lib/const";
 import { buttonVariants } from "./ui/button";
 import { headers } from "next/headers";
 import { NextSession } from "@/lib/auth";
-import { Nullalble } from "@/types/shared";
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+} from "@/components/ui/dropdown-menu";
+import { signOut } from "next-auth/react";
+import { User } from "./navbar-user";
 
-function Navbar({ session }: { session: Nullalble<NextSession> }) {
+function Navbar({ session }: { session: NextSession }) {
   const headersList = headers();
   const pathname = headersList.get("x-invoke-path");
   return (
@@ -29,7 +36,7 @@ function Navbar({ session }: { session: Nullalble<NextSession> }) {
             </Link>
           )}
           {session ? (
-            <UserCircle className="h-8 w-8 text-white" />
+            <User session={session} />
           ) : (
             <Link className={buttonVariants()} href={ROUTES.SIGIN}>
               Sign in
