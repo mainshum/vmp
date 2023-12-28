@@ -5,6 +5,13 @@ type SuccessType = "customer_registered";
 export const ROUTES = {
   SIGIN: "/sign-in",
   ROLE_SELECT: "/role-select",
+  VENDOR: {
+    REQUESTS: {
+      LIST: "/vendor/requests",
+      CREATE: "/vendor/requests/create?page=jpf",
+      ONE: (id: string) => `/vendor/requests/create?requestId=${id}&page=jpf`,
+    },
+  },
   CUSTOMER: {
     REQUESTS: {
       LIST: "/customer/requests",
