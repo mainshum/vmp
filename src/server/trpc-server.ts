@@ -5,15 +5,10 @@ import { RequestInput } from "@/lib/validation";
 import { z } from "zod";
 import { VMPRole } from "@prisma/client";
 import superjson from "superjson";
-import { getVMPSession } from "@/lib/auth";
-import { match } from "ts-pattern";
+import { NextSession, getVMPSession } from "@/lib/auth";
 
-import { createHTTPHandler } from "@trpc/server/adapters/standalone";
-
-export const createContext = async () => {
-  const session = await getVMPSession();
-
-  return { session };
+export const createContext = async (session?: NextSession) => {
+  return { session: session || (await getVMPSession()) };
 };
 
 const t = initTRPC
@@ -36,34 +31,34 @@ const roleProtected = (authed: (r: VMPRole) => boolean) =>
 
 const requestId = z.object({ requestId: z.string().cuid() });
 
-// this is our RPC API
-export const appRouter = t.router({
-  // requests
-  requests: roleProtected((r) => r !== "NONE").query(({ ctx: { user } }) => {
-    const { role } = user;
+const adminOr = (role?: VMPRole) => (r: VMPRole) => r === role || r === "ADMIN";
 
-    return match(role)
-      .with(VMPRole.CLIENT, () =>
-        db.request.findMany({ where: { userId: user.id } }),
-      )
-      .with(VMPRole.VENDOR, () =>
-        db.request.findMany({
-          select: {
-            name: true,
-            id: true,
-            creationDate: true,
-            validUntil: true,
-          },
-        }),
-      )
-      .with(VMPRole.ADMIN, () => db.request.findMany())
-      .with(VMPRole.NONE, () => {
-        throw new TRPCError({ code: "UNAUTHORIZED" });
-      })
-      .exhaustive();
+const customerRouter = t.router({
+  requests: roleProtected(adminOr(VMPRole.CLIENT)).query(
+    ({ ctx: { user } }) => {
+      return db.request.findMany({ where: { userId: user.id } });
+    },
+  ),
+  requestsPreviews: t.procedure.query(() => {
+    return db.$queryRaw<RequestPreview[]>`
+      select req.id, req.status, req.name, CAST(req."validUntil" as TEXT), CAST(req."creationDate" as TEXT), CAST(COUNT(ofe.id) as INT) as "offersCount"
+      from "Request" req
+      left join "Offer" ofe 
+      on req.id = ofe."requestId"
+      group by req.id
+  `;
   }),
   request: t.procedure.input(requestId).query(({ input }) => {
     return db.request.findFirst({ where: { id: input.requestId } });
+  }),
+  requestDelete: t.procedure.input(z.string()).mutation(({ input: id }) => {
+    return db.request.delete({ where: { id } });
+  }),
+  offers: t.procedure.input(requestId).query(({ input }) => {
+    return db.offer.findMany({
+      where: { requestId: input.requestId },
+      orderBy: { id: "asc" },
+    });
   }),
   upsertRequest: roleProtected((r) => r === "ADMIN" || r === "CLIENT")
     .input(
@@ -71,8 +66,6 @@ export const appRouter = t.router({
     )
     .mutation(({ input, ctx: { user } }) => {
       const { requestPostModel, id } = input;
-
-      console.log(requestPostModel);
 
       if (id)
         return db.request.update({ where: { id }, data: requestPostModel });
@@ -86,24 +79,32 @@ export const appRouter = t.router({
         },
       });
     }),
-  requestsPreviews: t.procedure.query(() => {
-    return db.$queryRaw<RequestPreview[]>`
-      select req.id, req.status, req.name, CAST(req."validUntil" as TEXT), CAST(req."creationDate" as TEXT), CAST(COUNT(ofe.id) as INT) as "offersCount"
-      from "Request" req
-      left join "Offer" ofe 
-      on req.id = ofe."requestId"
-      group by req.id
-  `;
-  }),
-  requestDelete: t.procedure.input(z.string()).mutation(({ input: id }) => {
-    return db.request.delete({ where: { id } });
-  }),
-  offers: t.procedure.input(requestId).query(({ input }) => {
-    return db.offer.findMany({
-      where: { requestId: input.requestId },
-      orderBy: { id: "asc" },
+});
+
+const vendorRouter = t.router({
+  requests: roleProtected(adminOr(VMPRole.VENDOR)).query(() => {
+    return db.request.findMany({
+      select: {
+        id: true,
+        name: true,
+        validUntil: true,
+        creationDate: true,
+      },
     });
   }),
+});
+
+const adminRouter = t.router({
+  requests: roleProtected(adminOr()).query(() => {
+    return db.request.findMany();
+  }),
+});
+
+// this is our RPC API
+export const appRouter = t.router({
+  [VMPRole.CLIENT]: customerRouter,
+  [VMPRole.VENDOR]: vendorRouter,
+  [VMPRole.ADMIN]: adminRouter,
 });
 
 export type AppRouter = typeof appRouter;

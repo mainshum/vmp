@@ -17,13 +17,14 @@ import { Action } from "@/types/shared";
 import { useToast } from "@/hooks/use-toast";
 import Link from "next/link";
 import { ROUTES } from "@/lib/const";
-import { Shell } from "@/components/shell";
 import { RouterOutputs, trpc } from "@/lib/trpc";
-import { RequestPreview } from "@/types/request";
+import { GetResult } from "@prisma/client/runtime";
 
 const chevronClasses = "h-4 w-4";
 
-type RequestsPreviews = RouterOutputs["requestsPreviews"];
+type CustomerRequests = RouterOutputs["CLIENT"]["requests"];
+type VendorRequests = RouterOutputs["VENDOR"]["requests"];
+type AdminRequests = RouterOutputs["ADMIN"]["requests"];
 
 type Ctx = {
   handleRequestRemoval: Action<string>;
@@ -31,11 +32,15 @@ type Ctx = {
 
 const ctx = React.createContext<Ctx>({} as Ctx);
 
-export const opsColumns: ColumnDef<RequestsPreviews[0]>[] = [
+type SharedColumns = Pick<
+  CustomerRequests[0],
+  "name" | "id" | "validUntil" | "creationDate"
+>;
+
+const sharedColumns: ColumnDef<SharedColumns>[] = [
   {
     accessorKey: "id",
     header: "Request ID",
-
     cell: ({ row }) => {
       return (
         <span className="flex gap-2">
@@ -61,6 +66,24 @@ export const opsColumns: ColumnDef<RequestsPreviews[0]>[] = [
     header: "Name",
   },
   {
+    accessorKey: "creationDate",
+    header: "Created at",
+    cell: ({ row }) => createDate(row.getValue("creationDate")),
+  },
+  {
+    accessorKey: "validUntil",
+    header: "Valid until",
+    cell: ({ row }) => createDate(row.getValue("validUntil")),
+  },
+];
+
+type UnwrapColDef<T> = T extends ColumnDef<infer R> ? R : never;
+
+type MergeColDefs<A, B> = ColumnDef<UnwrapColDef<A> & UnwrapColDef<B>>;
+
+const customerColumnns: ColumnDef<CustomerRequests[0]>[] = [
+  ...(sharedColumns as UnwrapColDef<(typeof sharedColumns)[0]>[]),
+  {
     accessorKey: "status",
     header: "Status",
   },
@@ -74,21 +97,13 @@ export const opsColumns: ColumnDef<RequestsPreviews[0]>[] = [
     },
   },
   {
-    accessorKey: "creationDate",
-    header: "Created at",
-    cell: ({ row }) => createDate(row.getValue("creationDate")),
-  },
-  {
-    accessorKey: "validUntil",
-    header: "Valid until",
-    cell: ({ row }) => createDate(row.getValue("validUntil")),
-  },
-  {
     accessorKey: "actions",
     header: "Actions",
     cell: ({ row }) => <Cell id={row.original.id} />,
   },
 ];
+
+const vendorColumns: ColumnDef<VendorRequests[0]>[] = sharedColumns;
 
 function Cell({ id }: { id: string }) {
   const { handleRequestRemoval } = useContext(ctx);
@@ -113,15 +128,17 @@ function Cell({ id }: { id: string }) {
   );
 }
 
-export function RequestsTable({ requests }: { requests: RequestPreview[] }) {
+export function Customer({ requests }: { requests: CustomerRequests }) {
   const { toast } = useToast();
   const utils = trpc.useUtils();
 
-  const { data } = trpc.requestsPreviews.useQuery(undefined, {
+  const client = trpc.CLIENT;
+
+  const { data } = client.requests.useQuery(undefined, {
     initialData: requests,
   });
 
-  const { mutate: handleRequestRemoval } = trpc.requestDelete.useMutation({
+  const { mutate: handleRequestRemoval } = client.requestDelete.useMutation({
     onError: () => {
       toast({
         title: "Request removal failed",
@@ -130,14 +147,14 @@ export function RequestsTable({ requests }: { requests: RequestPreview[] }) {
     },
     onSuccess: (x) => {
       toast({ title: `Request ${x.name} removed successfully` });
-      utils.requestsPreviews.invalidate();
+      utils.CLIENT.requests.invalidate();
     },
   });
 
   return (
     <ctx.Provider value={{ handleRequestRemoval }}>
       <DataTable
-        columns={opsColumns}
+        columns={customerColumnns}
         data={data || []}
         renderSubComponent={({ row }) => (
           <OffersTable opportunityId={row.original.id} />
@@ -146,3 +163,23 @@ export function RequestsTable({ requests }: { requests: RequestPreview[] }) {
     </ctx.Provider>
   );
 }
+
+export function Vendor({ requests }: { requests: VendorRequests }) {
+  const client = trpc.VENDOR;
+
+  const { data } = client.requests.useQuery(undefined, {
+    initialData: requests,
+  });
+
+  return (
+    <DataTable
+      columns={vendorColumns}
+      data={data || []}
+      renderSubComponent={({ row }) => (
+        <OffersTable opportunityId={row.original.id} />
+      )}
+    />
+  );
+}
+
+export const Admin = Customer;
