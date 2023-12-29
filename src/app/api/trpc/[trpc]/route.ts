@@ -1,22 +1,19 @@
-import {
-  FetchCreateContextFnOptions,
-  fetchRequestHandler,
-} from "@trpc/server/adapters/fetch";
+import { fetchRequestHandler } from "@trpc/server/adapters/fetch";
 import { appRouter } from "@/server/trpc-server";
+import { getSession } from "next-auth/react";
+import { getVMPSession } from "@/lib/auth";
 
 // this is the server RPC API handler
 
-const handler = (request: Request) => {
-  console.log(`incoming request ${request.url}`);
+const handler = async (request: Request) => {
+  const session = await getVMPSession();
+
   return fetchRequestHandler({
     endpoint: "/api/trpc",
     req: request,
     router: appRouter,
-    createContext: function (
-      opts: FetchCreateContextFnOptions,
-    ): object | Promise<object> {
-      // empty context
-      return {};
+    createContext: function () {
+      return { session };
     },
   });
 };

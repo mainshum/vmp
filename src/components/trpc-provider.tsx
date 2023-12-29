@@ -5,6 +5,7 @@ import { httpBatchLink } from "@trpc/client";
 import { useState } from "react";
 import { trpc } from "@/lib/trpc";
 import superjson from "superjson";
+import { getSession } from "next-auth/react";
 
 export const TrpcProvider: React.FC<{ children: React.ReactNode }> = (p) => {
   const [queryClient] = useState(() => new QueryClient());
@@ -13,9 +14,6 @@ export const TrpcProvider: React.FC<{ children: React.ReactNode }> = (p) => {
       links: [
         httpBatchLink({
           url: "/api/trpc",
-          headers: {
-            "nice-header": "nice-value",
-          },
         }),
       ],
       transformer: superjson,

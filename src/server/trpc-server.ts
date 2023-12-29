@@ -10,7 +10,7 @@ import { match } from "ts-pattern";
 
 import { createHTTPHandler } from "@trpc/server/adapters/standalone";
 
-export const createContext = async (opts: any) => {
+export const createContext = async () => {
   const session = await getVMPSession();
 
   return { session };
