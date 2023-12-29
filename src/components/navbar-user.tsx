@@ -11,14 +11,12 @@ import {
 import {
   UserCircle,
   LogOutIcon,
-  Link,
   Megaphone,
   Percent,
   Settings,
 } from "lucide-react";
 import { signOut } from "next-auth/react";
 import { useRouter } from "next/navigation";
-import { match } from "ts-pattern";
 
 export const User = ({ session }: { session: Exclude<NextSession, null> }) => {
   const router = useRouter();
@@ -42,9 +40,7 @@ export const User = ({ session }: { session: Exclude<NextSession, null> }) => {
         )}
 
         {(role == "ADMIN" || role == "CLIENT") && (
-          <DropdownMenuItem
-            onClick={() => router.push(ROUTES.CUSTOMER.REQUESTS.LIST)}
-          >
+          <DropdownMenuItem onClick={() => router.push(ROUTES.REQUESTS.LIST)}>
             <Megaphone className="mr-2 h-4 w-4" />
             <span>Requests</span>
           </DropdownMenuItem>

@@ -45,26 +45,6 @@ export const JobProfileForm = ({ requestName }: Props) => {
 
   const router = useRouter();
 
-  const { mutate } = trpc.upsertRequest.useMutation({
-    onMutate: () => {
-      toast({ title: "Saving..." });
-    },
-    onError: () => {
-      toast({
-        title: "Error saving request",
-        description: "Please try resubmitting the form",
-      });
-    },
-    onSuccess: (data) => {
-      const url = new URL(window.location.href);
-
-      url.searchParams.set("profile", data.profile);
-      url.searchParams.set("page", "technical");
-
-      router.push(url.toString());
-    },
-  });
-
   const subProfile = getSubProfile(form.watch("profile"));
 
   return (

@@ -1,5 +1,6 @@
-import { appRouter } from "@/server/trpc-server";
+import { appRouter, createContext } from "@/server/trpc-server";
 import { JobProfileForm } from "./offer-form";
+import { getVMPSession } from "@/lib/auth";
 
 async function OfferCreate({
   searchParams,
@@ -8,12 +9,15 @@ async function OfferCreate({
 }) {
   if (!searchParams.requestId) throw new Error("Request id is required");
 
-  const caller = appRouter.createCaller({});
-  const data = await caller.request({ requestId: searchParams.requestId });
+  const session = await getVMPSession();
+
+  const caller = appRouter.createCaller(await createContext(session));
+
+  const data = await caller.CLIENT.request(searchParams.requestId);
 
   if (!data) throw new Error("Request not found");
 
-  return <JobProfileForm />;
+  return <JobProfileForm requestName={data.name} />;
 }
 
 export default OfferCreate;
