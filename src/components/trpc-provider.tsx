@@ -13,6 +13,9 @@ export const TrpcProvider: React.FC<{ children: React.ReactNode }> = (p) => {
       links: [
         httpBatchLink({
           url: "/api/trpc",
+          headers: {
+            "nice-header": "nice-value",
+          },
         }),
       ],
       transformer: superjson,

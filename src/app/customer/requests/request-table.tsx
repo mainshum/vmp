@@ -136,15 +136,13 @@ export function RequestsTable({ requests }: { requests: RequestPreview[] }) {
 
   return (
     <ctx.Provider value={{ handleRequestRemoval }}>
-      <Shell className="container pt-8">
-        <DataTable
-          columns={opsColumns}
-          data={data || []}
-          renderSubComponent={({ row }) => (
-            <OffersTable opportunityId={row.original.id} />
-          )}
-        />
-      </Shell>
+      <DataTable
+        columns={opsColumns}
+        data={data || []}
+        renderSubComponent={({ row }) => (
+          <OffersTable opportunityId={row.original.id} />
+        )}
+      />
     </ctx.Provider>
   );
 }
