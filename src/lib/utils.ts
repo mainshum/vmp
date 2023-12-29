@@ -61,3 +61,6 @@ export const getSubProfile = (profile: JobProfile): JobSubProfile[] =>
     .with(JobProfile.DEVOPS, () => [])
     .with(JobProfile.QUALITY_ASSURANCE, () => [])
     .otherwise(() => []);
+
+export const adminOr = (role?: VMPRole) => (r: VMPRole) =>
+  r === role || r === "ADMIN";

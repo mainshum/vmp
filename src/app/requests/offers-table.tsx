@@ -9,7 +9,6 @@ import { cn, noop } from "@/lib/utils";
 import { Nullalble } from "@/types/shared";
 import { Loader2, StarIcon } from "lucide-react";
 import { createDate } from "./shared";
-import { z } from "zod";
 import { produce } from "immer";
 import { useAutoAnimate } from "@formkit/auto-animate/react";
 import { OfferSchema } from "@/types/prisma-types";
@@ -64,7 +63,7 @@ function Stars({
   );
 }
 
-type OfferSchema = RouterOutputs["offers"][0];
+type OfferSchema = RouterOutputs["CLIENT"]["offers"][0];
 
 const offersColumns: ColumnDef<OfferSchema>[] = [
   {
@@ -124,7 +123,7 @@ export function OffersTable({
 
   const key = ["offers", opId];
 
-  const { data } = trpc.offers.useQuery({ requestId: opId });
+  const { data } = trpc.CLIENT.offers.useQuery(opId);
 
   const [divRef] = useAutoAnimate();
 

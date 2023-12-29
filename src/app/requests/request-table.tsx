@@ -4,7 +4,6 @@ import { DataTable } from "@/components/data-table";
 import { OffersTable } from "./offers-table";
 import { ColumnDef } from "@tanstack/react-table";
 import { ChevronDown, ChevronRight, MoreHorizontal } from "lucide-react";
-import { createDate } from "./shared";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -18,7 +17,7 @@ import { useToast } from "@/hooks/use-toast";
 import Link from "next/link";
 import { ROUTES } from "@/lib/const";
 import { RouterOutputs, trpc } from "@/lib/trpc";
-import { GetResult } from "@prisma/client/runtime";
+import { createDate } from "./shared";
 
 const chevronClasses = "h-4 w-4";
 
@@ -26,11 +25,13 @@ type CustomerRequests = RouterOutputs["CLIENT"]["requests"];
 type VendorRequests = RouterOutputs["VENDOR"]["requests"];
 type AdminRequests = RouterOutputs["ADMIN"]["requests"];
 
-type Ctx = {
-  handleRequestRemoval: Action<string>;
+type ActionsContext = {
+  handleRequestRemoval?: Action<string>;
+  enableOffering: boolean;
+  enableEditing: boolean;
 };
 
-const ctx = React.createContext<Ctx>({} as Ctx);
+const ctx = React.createContext<ActionsContext>({} as ActionsContext);
 
 type SharedColumns = Pick<
   CustomerRequests[0],
@@ -79,8 +80,6 @@ const sharedColumns: ColumnDef<SharedColumns>[] = [
 
 type UnwrapColDef<T> = T extends ColumnDef<infer R> ? R : never;
 
-type MergeColDefs<A, B> = ColumnDef<UnwrapColDef<A> & UnwrapColDef<B>>;
-
 const customerColumnns: ColumnDef<CustomerRequests[0]>[] = [
   ...(sharedColumns as UnwrapColDef<(typeof sharedColumns)[0]>[]),
   {
@@ -99,14 +98,31 @@ const customerColumnns: ColumnDef<CustomerRequests[0]>[] = [
   {
     accessorKey: "actions",
     header: "Actions",
-    cell: ({ row }) => <Cell id={row.original.id} />,
+    cell: ({ row }) => <CustomerActions id={row.original.id} />,
   },
 ];
 
-const vendorColumns: ColumnDef<VendorRequests[0]>[] = sharedColumns;
+const vendorColumns: ColumnDef<VendorRequests[0]>[] = [
+  ...sharedColumns,
+  {
+    accessorKey: "actions",
+    header: "Actions",
+    cell: ({ row }) => <CustomerActions id={row.original.id} />,
+  },
+];
 
-function Cell({ id }: { id: string }) {
-  const { handleRequestRemoval } = useContext(ctx);
+const adminColumns = [
+  customerColumnns[0],
+  {
+    accessorKey: "userId",
+    header: "Creator ID",
+  },
+  ...customerColumnns.slice(1),
+];
+
+function CustomerActions({ id }: { id: string }) {
+  const { handleRequestRemoval, enableOffering, enableEditing } =
+    useContext(ctx);
 
   return (
     <DropdownMenu>
@@ -117,12 +133,22 @@ function Cell({ id }: { id: string }) {
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">
-        <DropdownMenuItem asChild>
-          <Link href={ROUTES.CUSTOMER.REQUESTS.ONE(id)}>Edit request</Link>
-        </DropdownMenuItem>
-        <DropdownMenuItem onClick={() => handleRequestRemoval(id)}>
-          Remove request
-        </DropdownMenuItem>
+        {enableEditing && (
+          <DropdownMenuItem asChild>
+            <Link href={ROUTES.REQUESTS.ONE(id)}>Edit request</Link>
+          </DropdownMenuItem>
+        )}
+
+        {handleRequestRemoval && (
+          <DropdownMenuItem onClick={() => handleRequestRemoval(id)}>
+            Remove request
+          </DropdownMenuItem>
+        )}
+        {enableOffering && (
+          <DropdownMenuItem asChild>
+            <Link href={ROUTES.VENDOR.OFFERS.CREATE(id)}>Make offer</Link>
+          </DropdownMenuItem>
+        )}
       </DropdownMenuContent>
     </DropdownMenu>
   );
@@ -152,7 +178,13 @@ export function Customer({ requests }: { requests: CustomerRequests }) {
   });
 
   return (
-    <ctx.Provider value={{ handleRequestRemoval }}>
+    <ctx.Provider
+      value={{
+        handleRequestRemoval,
+        enableOffering: false,
+        enableEditing: true,
+      }}
+    >
       <DataTable
         columns={customerColumnns}
         data={data || []}
@@ -164,6 +196,8 @@ export function Customer({ requests }: { requests: CustomerRequests }) {
   );
 }
 
+const vendorOptions = { enableOffering: true, enableEditing: false };
+
 export function Vendor({ requests }: { requests: VendorRequests }) {
   const client = trpc.VENDOR;
 
@@ -172,14 +206,39 @@ export function Vendor({ requests }: { requests: VendorRequests }) {
   });
 
   return (
-    <DataTable
-      columns={vendorColumns}
-      data={data || []}
-      renderSubComponent={({ row }) => (
-        <OffersTable opportunityId={row.original.id} />
-      )}
-    />
+    <ctx.Provider value={vendorOptions}>
+      <DataTable
+        columns={vendorColumns}
+        data={data || []}
+        renderSubComponent={({ row }) => (
+          <OffersTable opportunityId={row.original.id} />
+        )}
+      />
+    </ctx.Provider>
   );
 }
 
-export const Admin = Customer;
+export function Admin({ requests }: { requests: AdminRequests }) {
+  const client = trpc.CLIENT;
+
+  const { data } = client.requests.useQuery(undefined, {
+    initialData: requests,
+  });
+
+  return (
+    <ctx.Provider
+      value={{
+        enableOffering: false,
+        enableEditing: true,
+      }}
+    >
+      <DataTable
+        columns={adminColumns}
+        data={data || []}
+        renderSubComponent={({ row }) => (
+          <OffersTable opportunityId={row.original.id} />
+        )}
+      />
+    </ctx.Provider>
+  );
+}

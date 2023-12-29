@@ -1,5 +1,5 @@
 import { appRouter, createContext } from "@/server/trpc-server";
-import { Customer, Vendor, Admin } from "../customer/requests/request-table";
+import { Customer, Vendor, Admin } from "./request-table";
 import { match } from "ts-pattern";
 import { getVMPSession } from "@/lib/auth";
 
@@ -16,12 +16,10 @@ async function PageServer() {
     <>
       {await match(session.user.role)
         .with("CLIENT", async () => {
-          const data = await caller.CLIENT.requests();
-          return <Customer requests={data} />;
+          return <Customer requests={await caller.CLIENT.requests()} />;
         })
-        .with("VENDOR", () => {
-          //   const data = await caller.VENDOR.requests();
-          return <Vendor requests={[]} />;
+        .with("VENDOR", async () => {
+          return <Vendor requests={await caller.VENDOR.requests()} />;
         })
         .with("ADMIN", async () => {
           return <Admin requests={await caller.ADMIN.requests()} />;

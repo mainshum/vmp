@@ -14,12 +14,12 @@ export const ROUTES = {
       CREATE: (id: string) => `/vendor/offers/create?requestId=${id}`,
     },
   },
+  REQUESTS: {
+    LIST: "/requests",
+    CREATE: "/requests/create?page=jpf",
+    ONE: (id: string) => `/requests/create?requestId=${id}&page=jpf`,
+  },
   CUSTOMER: {
-    REQUESTS: {
-      LIST: "/customer/requests",
-      CREATE: "/customer/requests/create?page=jpf",
-      ONE: (id: string) => `/customer/requests/create?requestId=${id}&page=jpf`,
-    },
     SETTINGS: {
       COMPANY: "/settings/company",
       BUYER: "/settings/buyer",

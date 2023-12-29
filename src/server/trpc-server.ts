@@ -6,6 +6,7 @@ import { z } from "zod";
 import { VMPRole } from "@prisma/client";
 import superjson from "superjson";
 import { NextSession, getVMPSession } from "@/lib/auth";
+import { adminOr } from "@/lib/utils";
 
 export const createContext = async (session?: NextSession) => {
   return { session: session || (await getVMPSession()) };
@@ -29,9 +30,7 @@ const roleProtected = (authed: (r: VMPRole) => boolean) =>
     });
   });
 
-const requestId = z.object({ requestId: z.string().cuid() });
-
-const adminOr = (role?: VMPRole) => (r: VMPRole) => r === role || r === "ADMIN";
+const requestId = z.string().cuid();
 
 const customerRouter = t.router({
   requests: roleProtected(adminOr(VMPRole.CLIENT)).query(
@@ -49,14 +48,14 @@ const customerRouter = t.router({
   `;
   }),
   request: t.procedure.input(requestId).query(({ input }) => {
-    return db.request.findFirst({ where: { id: input.requestId } });
+    return db.request.findFirst({ where: { id: input } });
   }),
   requestDelete: t.procedure.input(z.string()).mutation(({ input: id }) => {
     return db.request.delete({ where: { id } });
   }),
   offers: t.procedure.input(requestId).query(({ input }) => {
     return db.offer.findMany({
-      where: { requestId: input.requestId },
+      where: { requestId: input },
       orderBy: { id: "asc" },
     });
   }),
