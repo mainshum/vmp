@@ -55,7 +55,8 @@ model User {
   accounts Account[]
   sessions Session[]
 
-  role VMPRole @default(NONE)
+  role     VMPRole   @default(NONE)
+  requests Request[]
 }
 
 model VerificationToken {
@@ -139,7 +140,9 @@ enum JobSubProfile {
 
 model Request {
   /// @zod.cuid()
-  id String @id @default(cuid())
+  id     String @id @default(cuid())
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId String
 
   /// @zod.custom(z.date({coerce: true}))
   validUntil DateTime

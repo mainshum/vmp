@@ -42,7 +42,6 @@ import { useSearchParams } from "next/navigation";
 import { useRouter } from "next/navigation";
 import { match } from "ts-pattern";
 import clsx from "clsx";
-import SideNav from "@/components/side-nav";
 import { Children } from "@/types/shared";
 import { z } from "zod";
 import { Error } from "@/components/success";
@@ -51,7 +50,7 @@ import { RequestInput } from "@/lib/validation";
 import dynamic from "next/dynamic";
 import { OutputData } from "@editorjs/editorjs";
 
-type RequestData = RouterOutputs["request"];
+type RequestData = RouterOutputs["CLIENT"]["request"];
 
 function InputBrand({ msg }: { msg: string }) {
   return (
@@ -100,7 +99,7 @@ type RequestFormState =
     }
   | { type: "error" };
 
-const Editor = dynamic(() => import("../../../../components/editor"), {
+const Editor = dynamic(() => import("../../../components/editor"), {
   ssr: false,
 });
 
@@ -157,7 +156,7 @@ const TechnicalForm = ({
   const { toast } = useToast();
   const router = useRouter();
 
-  const { mutate } = trpc.upsertRequest.useMutation({
+  const { mutate } = trpc.CLIENT.upsertRequest.useMutation({
     onMutate: () => {
       toast({ title: "Saving..." });
     },
@@ -232,7 +231,7 @@ export const RequestForm = ({ initRequest }: { initRequest: RequestData }) => {
   );
 };
 
-type CreateUpdateRequestOutput = RouterOutputs["upsertRequest"];
+type CreateUpdateRequestOutput = RouterOutputs["CLIENT"]["upsertRequest"];
 
 export const JobProfileForm = ({
   data,
@@ -273,7 +272,7 @@ export const JobProfileForm = ({
 
   const router = useRouter();
 
-  const { mutate } = trpc.upsertRequest.useMutation({
+  const { mutate } = trpc.CLIENT.upsertRequest.useMutation({
     onMutate: () => {
       toast({ title: "Saving..." });
     },

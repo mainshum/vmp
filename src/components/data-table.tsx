@@ -71,7 +71,6 @@ export function DataTable<TData, TValue>({
                   <TableCell key={cell.id}>
                     {flexRender(cell.column.columnDef.cell, {
                       ...cell.getContext(),
-                      dupa: 13,
                     })}
                   </TableCell>
                 ))}

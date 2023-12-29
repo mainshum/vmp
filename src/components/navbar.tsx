@@ -1,17 +1,9 @@
 import Link from "next/link";
 import Icons from "./icons";
-import { LogOutIcon, Megaphone, UserCircle } from "lucide-react";
 import { ROUTES } from "@/lib/const";
 import { buttonVariants } from "./ui/button";
 import { headers } from "next/headers";
 import { NextSession } from "@/lib/auth";
-import {
-  DropdownMenu,
-  DropdownMenuTrigger,
-  DropdownMenuContent,
-  DropdownMenuItem,
-} from "@/components/ui/dropdown-menu";
-import { signOut } from "next-auth/react";
 import { User } from "./navbar-user";
 
 function Navbar({ session }: { session: NextSession }) {
@@ -27,11 +19,8 @@ function Navbar({ session }: { session: NextSession }) {
           </p>
         </Link>
         <div className="flex items-center gap-4">
-          {pathname === ROUTES.CUSTOMER.REQUESTS.LIST && (
-            <Link
-              className={buttonVariants()}
-              href={ROUTES.CUSTOMER.REQUESTS.CREATE}
-            >
+          {pathname === ROUTES.REQUESTS.LIST && (
+            <Link className={buttonVariants()} href={ROUTES.REQUESTS.CREATE}>
               New request
             </Link>
           )}

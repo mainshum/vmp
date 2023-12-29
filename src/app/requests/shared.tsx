@@ -1,17 +1,14 @@
-"use client";
-
-import { HelpCircle } from "lucide-react";
-import React from "react";
 import { Nullalble } from "@/types/shared";
 import {
-  Tooltip,
-  TooltipContent,
   TooltipProvider,
+  Tooltip,
   TooltipTrigger,
+  TooltipContent,
 } from "@/components/ui/tooltip";
+import { HelpCircle } from "lucide-react";
 
-export const createDate = (val: Nullalble<String>) => {
-  if (val) return val;
+export const createDate = (val: Nullalble<Date>) => {
+  if (val) return val.toLocaleDateString();
 
   return (
     <TooltipProvider>

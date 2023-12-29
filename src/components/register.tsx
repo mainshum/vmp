@@ -1,6 +1,5 @@
 "use client";
 
-import ErrorComp from "@/app/register/error";
 import { match } from "ts-pattern";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -243,14 +242,7 @@ export function RegisterForm() {
             <Loader2 className="animate-spin"></Loader2>
           </SavingModal>
         ))
-        .with("error_submitting", () => (
-          <ErrorComp
-            reset={noop}
-            error={
-              new Error("Unexpected error occured when submitting the form")
-            }
-          />
-        ))
+        .with("error_submitting", () => null)
         .exhaustive()}
     </React.Fragment>
   );

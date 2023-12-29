@@ -1,5 +1,4 @@
 import GP from "next-auth/providers/google";
-import EmailProvider from "next-auth/providers/email";
 import { NextAuthOptions, getServerSession } from "next-auth";
 import { PrismaAdapter } from "@auth/prisma-adapter";
 import { db } from "@/lib/db";
@@ -29,7 +28,6 @@ export const nextAuthOptions: NextAuthOptions = {
       async sendVerificationRequest({ identifier: email, url }) {
         // Call the cloud Email provider API for sending emails
         // See https://docs.sendgrid.com/api-reference/mail-send/mail-send
-        console.log(email, url);
         const response = await fetch("https://api.sendgrid.com/v3/mail/send", {
           // The body format will vary depending on provider, please see their documentation
           // for further details.
