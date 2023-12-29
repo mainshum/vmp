@@ -27,6 +27,7 @@ import { format } from "date-fns";
 import { CalendarIcon } from "lucide-react";
 import { Calendar } from "@/components/ui/calendar";
 import { Button } from "@/components/ui/button";
+import { FormWrapper } from "@/components/form";
 
 type Props = {
   requestName: string;
@@ -49,7 +50,7 @@ export const JobProfileForm = ({ requestName }: Props) => {
 
   return (
     <Form {...form}>
-      <form onSubmit={console.log} noValidate className="space-y-8">
+      <FormWrapper onSubmit={console.log}>
         <MySelect
           control={form.control}
           name="profile"
@@ -125,7 +126,7 @@ export const JobProfileForm = ({ requestName }: Props) => {
             </FormItem>
           )}
         />
-      </form>
+      </FormWrapper>
     </Form>
   );
 };
