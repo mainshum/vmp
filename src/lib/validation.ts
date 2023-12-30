@@ -7,6 +7,8 @@ import {
   JobProfile,
   JobSubProfile,
   Seniority,
+  Offer,
+  OfferPayload,
 } from "@prisma/client";
 import { z } from "zod";
 
@@ -20,6 +22,9 @@ export const positiveInteger15 = positiveInteger
   .max(5, { message: "Integer in range (1-5)" });
 
 export const availabilitySlider = z.number({ coerce: true });
+
+export const requestId = z.string().cuid();
+const nanoidGenerated = z.string().regex(/^[a-zA-Z0-9_-]{21}$/);
 
 export const stringMin3 = z
   .string()
@@ -100,7 +105,9 @@ export const RequestInput = z
 export type RequestInput = z.infer<typeof RequestInput>;
 
 export const OfferInput = RequestOfferShared.extend({
-  cv: z.string(),
+  id: nanoidGenerated,
+  requestId: requestId,
+  cv: z.string().min(1, { message: "Choose CV file" }),
 });
 
 export type OfferInput = z.infer<typeof OfferInput>;

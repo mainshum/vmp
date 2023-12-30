@@ -49,7 +49,7 @@ import { RouterOutputs, trpc } from "@/lib/trpc";
 import { RequestInput } from "@/lib/validation";
 import dynamic from "next/dynamic";
 import { OutputData } from "@editorjs/editorjs";
-import { FormWrapper } from "@/components/form";
+import { FormWrapper, SubmitButton } from "@/components/form";
 
 type RequestData = RouterOutputs["CLIENT"]["request"];
 
@@ -633,9 +633,7 @@ export const JobProfileForm = ({
           label="Project manager"
           description="Check if project is managed by a Project Manager"
         />
-        <section className="flex justify-center">
-          <Button type="submit">Next page</Button>
-        </section>
+        <SubmitButton>Submit request</SubmitButton>
       </FormWrapper>
     </Form>
   );

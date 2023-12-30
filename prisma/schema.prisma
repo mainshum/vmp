@@ -57,6 +57,7 @@ model User {
 
   role     VMPRole   @default(NONE)
   requests Request[]
+  offers   Offer[]
 }
 
 model VerificationToken {
@@ -211,13 +212,20 @@ enum OfferStatus {
 }
 
 model Offer {
-  id            String      @id @default(cuid())
-  matchingGrade Int?
-  offerStatus   OfferStatus @default(PENDING)
+  id            String        @id
+  userId        String
+  user          User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  matchingGrade Int?          @default(0)
+  offerStatus   OfferStatus?  @default(PENDING)
+  request       Request?      @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  requestId     String
+  profile       JobProfile
+  subProfile    JobSubProfile
+  seniority     Seniority
   validUntil    DateTime
   creationDate  DateTime
-  request       Request?    @relation(fields: [requestId], references: [id])
-  requestId     String
+  startDate     DateTime
+  cv            String
 }
 
 enum ProjectStage {

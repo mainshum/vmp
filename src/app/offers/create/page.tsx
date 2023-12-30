@@ -17,7 +17,7 @@ async function OfferCreate({
 
   if (!data) throw new Error("Request not found");
 
-  return <JobProfileForm requestName={data.name} />;
+  return <JobProfileForm requestId={data.id} requestName={data.name} />;
 }
 
 export default OfferCreate;

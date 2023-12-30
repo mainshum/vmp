@@ -1,6 +1,7 @@
 "use client";
 
-import React from "react";
+import React, { ButtonHTMLAttributes } from "react";
+import { Button } from "./ui/button";
 
 export const FormWrapper = React.forwardRef<
   HTMLFormElement,
@@ -18,4 +19,18 @@ export const FormWrapper = React.forwardRef<
   );
 });
 
+export const SubmitButton = React.forwardRef<
+  HTMLButtonElement,
+  ButtonHTMLAttributes<HTMLButtonElement>
+>(({ children }, ref) => {
+  return (
+    <section className="flex justify-center">
+      <Button ref={ref} type="submit">
+        {children}
+      </Button>
+    </section>
+  );
+});
+
+SubmitButton.displayName = "SubmitButton";
 FormWrapper.displayName = "FormWrapper";

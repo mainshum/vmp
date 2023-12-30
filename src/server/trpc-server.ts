@@ -1,7 +1,7 @@
 import { TRPCError, initTRPC } from "@trpc/server";
 import { db } from "@/lib/db";
 import { RequestPreview } from "@/types/request";
-import { RequestInput } from "@/lib/validation";
+import { OfferInput, RequestInput, requestId } from "@/lib/validation";
 import { z } from "zod";
 import { VMPRole } from "@prisma/client";
 import superjson from "superjson";
@@ -29,8 +29,6 @@ const roleProtected = (authed: (r: VMPRole) => boolean) =>
       ctx: { ...opts.ctx, user },
     });
   });
-
-const requestId = z.string().cuid();
 
 const customerRouter = t.router({
   requests: roleProtected(adminOr(VMPRole.CLIENT)).query(
@@ -91,6 +89,24 @@ const vendorRouter = t.router({
       },
     });
   }),
+  upsertOffer: roleProtected((r) => r === "ADMIN" || r === "VENDOR")
+    .input(OfferInput)
+    .mutation(({ input, ctx: { user } }) => {
+      const { ...offerPostModel } = input;
+
+      return db.offer.upsert({
+        where: {
+          id: offerPostModel.id,
+        },
+        create: {
+          userId: user.id,
+          ...offerPostModel,
+          validUntil: new Date(),
+          creationDate: new Date(),
+        },
+        update: offerPostModel,
+      });
+    }),
 });
 
 const adminRouter = t.router({

@@ -8,11 +8,10 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import { toast } from "@/hooks/use-toast";
+import { useToast } from "@/hooks/use-toast";
 import { trpc } from "@/lib/trpc";
 import { OfferInput } from "@/lib/validation";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { MySelect } from "@/components/forms";
 import { JobProfile, Seniority } from "@prisma/client";
@@ -27,30 +26,73 @@ import { format } from "date-fns";
 import { CalendarIcon } from "lucide-react";
 import { Calendar } from "@/components/ui/calendar";
 import { Button } from "@/components/ui/button";
-import { FormWrapper } from "@/components/form";
+import { FormWrapper, SubmitButton } from "@/components/form";
+import { Input } from "@/components/ui/input";
+import React from "react";
+import { nanoid } from "nanoid";
 
 type Props = {
   requestName: string;
+  requestId: string;
 };
 
-export const JobProfileForm = ({ requestName }: Props) => {
+export const JobProfileForm = ({ requestName, requestId }: Props) => {
+  const fileInput = React.useRef<HTMLInputElement>(null);
+
   const form = useForm<OfferInput>({
     resolver: zodResolver(OfferInput),
     defaultValues: {
+      id: nanoid(),
+      requestId: requestId,
       profile: undefined,
       subProfile: undefined,
       seniority: undefined,
       startDate: undefined,
+      cv: "",
     },
   });
 
-  const router = useRouter();
+  const { mutate, isLoading } = trpc.VENDOR.upsertOffer.useMutation({
+    onMutate: () => {
+      toast({ title: "Submitting offer" });
+    },
+    onError: () => {
+      toast({ title: "Error submitting form" });
+    },
+    onSuccess: () => {
+      toast({ title: "Offer submitted" });
+    },
+  });
+
+  const { toast } = useToast();
+
+  const handleSubmit = form.handleSubmit(({ cv, ...rest }) => {
+    const file = fileInput.current?.files?.[0];
+    if (!file) {
+      toast({ title: "Please upload a CV" });
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onloadend = (e) =>
+      mutate({
+        ...rest,
+        cv: e.target?.result as string,
+      });
+
+    reader.onerror = (e) => {
+      toast({ title: "Error uploading CV" });
+      reader.abort();
+    };
+
+    reader.readAsDataURL(file);
+  });
 
   const subProfile = getSubProfile(form.watch("profile"));
 
   return (
     <Form {...form}>
-      <FormWrapper onSubmit={console.log}>
+      <FormWrapper onSubmit={handleSubmit}>
         <MySelect
           control={form.control}
           name="profile"
@@ -112,7 +154,7 @@ export const JobProfileForm = ({ requestName }: Props) => {
                     </Button>
                   </FormControl>
                 </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="center">
+                <PopoverContent className="w-auto p-0" align="end">
                   <Calendar
                     mode="single"
                     onSelect={field.onChange}
@@ -126,6 +168,36 @@ export const JobProfileForm = ({ requestName }: Props) => {
             </FormItem>
           )}
         />
+        <FormField
+          control={form.control}
+          name="cv"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>CV</FormLabel>
+              <FormControl>
+                <Input
+                  {...field}
+                  ref={fileInput}
+                  type="file"
+                  value={field.value}
+                />
+              </FormControl>
+              <FormDescription>
+                Remember that the cv you include should be{" "}
+                <a
+                  className="underline"
+                  target="_blank"
+                  rel="noopener norefferer"
+                  href="https://occy.com/blog/blind-cvs/"
+                >
+                  blind.
+                </a>
+              </FormDescription>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <SubmitButton disabled={isLoading}>Submit offer</SubmitButton>
       </FormWrapper>
     </Form>
   );
