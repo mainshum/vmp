@@ -5,14 +5,12 @@ type SuccessType = "customer_registered";
 export const ROUTES = {
   SIGIN: "/sign-in",
   ROLE_SELECT: "/role-select",
-  VENDOR: {
-    REQUESTS: {
-      LIST: "/vendor/requests",
-      CREATE: "/vendor/requests/create?page=jpf",
-    },
-    OFFERS: {
-      CREATE: (id: string) => `/vendor/offers/create?requestId=${id}`,
-    },
+  OFFERS: {
+    LIST: "/offers",
+    CREATE: (requestId: string) =>
+      `/offers/create?meta=${JSON.stringify({ requestId, type: "CREATE" })}`,
+    EDIT: (offerId: string) =>
+      `/offers/create?meta=${JSON.stringify({ offerId, type: "EDIT" })}`,
   },
   REQUESTS: {
     LIST: "/requests",

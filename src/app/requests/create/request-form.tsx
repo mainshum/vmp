@@ -49,6 +49,7 @@ import { RouterOutputs, trpc } from "@/lib/trpc";
 import { RequestInput } from "@/lib/validation";
 import dynamic from "next/dynamic";
 import { OutputData } from "@editorjs/editorjs";
+import { FormWrapper, SubmitButton } from "@/components/form";
 
 type RequestData = RouterOutputs["CLIENT"]["request"];
 
@@ -215,19 +216,17 @@ export const RequestForm = ({ initRequest }: { initRequest: RequestData }) => {
   }
 
   return (
-    <div className="pb-8">
+    <>
       <FormNavigation page={parsedState.type} />
-      <div className="flex flex-col items-center justify-center gap-8 px-16">
-        {match(parsedState)
-          .with({ type: "jpf" }, () => (
-            <JobProfileForm onFilled={setRequest} data={request} />
-          ))
-          .with({ type: "technical" }, ({ request }) => (
-            <TechnicalForm request={request} />
-          ))
-          .exhaustive()}
-      </div>
-    </div>
+      {match(parsedState)
+        .with({ type: "jpf" }, () => (
+          <JobProfileForm onFilled={setRequest} data={request} />
+        ))
+        .with({ type: "technical" }, ({ request }) => (
+          <TechnicalForm request={request} />
+        ))
+        .exhaustive()}
+    </>
   );
 };
 
@@ -317,7 +316,7 @@ export const JobProfileForm = ({
 
   return (
     <Form {...form}>
-      <form
+      <FormWrapper
         onSubmit={form.handleSubmit(() =>
           mutate({
             id: data?.id,
@@ -327,10 +326,7 @@ export const JobProfileForm = ({
             ),
           }),
         )}
-        noValidate
-        className="space-y-8"
       >
-        <a className="hop-anchor top-[-45px]" id="profile" />
         <MyInput
           description=" This name will be visibile to vendors and help you identify the project among all the requests."
           control={form.control}
@@ -399,7 +395,6 @@ export const JobProfileForm = ({
             </FormItem>
           )}
         />
-        <a className="hop-anchor" id="availability" />
         <FormField
           control={form.control}
           name="availability"
@@ -529,7 +524,6 @@ export const JobProfileForm = ({
             </FormItem>
           )}
         />
-        <a className="hop-anchor" id="travel" />
         <section ref={officeLocationRef}>
           <MySelect
             control={form.control}
@@ -572,7 +566,6 @@ export const JobProfileForm = ({
           label="International travel"
           description="Check if travelling abroad will be required"
         />
-        <a className="hop-anchor" id="project" />
         <MySelect
           control={form.control}
           label="Project maturity"
@@ -640,10 +633,8 @@ export const JobProfileForm = ({
           label="Project manager"
           description="Check if project is managed by a Project Manager"
         />
-        <section className="flex justify-center">
-          <Button type="submit">Next page</Button>
-        </section>
-      </form>
+        <SubmitButton>Submit request</SubmitButton>
+      </FormWrapper>
     </Form>
   );
 };

@@ -1,12 +1,18 @@
 import { TRPCError, initTRPC } from "@trpc/server";
 import { db } from "@/lib/db";
 import { RequestPreview } from "@/types/request";
-import { RequestInput } from "@/lib/validation";
+import {
+  OfferInput,
+  RequestInput,
+  nanoidGenerated,
+  requestId,
+} from "@/lib/validation";
 import { z } from "zod";
 import { VMPRole } from "@prisma/client";
 import superjson from "superjson";
 import { NextSession, getVMPSession } from "@/lib/auth";
 import { adminOr } from "@/lib/utils";
+import { revalidatePath } from "next/cache";
 
 export const createContext = async (session?: NextSession) => {
   return { session: session || (await getVMPSession()) };
@@ -29,8 +35,6 @@ const roleProtected = (authed: (r: VMPRole) => boolean) =>
       ctx: { ...opts.ctx, user },
     });
   });
-
-const requestId = z.string().cuid();
 
 const customerRouter = t.router({
   requests: roleProtected(adminOr(VMPRole.CLIENT)).query(
@@ -80,7 +84,14 @@ const customerRouter = t.router({
     }),
 });
 
+const offer = roleProtected(adminOr(VMPRole.VENDOR))
+  .input(nanoidGenerated)
+  .query(({ input }) => {
+    return db.offer.findFirstOrThrow({ where: { id: input } });
+  });
+
 const vendorRouter = t.router({
+  offer: offer,
   requests: roleProtected(adminOr(VMPRole.VENDOR)).query(() => {
     return db.request.findMany({
       select: {
@@ -91,6 +102,27 @@ const vendorRouter = t.router({
       },
     });
   }),
+  insertOffer: roleProtected((r) => r === "ADMIN" || r === "VENDOR")
+    .input(OfferInput)
+    .mutation(({ input, ctx: { user } }) => {
+      return db.offer.create({
+        data: {
+          ...input,
+          userId: user.id,
+          validUntil: new Date(),
+          creationDate: new Date(),
+        },
+      });
+    }),
+  updateOffer: roleProtected((r) => r === "ADMIN" || r === "VENDOR")
+    .input(OfferInput.partial({ cv: true }))
+    .mutation(async ({ input, ctx }) => {
+      revalidatePath("/");
+      return db.offer.update({
+        where: { id: input.id },
+        data: input,
+      });
+    }),
 });
 
 const adminRouter = t.router({

@@ -45,12 +45,7 @@ const sharedColumns: ColumnDef<SharedColumns>[] = [
     cell: ({ row }) => {
       return (
         <span className="flex gap-2">
-          <button
-            {...{
-              onClick: () => row.toggleExpanded(),
-              style: { cursor: "pointer" },
-            }}
-          >
+          <button className="cursor-pointer">
             {row.getIsExpanded() ? (
               <ChevronDown className={chevronClasses} />
             ) : (
@@ -146,7 +141,7 @@ function CustomerActions({ id }: { id: string }) {
         )}
         {enableOffering && (
           <DropdownMenuItem asChild>
-            <Link href={ROUTES.VENDOR.OFFERS.CREATE(id)}>Make offer</Link>
+            <Link href={ROUTES.OFFERS.CREATE(id)}>Make offer</Link>
           </DropdownMenuItem>
         )}
       </DropdownMenuContent>
@@ -228,12 +223,13 @@ export function Admin({ requests }: { requests: AdminRequests }) {
   return (
     <ctx.Provider
       value={{
-        enableOffering: false,
+        enableOffering: true,
         enableEditing: true,
       }}
     >
       <DataTable
         columns={adminColumns}
+        onRowClick={(row) => row.toggleExpanded()}
         data={data || []}
         renderSubComponent={({ row }) => (
           <OffersTable opportunityId={row.original.id} />

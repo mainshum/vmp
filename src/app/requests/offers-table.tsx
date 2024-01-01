@@ -1,40 +1,34 @@
 "use client";
 
 import { DataTable } from "@/components/data-table";
-import { useToast } from "@/hooks/use-toast";
-import { useQueryClient, useMutation } from "@tanstack/react-query";
 import { ColumnDef } from "@tanstack/react-table";
-import React, { createContext, useContext, useState } from "react";
-import { cn, noop } from "@/lib/utils";
+import React, { useContext } from "react";
+import { cn } from "@/lib/utils";
 import { Nullalble } from "@/types/shared";
-import { Loader2, StarIcon } from "lucide-react";
+import { FileText, Loader2, MoreHorizontal, StarIcon } from "lucide-react";
 import { createDate } from "./shared";
-import { produce } from "immer";
 import { useAutoAnimate } from "@formkit/auto-animate/react";
-import { OfferSchema } from "@/types/prisma-types";
 import { RouterOutputs, trpc } from "@/lib/trpc";
+import { ROUTES } from "@/lib/const";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Button } from "@/components/ui/button";
+import Link from "next/link";
 
-type MutateStarsPayload = { id: string; matchingGrade: number };
-
-type Ctx = {
+type ActionsContext = {
   // eslint-disable-next-line no-unused-vars
-  onStarsToggled: ({ id, matchingGrade }: MutateStarsPayload) => void;
+  handleOfferRemoval?: (offerId: string) => void;
+  enableEditing: boolean;
 };
 
-const HandlersCtx = createContext<Ctx>({ onStarsToggled: noop });
+const ctx = React.createContext<ActionsContext>({} as ActionsContext);
 
-function Stars({
-  offerId,
-  matchingStars,
-}: {
-  offerId: string;
-  matchingStars: Nullalble<number>;
-}) {
+function Stars({ matchingStars }: { matchingStars: Nullalble<number> }) {
   const orangeStars = !matchingStars ? 0 : matchingStars;
-
-  const [hoverInd, setHoverInd] = useState<Nullalble<number>>(null);
-
-  const { onStarsToggled } = useContext(HandlersCtx);
 
   return (
     <span className="flex">
@@ -45,16 +39,9 @@ function Stars({
           return (
             <StarIcon
               key={ind}
-              onMouseOver={() => setHoverInd(starNo)}
-              onMouseOut={() => setHoverInd(null)}
-              onClick={() => {
-                if (orangeStars === starNo) return;
-                onStarsToggled({ id: offerId, matchingGrade: starNo });
-              }}
               className={cn(
-                "h-4 w-4 cursor-pointer",
+                "h-4 w-4",
                 starNo <= orangeStars && "fill-orange-200",
-                hoverInd && starNo <= hoverInd && "fill-orange-300",
               )}
             />
           );
@@ -64,6 +51,47 @@ function Stars({
 }
 
 type OfferSchema = RouterOutputs["CLIENT"]["offers"][0];
+
+const PDFFile = ({ offerId, cv }: { offerId: string; cv: string }) => {
+  const downloadCV = () => {
+    const linkSource = cv;
+    const downloadLink = document.createElement("a");
+    const fileName = "CV.pdf";
+
+    downloadLink.href = linkSource;
+    downloadLink.download = fileName;
+    downloadLink.click();
+  };
+
+  return <FileText className="h-4 w-4 cursor-pointer" onClick={downloadCV} />;
+};
+
+function Actions({ offerId }: { offerId: string }) {
+  const { enableEditing, handleOfferRemoval } = useContext(ctx);
+
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button variant="ghost" className="h-8 w-8 p-0">
+          <span className="sr-only">Open menu</span>
+          <MoreHorizontal className="h-4 w-4" />
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end">
+        {handleOfferRemoval && (
+          <DropdownMenuItem onClick={() => handleOfferRemoval(offerId)}>
+            Remove offer
+          </DropdownMenuItem>
+        )}
+        {enableEditing && (
+          <DropdownMenuItem asChild>
+            <Link href={ROUTES.OFFERS.EDIT(offerId)}>View offer</Link>
+          </DropdownMenuItem>
+        )}
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+}
 
 const offersColumns: ColumnDef<OfferSchema>[] = [
   {
@@ -77,12 +105,7 @@ const offersColumns: ColumnDef<OfferSchema>[] = [
     header: "Grade",
     accessorKey: "matchingGrade",
     cell: ({ row }) => {
-      return (
-        <Stars
-          offerId={row.original.id}
-          matchingStars={row.getValue("matchingGrade")}
-        />
-      );
+      return <Stars matchingStars={row.getValue("matchingGrade")} />;
     },
   },
   {
@@ -99,64 +122,32 @@ const offersColumns: ColumnDef<OfferSchema>[] = [
     header: "Valid until",
     cell: ({ row }) => createDate(row.getValue("validUntil")),
   },
+  {
+    accessorKey: "cv",
+    header: "CV",
+    cell: ({ row }) => {
+      return <PDFFile offerId={row.original.id} cv={row.getValue("cv")} />;
+    },
+  },
+  {
+    accessorKey: "actions",
+    header: "Actions",
+    cell: ({ row }) => <Actions offerId={row.original.id} />,
+  },
 ];
-const toggleStars = ({
-  id,
-  matchingGrade,
-}: {
-  id: string;
-  matchingGrade: number;
-}) =>
-  fetch(`/api/offers/${id}`, {
-    method: "PUT",
-    body: JSON.stringify({ id, matchingGrade }),
-  });
 
+// admin and vendor
 export function OffersTable({
   opportunityId: opId,
 }: {
   opportunityId: string;
 }) {
-  const { toast } = useToast();
-
-  const queryClient = useQueryClient();
-
-  const key = ["offers", opId];
-
   const { data } = trpc.CLIENT.offers.useQuery(opId);
 
   const [divRef] = useAutoAnimate();
 
-  const mutation = useMutation({
-    mutationFn: toggleStars,
-    onMutate: async ({ id, matchingGrade }) => {
-      await queryClient.cancelQueries({ queryKey: key });
-
-      const current = queryClient.getQueryData(key);
-
-      queryClient.setQueryData<OfferSchema[]>(key, (ops) =>
-        produce(ops, (xs) => {
-          if (!xs) return;
-          const offer = xs.find((d) => d.id === id);
-          if (!offer) return;
-          offer.matchingGrade = matchingGrade;
-        }),
-      );
-
-      return { current };
-    },
-    // eslint-disable-next-line no-unused-vars
-    onError: (_a, _b, ctx) => {
-      // TODO onError
-    },
-    onSettled: async () => {
-      queryClient.invalidateQueries({ queryKey: key });
-      toast({ title: "Grade updated" });
-    },
-  });
-
   return (
-    <HandlersCtx.Provider value={{ onStarsToggled: mutation.mutate }}>
+    <ctx.Provider value={{ enableEditing: true }}>
       <div ref={divRef}>
         {data ? (
           <DataTable columns={offersColumns} data={data} />
@@ -167,6 +158,6 @@ export function OffersTable({
           </div>
         )}
       </div>
-    </HandlersCtx.Provider>
+    </ctx.Provider>
   );
 }

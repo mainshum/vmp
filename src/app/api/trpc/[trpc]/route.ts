@@ -1,6 +1,5 @@
 import { fetchRequestHandler } from "@trpc/server/adapters/fetch";
 import { appRouter } from "@/server/trpc-server";
-import { getSession } from "next-auth/react";
 import { getVMPSession } from "@/lib/auth";
 
 // this is the server RPC API handler
