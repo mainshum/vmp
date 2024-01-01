@@ -24,7 +24,7 @@ export const positiveInteger15 = positiveInteger
 export const availabilitySlider = z.number({ coerce: true });
 
 export const requestId = z.string().cuid();
-const nanoidGenerated = z.string().regex(/^[a-zA-Z0-9_-]{21}$/);
+export const nanoidGenerated = z.string().regex(/^[a-zA-Z0-9_-]{21}$/);
 
 export const stringMin3 = z
   .string()

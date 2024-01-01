@@ -7,7 +7,10 @@ export const ROUTES = {
   ROLE_SELECT: "/role-select",
   OFFERS: {
     LIST: "/offers",
-    CREATE: (id: string) => `/offers/create?requestId=${id}`,
+    CREATE: (requestId: string) =>
+      `/offers/create?meta=${JSON.stringify({ requestId, type: "CREATE" })}`,
+    EDIT: (offerId: string) =>
+      `/offers/create?meta=${JSON.stringify({ offerId, type: "EDIT" })}`,
   },
   REQUESTS: {
     LIST: "/requests",

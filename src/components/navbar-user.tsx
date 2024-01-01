@@ -31,7 +31,11 @@ export const User = ({ session }: { session: Exclude<NextSession, null> }) => {
         align="end"
       >
         {(role == "ADMIN" || role == "VENDOR") && (
-          <DropdownMenuItem onClick={() => router.push(ROUTES.OFFERS.LIST)}>
+          <DropdownMenuItem
+            disabled
+            className="opacity-50"
+            onClick={() => router.push(ROUTES.OFFERS.LIST)}
+          >
             <Percent className="mr-2 h-4 w-4" />
             <span>Offers</span>
           </DropdownMenuItem>

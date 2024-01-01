@@ -17,12 +17,15 @@ import {
   TableCell,
 } from "./ui/table";
 import React from "react";
+import clsx from "clsx";
 
 interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[];
   data: TData[];
   // eslint-disable-next-line no-unused-vars
   renderSubComponent?: (props: { row: Row<TData> }) => React.ReactElement;
+  // eslint-disable-next-line no-unused-vars
+  onRowClick?: (row: Row<TData>) => void;
   tableOptions?: Omit<
     TableOptions<TData>,
     "data" | "columns" | "getCoreRowModel"
@@ -33,6 +36,7 @@ export function DataTable<TData, TValue>({
   columns,
   data,
   renderSubComponent,
+  onRowClick,
   tableOptions,
 }: DataTableProps<TData, TValue>) {
   const table = useReactTable({
@@ -66,7 +70,11 @@ export function DataTable<TData, TValue>({
         {table.getRowModel().rows?.length ? (
           table.getRowModel().rows.map((row) => (
             <React.Fragment key={row.id}>
-              <TableRow data-state={row.getIsSelected() && "selected"}>
+              <TableRow
+                className={clsx(onRowClick && "cursor-pointer")}
+                onClick={() => onRowClick?.(row)}
+                data-state={row.getIsSelected() && "selected"}
+              >
                 {row.getVisibleCells().map((cell) => (
                   <TableCell key={cell.id}>
                     {flexRender(cell.column.columnDef.cell, {
