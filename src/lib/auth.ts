@@ -33,7 +33,7 @@ export const nextAuthOptions: NextAuthOptions = {
           // for further details.
           body: JSON.stringify({
             personalizations: [{ to: [{ email }] }],
-            from: { email: "aleksander@vendormarketplace.org" },
+            from: { email: "noreply@vendormarketplace.org" },
             subject: "Sign in to Your page",
             content: [
               {
