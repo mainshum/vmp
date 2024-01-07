@@ -24,7 +24,7 @@ export const User = ({ session }: { session: Exclude<NextSession, null> }) => {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <UserCircle className="h-8 w-8 text-white" />
+        <UserCircle className="h-8 w-8 text-white cursor-pointer" />
       </DropdownMenuTrigger>
       <DropdownMenuContent
         className="[&>[role='menuitem']]:cursor-pointer"
