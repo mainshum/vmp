@@ -50,6 +50,7 @@ import { RequestInput } from "@/lib/validation";
 import dynamic from "next/dynamic";
 import { OutputData } from "@editorjs/editorjs";
 import { FormWrapper, SubmitButton } from "@/components/form";
+import { ROUTES } from "@/lib/const";
 
 type RequestData = RouterOutputs["CLIENT"]["request"];
 
@@ -170,7 +171,7 @@ const TechnicalForm = ({
     onSuccess: () => {
       toast({ title: "Saved successfully" });
 
-      router.push("/customer/requests");
+      router.push(ROUTES.REQUESTS.LIST);
     },
   });
 

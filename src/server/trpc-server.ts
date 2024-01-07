@@ -8,7 +8,7 @@ import {
   requestId,
 } from "@/lib/validation";
 import { z } from "zod";
-import { VMPRole } from "@prisma/client";
+import { RequestStatus, VMPRole } from "@prisma/client";
 import superjson from "superjson";
 import { NextSession, getVMPSession } from "@/lib/auth";
 import { adminOr } from "@/lib/utils";
@@ -129,6 +129,14 @@ const adminRouter = t.router({
   requests: roleProtected(adminOr()).query(() => {
     return db.request.findMany();
   }),
+  updateStatus: roleProtected(r => r === 'ADMIN')
+    .input(z.object({id: requestId, newStatus: z.nativeEnum(RequestStatus)}))
+    .mutation(({input}) => {
+      return db.request.update({
+        where: {id: input.id},
+        data: {status: input.newStatus}
+      })
+    }),
 });
 
 // this is our RPC API

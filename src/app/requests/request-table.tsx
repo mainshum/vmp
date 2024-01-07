@@ -16,17 +16,20 @@ import { Action } from "@/types/shared";
 import { useToast } from "@/hooks/use-toast";
 import Link from "next/link";
 import { ROUTES } from "@/lib/const";
-import { RouterOutputs, trpc } from "@/lib/trpc";
+import { RouterOutputs, RouterInputs, trpc } from "@/lib/trpc";
 import { createDate } from "./shared";
+import { RequestStatus } from "@prisma/client";
 
 const chevronClasses = "h-4 w-4";
 
 type CustomerRequests = RouterOutputs["CLIENT"]["requests"];
 type VendorRequests = RouterOutputs["VENDOR"]["requests"];
 type AdminRequests = RouterOutputs["ADMIN"]["requests"];
+type RouterX = RouterInputs['ADMIN']['updateStatus'];
 
 type ActionsContext = {
   handleRequestRemoval?: Action<string>;
+  onStatusChange?: Action<RouterX>;
   enableOffering: boolean;
   enableEditing: boolean;
 };
@@ -93,7 +96,7 @@ const customerColumnns: ColumnDef<CustomerRequests[0]>[] = [
   {
     accessorKey: "actions",
     header: "Actions",
-    cell: ({ row }) => <CustomerActions id={row.original.id} />,
+    cell: ({ row }) => <CustomerActions status={row.original.status} id={row.original.id} />,
   },
 ];
 
@@ -115,11 +118,59 @@ const adminColumns = [
   ...customerColumnns.slice(1),
 ];
 
-function CustomerActions({ id }: { id: string }) {
-  const { handleRequestRemoval, enableOffering, enableEditing } =
-    useContext(ctx);
+const statusesOrder: RequestStatus[] = [
+  "DRAFT",
+  "PENDING",
+  "ACTIVE",
+  "EXPIRED",
+  "CLOSED",
+];
+
+const AdminActions = ({
+  onStatusChange,
+  status,
+}: {
+  onStatusChange: Action<RequestStatus>;
+  status: RequestStatus;
+}) => {
+  const ind = statusesOrder.findIndex((x) => x === status);
 
   return (
+    <>
+      {ind >= 1 && (
+        <DropdownMenuItem
+          onClick={() => onStatusChange(statusesOrder[ind - 1])}
+        >
+          Downgrade status to {statusesOrder[ind - 1]}
+        </DropdownMenuItem>
+      )}
+      {statusesOrder[ind + 1] && (
+        <DropdownMenuItem
+          onClick={() => onStatusChange(statusesOrder[ind + 1])}
+        >
+          Advance status to {statusesOrder[ind + 1]}
+        </DropdownMenuItem>
+      )}
+    </>
+  );
+};
+
+function CustomerActions({
+  id,
+  status,
+}: {
+  id: string;
+  status?: RequestStatus;
+}) {
+  const {
+    handleRequestRemoval,
+    enableOffering,
+    enableEditing,
+    onStatusChange,
+  } = useContext(ctx);
+
+  return (
+    <div onClick={e => e.stopPropagation()}>
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button variant="ghost" className="h-8 w-8 p-0">
@@ -128,6 +179,9 @@ function CustomerActions({ id }: { id: string }) {
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">
+        {onStatusChange && status && (
+          <AdminActions onStatusChange={(newStatus) => onStatusChange({id, newStatus})} status={status} />
+        )}
         {enableEditing && (
           <DropdownMenuItem asChild>
             <Link href={ROUTES.REQUESTS.ONE(id)}>Edit request</Link>
@@ -146,6 +200,7 @@ function CustomerActions({ id }: { id: string }) {
         )}
       </DropdownMenuContent>
     </DropdownMenu>
+</div>
   );
 }
 
@@ -216,15 +271,33 @@ export function Vendor({ requests }: { requests: VendorRequests }) {
 export function Admin({ requests }: { requests: AdminRequests }) {
   const client = trpc.CLIENT;
 
+  const utils = trpc.useUtils();
+
   const { data } = client.requests.useQuery(undefined, {
     initialData: requests,
   });
+
+  const {toast} = useToast();
+
+  const {mutate} = trpc.ADMIN.updateStatus.useMutation({
+    onMutate({newStatus}) {
+      toast({title: `Changing status to ${newStatus}`});
+    },
+    onError() {
+      toast({title: 'Error changing status'})
+    },
+    onSuccess({status, name}) {
+      utils.CLIENT.requests.invalidate();
+      toast({title: `Request ${name}: status changed to ${status}`});
+    }
+  })
 
   return (
     <ctx.Provider
       value={{
         enableOffering: true,
         enableEditing: true,
+        onStatusChange: mutate,
       }}
     >
       <DataTable
