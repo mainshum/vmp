@@ -297,7 +297,12 @@ export function Admin({ requests }: { requests: AdminRequests }) {
       value={{
         enableOffering: true,
         enableEditing: true,
-        onStatusChange: mutate,
+        onStatusChange: ({id, newStatus}) => {
+          const answer = confirm(`This action will change request's status to ${newStatus}. Are you sure?`)
+          if (!answer) return;
+
+          mutate({id, newStatus});
+        },
       }}
     >
       <DataTable
