@@ -7,8 +7,6 @@ import {
   JobProfile,
   JobSubProfile,
   Seniority,
-  Offer,
-  OfferPayload,
 } from "@prisma/client";
 import { z } from "zod";
 

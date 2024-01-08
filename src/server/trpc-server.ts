@@ -123,18 +123,29 @@ const requestRouter = t.router({
       where: {
         status: "ACTIVE",
       },
-      select: {
-        id: true,
-        name: true,
-        validUntil: true,
-        creationDate: true,
+      include: {
+        _count: { select: { offers: true } },
       },
     });
   }),
   list: roleProtected(["CLIENT", "ADMIN"]).query(({ ctx: { user } }) => {
     return match(user.role)
-      .with("ADMIN", () => db.request.findMany())
-      .with("CLIENT", () => db.request.findMany({ where: { userId: user.id } }))
+      .with("ADMIN", () =>
+        db.request.findMany({
+          include: {
+            _count: { select: { offers: true } },
+          },
+        }),
+      )
+      .with("CLIENT", () =>
+        db.request.findMany({
+          where: { userId: user.id },
+
+          include: {
+            _count: { select: { offers: true } },
+          },
+        }),
+      )
       .exhaustive();
   }),
   byId: roleProtected(["CLIENT", "ADMIN"])

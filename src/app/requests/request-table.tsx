@@ -11,7 +11,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
-import React, { useContext } from "react";
+import React, { useContext, useEffect } from "react";
 import { Action } from "@/types/shared";
 import { useToast } from "@/hooks/use-toast";
 import Link from "next/link";
@@ -19,6 +19,7 @@ import { ROUTES } from "@/lib/const";
 import { RouterOutputs, RouterInputs, trpc } from "@/lib/trpc";
 import { createDate } from "./shared";
 import { RequestStatus } from "@prisma/client";
+import { useAutoAnimate } from "@formkit/auto-animate/react";
 
 const chevronClasses = "h-4 w-4";
 
@@ -72,19 +73,35 @@ const sharedColumns: ColumnDef<FullColumns[0]>[] = [
 
 type UnwrapColDef<T> = T extends ColumnDef<infer R> ? R : never;
 
+const Status = ({ status }: { status: string }) => {
+  const [ref] = useAutoAnimate();
+
+  useEffect(() => {
+    console.log("mount");
+    return () => console.log("umount");
+  }, []);
+
+  return (
+    <span ref={ref}>
+      <span key={status}>{status}</span>
+    </span>
+  );
+};
+
 const allColumns: ColumnDef<FullColumns[0]>[] = [
   ...(sharedColumns as UnwrapColDef<typeof sharedColumns>[]),
   {
     accessorKey: "status",
     header: "Status",
+    cell: ({ row }) => <Status status={row.getValue("status")} />,
   },
   {
-    accessorKey: "offersCount",
+    accessorKey: "_count",
     header: "Offers count",
     cell: ({ row }) => {
-      const count = row.getValue("offersCount") as number;
+      const { offers } = row.getValue("_count") as { offers: number };
 
-      return count > 0 ? count : "-";
+      return offers > 0 ? offers : "-";
     },
   },
   {
@@ -263,20 +280,14 @@ export function Admin({ requests }: { requests: FullColumns }) {
     initialData: requests,
   });
 
-  console.log(data);
-
   const { toast } = useToast();
 
   const { mutate } = trpc.request.updateStatus.useMutation({
-    onMutate({ newStatus }) {
-      toast({ title: `Changing status to ${newStatus}` });
-    },
     onError() {
       toast({ title: "Error changing status" });
     },
     onSuccess({ status, name, id }) {
       utils.request.byId.invalidate(id);
-      toast({ title: `Request ${name}: status changed to ${status}` });
     },
   });
 
