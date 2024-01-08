@@ -11,34 +11,32 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
-import React, { useContext } from "react";
+import React, { useContext, useEffect } from "react";
 import { Action } from "@/types/shared";
 import { useToast } from "@/hooks/use-toast";
 import Link from "next/link";
 import { ROUTES } from "@/lib/const";
-import { RouterOutputs, trpc } from "@/lib/trpc";
+import { RouterOutputs, RouterInputs, trpc } from "@/lib/trpc";
 import { createDate } from "./shared";
+import { RequestStatus } from "@prisma/client";
+import { useAutoAnimate } from "@formkit/auto-animate/react";
 
 const chevronClasses = "h-4 w-4";
 
-type CustomerRequests = RouterOutputs["CLIENT"]["requests"];
-type VendorRequests = RouterOutputs["VENDOR"]["requests"];
-type AdminRequests = RouterOutputs["ADMIN"]["requests"];
+type FullColumns = RouterOutputs["request"]["list"];
+type VendorColumns = RouterOutputs["request"]["vendorList"];
+type UpdateStatusInput = RouterInputs["request"]["updateStatus"];
 
 type ActionsContext = {
   handleRequestRemoval?: Action<string>;
+  onStatusChange?: Action<UpdateStatusInput>;
   enableOffering: boolean;
   enableEditing: boolean;
 };
 
 const ctx = React.createContext<ActionsContext>({} as ActionsContext);
 
-type SharedColumns = Pick<
-  CustomerRequests[0],
-  "name" | "id" | "validUntil" | "creationDate"
->;
-
-const sharedColumns: ColumnDef<SharedColumns>[] = [
+const sharedColumns: ColumnDef<FullColumns[0]>[] = [
   {
     accessorKey: "id",
     header: "Request ID",
@@ -75,30 +73,48 @@ const sharedColumns: ColumnDef<SharedColumns>[] = [
 
 type UnwrapColDef<T> = T extends ColumnDef<infer R> ? R : never;
 
-const customerColumnns: ColumnDef<CustomerRequests[0]>[] = [
-  ...(sharedColumns as UnwrapColDef<(typeof sharedColumns)[0]>[]),
+const Status = ({ status }: { status: string }) => {
+  const [ref] = useAutoAnimate();
+
+  useEffect(() => {
+    console.log("mount");
+    return () => console.log("umount");
+  }, []);
+
+  return (
+    <span ref={ref}>
+      <span key={status}>{status}</span>
+    </span>
+  );
+};
+
+const allColumns: ColumnDef<FullColumns[0]>[] = [
+  ...(sharedColumns as UnwrapColDef<typeof sharedColumns>[]),
   {
     accessorKey: "status",
     header: "Status",
+    cell: ({ row }) => <Status status={row.getValue("status")} />,
   },
   {
-    accessorKey: "offersCount",
+    accessorKey: "_count",
     header: "Offers count",
     cell: ({ row }) => {
-      const count = row.getValue("offersCount") as number;
+      const { offers } = row.getValue("_count") as { offers: number };
 
-      return count > 0 ? count : "-";
+      return offers > 0 ? offers : "-";
     },
   },
   {
     accessorKey: "actions",
     header: "Actions",
-    cell: ({ row }) => <CustomerActions id={row.original.id} />,
+    cell: ({ row }) => (
+      <CustomerActions status={row.original.status} id={row.original.id} />
+    ),
   },
 ];
 
-const vendorColumns: ColumnDef<VendorRequests[0]>[] = [
-  ...sharedColumns,
+const vendorColumns: ColumnDef<VendorColumns[0]>[] = [
+  ...(sharedColumns as UnwrapColDef<typeof sharedColumns>[]),
   {
     accessorKey: "actions",
     header: "Actions",
@@ -106,56 +122,102 @@ const vendorColumns: ColumnDef<VendorRequests[0]>[] = [
   },
 ];
 
-const adminColumns = [
-  customerColumnns[0],
-  {
-    accessorKey: "userId",
-    header: "Creator ID",
-  },
-  ...customerColumnns.slice(1),
+const statusesOrder: RequestStatus[] = [
+  "DRAFT",
+  "PENDING",
+  "ACTIVE",
+  "EXPIRED",
+  "CLOSED",
 ];
 
-function CustomerActions({ id }: { id: string }) {
-  const { handleRequestRemoval, enableOffering, enableEditing } =
-    useContext(ctx);
+const AdminActions = ({
+  onStatusChange,
+  status,
+}: {
+  onStatusChange: Action<RequestStatus>;
+  status: RequestStatus;
+}) => {
+  const ind = statusesOrder.findIndex((x) => x === status);
 
   return (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <Button variant="ghost" className="h-8 w-8 p-0">
-          <span className="sr-only">Open menu</span>
-          <MoreHorizontal className="h-4 w-4" />
-        </Button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="end">
-        {enableEditing && (
-          <DropdownMenuItem asChild>
-            <Link href={ROUTES.REQUESTS.ONE(id)}>Edit request</Link>
-          </DropdownMenuItem>
-        )}
+    <>
+      {ind >= 1 && (
+        <DropdownMenuItem
+          onClick={() => onStatusChange(statusesOrder[ind - 1])}
+        >
+          Downgrade status to {statusesOrder[ind - 1]}
+        </DropdownMenuItem>
+      )}
+      {statusesOrder[ind + 1] && (
+        <DropdownMenuItem
+          onClick={() => onStatusChange(statusesOrder[ind + 1])}
+        >
+          Advance status to {statusesOrder[ind + 1]}
+        </DropdownMenuItem>
+      )}
+    </>
+  );
+};
 
-        {handleRequestRemoval && (
-          <DropdownMenuItem onClick={() => handleRequestRemoval(id)}>
-            Remove request
-          </DropdownMenuItem>
-        )}
-        {enableOffering && (
-          <DropdownMenuItem asChild>
-            <Link href={ROUTES.OFFERS.CREATE(id)}>Make offer</Link>
-          </DropdownMenuItem>
-        )}
-      </DropdownMenuContent>
-    </DropdownMenu>
+function CustomerActions({
+  id,
+  status,
+}: {
+  id: string;
+  status?: RequestStatus;
+}) {
+  const {
+    handleRequestRemoval,
+    enableOffering,
+    enableEditing,
+    onStatusChange,
+  } = useContext(ctx);
+
+  return (
+    <div onClick={(e) => e.stopPropagation()}>
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button variant="ghost" className="h-8 w-8 p-0">
+            <span className="sr-only">Open menu</span>
+            <MoreHorizontal className="h-4 w-4" />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end">
+          {onStatusChange && status && (
+            <AdminActions
+              onStatusChange={(newStatus) => onStatusChange({ id, newStatus })}
+              status={status}
+            />
+          )}
+          {enableEditing && (
+            <DropdownMenuItem asChild>
+              <Link href={ROUTES.REQUESTS.ONE(id)}>Edit request</Link>
+            </DropdownMenuItem>
+          )}
+
+          {handleRequestRemoval && (
+            <DropdownMenuItem onClick={() => handleRequestRemoval(id)}>
+              Remove request
+            </DropdownMenuItem>
+          )}
+          {enableOffering && (
+            <DropdownMenuItem asChild>
+              <Link href={ROUTES.OFFERS.CREATE(id)}>Make offer</Link>
+            </DropdownMenuItem>
+          )}
+        </DropdownMenuContent>
+      </DropdownMenu>
+    </div>
   );
 }
 
-export function Customer({ requests }: { requests: CustomerRequests }) {
+export function Customer({ requests }: { requests: FullColumns }) {
   const { toast } = useToast();
   const utils = trpc.useUtils();
 
   const client = trpc.CLIENT;
 
-  const { data } = client.requests.useQuery(undefined, {
+  const { data } = trpc.request.list.useQuery(undefined, {
     initialData: requests,
   });
 
@@ -166,9 +228,9 @@ export function Customer({ requests }: { requests: CustomerRequests }) {
         description: "Try again later",
       });
     },
-    onSuccess: (x) => {
-      toast({ title: `Request ${x.name} removed successfully` });
-      utils.CLIENT.requests.invalidate();
+    onSuccess: ({ name, id }) => {
+      toast({ title: `Request ${name} removed successfully` });
+      utils.request.byId.invalidate(id);
     },
   });
 
@@ -181,7 +243,7 @@ export function Customer({ requests }: { requests: CustomerRequests }) {
       }}
     >
       <DataTable
-        columns={customerColumnns}
+        columns={allColumns}
         data={data || []}
         renderSubComponent={({ row }) => (
           <OffersTable opportunityId={row.original.id} />
@@ -193,10 +255,8 @@ export function Customer({ requests }: { requests: CustomerRequests }) {
 
 const vendorOptions = { enableOffering: true, enableEditing: false };
 
-export function Vendor({ requests }: { requests: VendorRequests }) {
-  const client = trpc.VENDOR;
-
-  const { data } = client.requests.useQuery(undefined, {
+export function Vendor({ requests }: { requests: VendorColumns }) {
+  const { data } = trpc.request.vendorList.useQuery(undefined, {
     initialData: requests,
   });
 
@@ -213,11 +273,22 @@ export function Vendor({ requests }: { requests: VendorRequests }) {
   );
 }
 
-export function Admin({ requests }: { requests: AdminRequests }) {
-  const client = trpc.CLIENT;
+export function Admin({ requests }: { requests: FullColumns }) {
+  const utils = trpc.useUtils();
 
-  const { data } = client.requests.useQuery(undefined, {
+  const { data } = trpc.request.list.useQuery(undefined, {
     initialData: requests,
+  });
+
+  const { toast } = useToast();
+
+  const { mutate } = trpc.request.updateStatus.useMutation({
+    onError() {
+      toast({ title: "Error changing status" });
+    },
+    onSuccess({ status, name, id }) {
+      utils.request.byId.invalidate(id);
+    },
   });
 
   return (
@@ -225,10 +296,18 @@ export function Admin({ requests }: { requests: AdminRequests }) {
       value={{
         enableOffering: true,
         enableEditing: true,
+        onStatusChange: ({ id, newStatus }) => {
+          const answer = confirm(
+            `This action will change request's status to ${newStatus}. Are you sure?`,
+          );
+          if (!answer) return;
+
+          mutate({ id, newStatus });
+        },
       }}
     >
       <DataTable
-        columns={adminColumns}
+        columns={allColumns}
         onRowClick={(row) => row.toggleExpanded()}
         data={data || []}
         renderSubComponent={({ row }) => (

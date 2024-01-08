@@ -6,27 +6,17 @@ import { getVMPSession } from "@/lib/auth";
 async function PageServer() {
   const session = await getVMPSession();
 
-  if (!session || session.user.role === "NONE") {
-    return <div>Not logged in</div>;
-  }
+  if (!session || session.user.role === "NONE") return <div>Not logged in</div>;
 
   const caller = appRouter.createCaller(await createContext(session));
 
-  return (
-    <>
-      {await match(session.user.role)
-        .with("CLIENT", async () => {
-          return <Customer requests={await caller.CLIENT.requests()} />;
-        })
-        .with("VENDOR", async () => {
-          return <Vendor requests={await caller.VENDOR.requests()} />;
-        })
-        .with("ADMIN", async () => {
-          return <Admin requests={await caller.ADMIN.requests()} />;
-        })
-        .exhaustive()}
-    </>
-  );
+  if (session.user.role === "VENDOR")
+    return <Vendor requests={await caller.request.vendorList()} />;
+
+  if (session.user.role === "CLIENT")
+    return <Customer requests={await caller.request.list()} />;
+
+  return <Admin requests={await caller.request.list()} />;
 }
 
 export default PageServer;

@@ -8,11 +8,12 @@ import {
   requestId,
 } from "@/lib/validation";
 import { z } from "zod";
-import { VMPRole } from "@prisma/client";
+import { RequestStatus, VMPRole } from "@prisma/client";
 import superjson from "superjson";
 import { NextSession, getVMPSession } from "@/lib/auth";
 import { adminOr } from "@/lib/utils";
 import { revalidatePath } from "next/cache";
+import { match } from "ts-pattern";
 
 export const createContext = async (session?: NextSession) => {
   return { session: session || (await getVMPSession()) };
@@ -23,25 +24,26 @@ const t = initTRPC
   .create({ transformer: superjson });
 
 // eslint-disable-next-line no-unused-vars
-const roleProtected = (authed: (r: VMPRole) => boolean) =>
+const roleProtected = <T extends VMPRole[]>(allowedRoles: T) =>
   t.procedure.use(async function isAuthed(opts) {
     const user = opts.ctx.session?.user;
 
-    if (!user || !authed(user.role)) {
+    if (!user || !allowedRoles.includes(user.role)) {
       throw new TRPCError({ code: "UNAUTHORIZED" });
     }
 
     return opts.next({
-      ctx: { ...opts.ctx, user },
+      ctx: {
+        ...opts.ctx,
+        user: {
+          ...user,
+          role: user.role as T[number],
+        },
+      },
     });
   });
 
 const customerRouter = t.router({
-  requests: roleProtected(adminOr(VMPRole.CLIENT)).query(
-    ({ ctx: { user } }) => {
-      return db.request.findMany({ where: { userId: user.id } });
-    },
-  ),
   requestsPreviews: t.procedure.query(() => {
     return db.$queryRaw<RequestPreview[]>`
       select req.id, req.status, req.name, CAST(req."validUntil" as TEXT), CAST(req."creationDate" as TEXT), CAST(COUNT(ofe.id) as INT) as "offersCount"
@@ -63,7 +65,7 @@ const customerRouter = t.router({
       orderBy: { id: "asc" },
     });
   }),
-  upsertRequest: roleProtected((r) => r === "ADMIN" || r === "CLIENT")
+  upsertRequest: roleProtected(["ADMIN", "CLIENT"])
     .input(
       z.object({ requestPostModel: RequestInput, id: z.string().optional() }),
     )
@@ -84,7 +86,7 @@ const customerRouter = t.router({
     }),
 });
 
-const offer = roleProtected(adminOr(VMPRole.VENDOR))
+const offer = roleProtected(["ADMIN", "VENDOR"])
   .input(nanoidGenerated)
   .query(({ input }) => {
     return db.offer.findFirstOrThrow({ where: { id: input } });
@@ -92,17 +94,7 @@ const offer = roleProtected(adminOr(VMPRole.VENDOR))
 
 const vendorRouter = t.router({
   offer: offer,
-  requests: roleProtected(adminOr(VMPRole.VENDOR)).query(() => {
-    return db.request.findMany({
-      select: {
-        id: true,
-        name: true,
-        validUntil: true,
-        creationDate: true,
-      },
-    });
-  }),
-  insertOffer: roleProtected((r) => r === "ADMIN" || r === "VENDOR")
+  insertOffer: roleProtected(["ADMIN", "VENDOR"])
     .input(OfferInput)
     .mutation(({ input, ctx: { user } }) => {
       return db.offer.create({
@@ -114,7 +106,7 @@ const vendorRouter = t.router({
         },
       });
     }),
-  updateOffer: roleProtected((r) => r === "ADMIN" || r === "VENDOR")
+  updateOffer: roleProtected(["VENDOR"])
     .input(OfferInput.partial({ cv: true }))
     .mutation(async ({ input, ctx }) => {
       revalidatePath("/");
@@ -125,17 +117,62 @@ const vendorRouter = t.router({
     }),
 });
 
-const adminRouter = t.router({
-  requests: roleProtected(adminOr()).query(() => {
-    return db.request.findMany();
+const requestRouter = t.router({
+  vendorList: roleProtected(["VENDOR"]).query(() => {
+    return db.request.findMany({
+      where: {
+        status: "ACTIVE",
+      },
+      include: {
+        _count: { select: { offers: true } },
+      },
+    });
   }),
+  list: roleProtected(["CLIENT", "ADMIN"]).query(({ ctx: { user } }) => {
+    return match(user.role)
+      .with("ADMIN", () =>
+        db.request.findMany({
+          include: {
+            _count: { select: { offers: true } },
+          },
+        }),
+      )
+      .with("CLIENT", () =>
+        db.request.findMany({
+          where: { userId: user.id },
+
+          include: {
+            _count: { select: { offers: true } },
+          },
+        }),
+      )
+      .exhaustive();
+  }),
+  byId: roleProtected(["CLIENT", "ADMIN"])
+    .input(requestId)
+    .query(({ input, ctx: { user } }) => {
+      return match(user.role)
+        .with("ADMIN", () => db.request.findFirst({ where: { id: input } }))
+        .with("CLIENT", () =>
+          db.request.findFirst({ where: { userId: user.id, id: input } }),
+        )
+        .exhaustive();
+    }),
+  updateStatus: roleProtected(["ADMIN"])
+    .input(z.object({ id: requestId, newStatus: z.nativeEnum(RequestStatus) }))
+    .mutation(({ input }) => {
+      return db.request.update({
+        where: { id: input.id },
+        data: { status: input.newStatus },
+      });
+    }),
 });
 
 // this is our RPC API
 export const appRouter = t.router({
   [VMPRole.CLIENT]: customerRouter,
   [VMPRole.VENDOR]: vendorRouter,
-  [VMPRole.ADMIN]: adminRouter,
+  request: requestRouter,
 });
 
 export type AppRouter = typeof appRouter;

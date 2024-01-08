@@ -1,3 +1,5 @@
+'use client';
+
 import Link from "next/link";
 import Icons from "./icons";
 import { ROUTES } from "@/lib/const";
@@ -5,10 +7,12 @@ import { buttonVariants } from "./ui/button";
 import { headers } from "next/headers";
 import { NextSession } from "@/lib/auth";
 import { User } from "./navbar-user";
+import { usePathname } from "next/navigation";
 
 function Navbar({ session }: { session: NextSession }) {
-  const headersList = headers();
-  const pathname = headersList.get("x-invoke-path");
+
+  const pathname = usePathname();
+
   return (
     <header className="fixed inset-x-0 top-0 z-[10] flex h-[56px] justify-center border-b bg-black py-2">
       <nav className="flex w-full items-center justify-between px-6">

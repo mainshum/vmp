@@ -120,9 +120,9 @@ model Customer {
 enum RequestStatus {
   DRAFT
   PENDING
-  NOOFFERS
-  WITHOFFERS
+  ACTIVE
   EXPIRED
+  CLOSED
 }
 
 enum JobProfile {

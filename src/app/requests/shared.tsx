@@ -8,7 +8,7 @@ import {
 import { HelpCircle } from "lucide-react";
 
 export const createDate = (val: Nullalble<Date>) => {
-  if (val) return val.toLocaleDateString();
+  if (val) return val.toDateString();
 
   return (
     <TooltipProvider>

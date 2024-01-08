@@ -1,7 +1,8 @@
 import GP from "next-auth/providers/google";
-import { NextAuthOptions, getServerSession } from "next-auth";
+import { NextAuthOptions, Session, getServerSession } from "next-auth";
 import { PrismaAdapter } from "@auth/prisma-adapter";
 import { db } from "@/lib/db";
+import { cookies } from "next/headers";
 
 export const nextAuthOptions: NextAuthOptions = {
   adapter: PrismaAdapter(db) as any,
@@ -71,7 +72,18 @@ export const nextAuthOptions: NextAuthOptions = {
   },
 };
 
-export const getVMPSession = async () =>
-  await getServerSession(nextAuthOptions);
-
 export type NextSession = Awaited<ReturnType<typeof getVMPSession>>;
+
+export const getVMPSession = async (): Promise<Session | null> => {
+  const cs = cookies();
+  const fakeRole = cs.get("fake-role");
+
+  if (process.env.NODE_ENV === "development" && fakeRole) {
+    return {
+      user: JSON.parse(fakeRole.value),
+      expires: "",
+    };
+  }
+
+  return await getServerSession(nextAuthOptions);
+};
