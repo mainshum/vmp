@@ -2,6 +2,7 @@ import GP from "next-auth/providers/google";
 import { NextAuthOptions, getServerSession } from "next-auth";
 import { PrismaAdapter } from "@auth/prisma-adapter";
 import { db } from "@/lib/db";
+import { cookies, headers } from "next/headers";
 
 export const nextAuthOptions: NextAuthOptions = {
   adapter: PrismaAdapter(db) as any,
@@ -71,7 +72,13 @@ export const nextAuthOptions: NextAuthOptions = {
   },
 };
 
-export const getVMPSession = async () =>
-  await getServerSession(nextAuthOptions);
+export const getVMPSession = async () => {
+  const hs = cookies();
+  console.log(process.env.NODE_ENV);
+
+  console.log(hs);
+
+  return await getServerSession(nextAuthOptions);
+};
 
 export type NextSession = Awaited<ReturnType<typeof getVMPSession>>;

@@ -58,6 +58,7 @@
     "@trpc/next": "^10.41.0",
     "@trpc/react-query": "^10.41.0",
     "@trpc/server": "^10.41.0",
+    "@types/editorjs__header": "^2.6.0",
     "@types/node": "20.2.5",
     "@types/react": "18.2.7",
     "@types/react-dom": "18.2.4",
@@ -83,7 +84,6 @@
     "postcss": "8.4.23",
     "prettier-plugin-tailwindcss": "^0.5.3",
     "prisma": "^4.16.2",
-    "prisma-zod-generator": "^0.8.13",
     "react": "18.2.0",
     "react-day-picker": "^8.9.0",
     "react-dom": "18.2.0",
@@ -100,8 +100,7 @@
     "typescript": "5.0.4",
     "uploadthing": "^4.0.0",
     "xstate": "^4.38.2",
-    "zod": "^3.21.4",
-    "@types/editorjs__header": "^2.6.0"
+    "zod": "^3.21.4"
   },
   "devDependencies": {
     "@cypress/webpack-preprocessor": "^6.0.0",

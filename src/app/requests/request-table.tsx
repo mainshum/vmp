@@ -22,26 +22,20 @@ import { RequestStatus } from "@prisma/client";
 
 const chevronClasses = "h-4 w-4";
 
-type CustomerRequests = RouterOutputs["CLIENT"]["requests"];
-type VendorRequests = RouterOutputs["VENDOR"]["requests"];
-type AdminRequests = RouterOutputs["ADMIN"]["requests"];
-type RouterX = RouterInputs['ADMIN']['updateStatus'];
+type FullColumns = RouterOutputs["request"]["list"];
+type VendorColumns = RouterOutputs["request"]["vendorList"];
+type UpdateStatusInput = RouterInputs["request"]["updateStatus"];
 
 type ActionsContext = {
   handleRequestRemoval?: Action<string>;
-  onStatusChange?: Action<RouterX>;
+  onStatusChange?: Action<UpdateStatusInput>;
   enableOffering: boolean;
   enableEditing: boolean;
 };
 
 const ctx = React.createContext<ActionsContext>({} as ActionsContext);
 
-type SharedColumns = Pick<
-  CustomerRequests[0],
-  "name" | "id" | "validUntil" | "creationDate"
->;
-
-const sharedColumns: ColumnDef<SharedColumns>[] = [
+const sharedColumns: ColumnDef<FullColumns[0]>[] = [
   {
     accessorKey: "id",
     header: "Request ID",
@@ -78,8 +72,8 @@ const sharedColumns: ColumnDef<SharedColumns>[] = [
 
 type UnwrapColDef<T> = T extends ColumnDef<infer R> ? R : never;
 
-const customerColumnns: ColumnDef<CustomerRequests[0]>[] = [
-  ...(sharedColumns as UnwrapColDef<(typeof sharedColumns)[0]>[]),
+const allColumns: ColumnDef<FullColumns[0]>[] = [
+  ...(sharedColumns as UnwrapColDef<typeof sharedColumns>[]),
   {
     accessorKey: "status",
     header: "Status",
@@ -96,26 +90,19 @@ const customerColumnns: ColumnDef<CustomerRequests[0]>[] = [
   {
     accessorKey: "actions",
     header: "Actions",
-    cell: ({ row }) => <CustomerActions status={row.original.status} id={row.original.id} />,
+    cell: ({ row }) => (
+      <CustomerActions status={row.original.status} id={row.original.id} />
+    ),
   },
 ];
 
-const vendorColumns: ColumnDef<VendorRequests[0]>[] = [
-  ...sharedColumns,
+const vendorColumns: ColumnDef<VendorColumns[0]>[] = [
+  ...(sharedColumns as UnwrapColDef<typeof sharedColumns>[]),
   {
     accessorKey: "actions",
     header: "Actions",
     cell: ({ row }) => <CustomerActions id={row.original.id} />,
   },
-];
-
-const adminColumns = [
-  customerColumnns[0],
-  {
-    accessorKey: "userId",
-    header: "Creator ID",
-  },
-  ...customerColumnns.slice(1),
 ];
 
 const statusesOrder: RequestStatus[] = [
@@ -170,47 +157,50 @@ function CustomerActions({
   } = useContext(ctx);
 
   return (
-    <div onClick={e => e.stopPropagation()}>
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <Button variant="ghost" className="h-8 w-8 p-0">
-          <span className="sr-only">Open menu</span>
-          <MoreHorizontal className="h-4 w-4" />
-        </Button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="end">
-        {onStatusChange && status && (
-          <AdminActions onStatusChange={(newStatus) => onStatusChange({id, newStatus})} status={status} />
-        )}
-        {enableEditing && (
-          <DropdownMenuItem asChild>
-            <Link href={ROUTES.REQUESTS.ONE(id)}>Edit request</Link>
-          </DropdownMenuItem>
-        )}
+    <div onClick={(e) => e.stopPropagation()}>
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button variant="ghost" className="h-8 w-8 p-0">
+            <span className="sr-only">Open menu</span>
+            <MoreHorizontal className="h-4 w-4" />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end">
+          {onStatusChange && status && (
+            <AdminActions
+              onStatusChange={(newStatus) => onStatusChange({ id, newStatus })}
+              status={status}
+            />
+          )}
+          {enableEditing && (
+            <DropdownMenuItem asChild>
+              <Link href={ROUTES.REQUESTS.ONE(id)}>Edit request</Link>
+            </DropdownMenuItem>
+          )}
 
-        {handleRequestRemoval && (
-          <DropdownMenuItem onClick={() => handleRequestRemoval(id)}>
-            Remove request
-          </DropdownMenuItem>
-        )}
-        {enableOffering && (
-          <DropdownMenuItem asChild>
-            <Link href={ROUTES.OFFERS.CREATE(id)}>Make offer</Link>
-          </DropdownMenuItem>
-        )}
-      </DropdownMenuContent>
-    </DropdownMenu>
-</div>
+          {handleRequestRemoval && (
+            <DropdownMenuItem onClick={() => handleRequestRemoval(id)}>
+              Remove request
+            </DropdownMenuItem>
+          )}
+          {enableOffering && (
+            <DropdownMenuItem asChild>
+              <Link href={ROUTES.OFFERS.CREATE(id)}>Make offer</Link>
+            </DropdownMenuItem>
+          )}
+        </DropdownMenuContent>
+      </DropdownMenu>
+    </div>
   );
 }
 
-export function Customer({ requests }: { requests: CustomerRequests }) {
+export function Customer({ requests }: { requests: FullColumns }) {
   const { toast } = useToast();
   const utils = trpc.useUtils();
 
   const client = trpc.CLIENT;
 
-  const { data } = client.requests.useQuery(undefined, {
+  const { data } = trpc.request.list.useQuery(undefined, {
     initialData: requests,
   });
 
@@ -221,9 +211,9 @@ export function Customer({ requests }: { requests: CustomerRequests }) {
         description: "Try again later",
       });
     },
-    onSuccess: (x) => {
-      toast({ title: `Request ${x.name} removed successfully` });
-      utils.CLIENT.requests.invalidate();
+    onSuccess: ({ name, id }) => {
+      toast({ title: `Request ${name} removed successfully` });
+      utils.request.byId.invalidate(id);
     },
   });
 
@@ -236,7 +226,7 @@ export function Customer({ requests }: { requests: CustomerRequests }) {
       }}
     >
       <DataTable
-        columns={customerColumnns}
+        columns={allColumns}
         data={data || []}
         renderSubComponent={({ row }) => (
           <OffersTable opportunityId={row.original.id} />
@@ -248,10 +238,8 @@ export function Customer({ requests }: { requests: CustomerRequests }) {
 
 const vendorOptions = { enableOffering: true, enableEditing: false };
 
-export function Vendor({ requests }: { requests: VendorRequests }) {
-  const client = trpc.VENDOR;
-
-  const { data } = client.requests.useQuery(undefined, {
+export function Vendor({ requests }: { requests: VendorColumns }) {
+  const { data } = trpc.request.vendorList.useQuery(undefined, {
     initialData: requests,
   });
 
@@ -268,45 +256,47 @@ export function Vendor({ requests }: { requests: VendorRequests }) {
   );
 }
 
-export function Admin({ requests }: { requests: AdminRequests }) {
-  const client = trpc.CLIENT;
-
+export function Admin({ requests }: { requests: FullColumns }) {
   const utils = trpc.useUtils();
 
-  const { data } = client.requests.useQuery(undefined, {
+  const { data } = trpc.request.list.useQuery(undefined, {
     initialData: requests,
   });
 
-  const {toast} = useToast();
+  console.log(data);
 
-  const {mutate} = trpc.ADMIN.updateStatus.useMutation({
-    onMutate({newStatus}) {
-      toast({title: `Changing status to ${newStatus}`});
+  const { toast } = useToast();
+
+  const { mutate } = trpc.request.updateStatus.useMutation({
+    onMutate({ newStatus }) {
+      toast({ title: `Changing status to ${newStatus}` });
     },
     onError() {
-      toast({title: 'Error changing status'})
+      toast({ title: "Error changing status" });
     },
-    onSuccess({status, name}) {
-      utils.CLIENT.requests.invalidate();
-      toast({title: `Request ${name}: status changed to ${status}`});
-    }
-  })
+    onSuccess({ status, name, id }) {
+      utils.request.byId.invalidate(id);
+      toast({ title: `Request ${name}: status changed to ${status}` });
+    },
+  });
 
   return (
     <ctx.Provider
       value={{
         enableOffering: true,
         enableEditing: true,
-        onStatusChange: ({id, newStatus}) => {
-          const answer = confirm(`This action will change request's status to ${newStatus}. Are you sure?`)
+        onStatusChange: ({ id, newStatus }) => {
+          const answer = confirm(
+            `This action will change request's status to ${newStatus}. Are you sure?`,
+          );
           if (!answer) return;
 
-          mutate({id, newStatus});
+          mutate({ id, newStatus });
         },
       }}
     >
       <DataTable
-        columns={adminColumns}
+        columns={allColumns}
         onRowClick={(row) => row.toggleExpanded()}
         data={data || []}
         renderSubComponent={({ row }) => (
