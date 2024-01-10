@@ -8,8 +8,20 @@ import { useState } from "react";
 import { useToast } from "../hooks/use-toast";
 import { Input } from "./ui/input";
 import { useForm } from "react-hook-form";
-import { Form, FormField } from "./ui/form";
+import {
+  Form,
+  FormControl,
+  FormDescription,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "./ui/form";
 import { Mail } from "lucide-react";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
+import { stringMin3 } from "@/lib/validation";
+import { MyInput } from "./forms";
 
 export interface Props extends React.HTMLAttributes<HTMLDivElement> {}
 
@@ -33,30 +45,41 @@ function SignUpForm({ className, ...rest }: Props) {
   };
 
   const form = useForm<{ email: string }>({
+    resolver: zodResolver(
+      z.object({
+        email: stringMin3,
+      }),
+    ),
     defaultValues: {
       email: "",
     },
   });
 
   return (
-    <div
-      className={cn("flex flex-col items-center gap-3 pb-4", className)}
-      {...rest}
-    >
-      <Icons.logo fill="black" />
+    <div className={cn("flex w-72 flex-col gap-4 pb-4", className)} {...rest}>
+      <Icons.logo fill="black" className="mb-4 self-center" />
       <Form {...form}>
         <form
           noValidate
           onSubmit={form.handleSubmit(({ email }) =>
             signIn("email", { email }),
           )}
-          className="space-y-2"
+          className="space-y-4"
         >
           <FormField
             control={form.control}
             name="email"
             render={({ field }) => (
-              <Input placeholder="hello@mail.com" {...field} />
+              <FormItem>
+                <FormControl>
+                  <Input
+                    {...field}
+                    placeholder="example@mail.com"
+                    value={field.value}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
             )}
           />
           <Button
