@@ -64,3 +64,5 @@ export const getSubProfile = (profile: JobProfile): JobSubProfile[] =>
 
 export const adminOr = (role?: VMPRole) => (r: VMPRole) =>
   r === role || r === "ADMIN";
+
+export const reduceSum = (acc: number, cv: number) => acc + cv;

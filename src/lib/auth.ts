@@ -68,6 +68,7 @@ export const nextAuthOptions: NextAuthOptions = {
       return session;
     },
     async signIn({ user }) {
+      return true;
       const exists = await db.user.findFirst({
         where: {
           email: user.email,

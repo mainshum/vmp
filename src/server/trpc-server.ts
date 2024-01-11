@@ -63,6 +63,7 @@ const customerRouter = t.router({
     return db.offer.findMany({
       where: { requestId: input },
       orderBy: { id: "asc" },
+      include: { offerGrade: true },
     });
   }),
   upsertRequest: roleProtected(["ADMIN", "CLIENT"])
@@ -96,11 +97,14 @@ const vendorRouter = t.router({
   offer: offer,
   insertOffer: roleProtected(["ADMIN", "VENDOR"])
     .input(OfferInput)
-    .mutation(({ input, ctx: { user } }) => {
+    .mutation(async ({ input, ctx: { user } }) => {
+      const offerGrade = await db.offerGrade.create({ data: {} });
+
       return db.offer.create({
         data: {
           ...input,
           userId: user.id,
+          offerGradeId: offerGrade.id,
           validUntil: new Date(),
           creationDate: new Date(),
         },
@@ -114,6 +118,14 @@ const vendorRouter = t.router({
         where: { id: input.id },
         data: input,
       });
+    }),
+});
+
+const offerRouter = t.router({
+  offerId: roleProtected(["ADMIN"])
+    .input(z.string())
+    .query(({ input }) => {
+      return db.offer.findFirst({ where: { id: input } });
     }),
 });
 
@@ -173,6 +185,7 @@ export const appRouter = t.router({
   [VMPRole.CLIENT]: customerRouter,
   [VMPRole.VENDOR]: vendorRouter,
   request: requestRouter,
+  offer: offerRouter,
 });
 
 export type AppRouter = typeof appRouter;

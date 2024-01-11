@@ -212,20 +212,31 @@ enum OfferStatus {
 }
 
 model Offer {
-  id            String        @id
-  userId        String
-  user          User          @relation(fields: [userId], references: [id], onDelete: Cascade)
-  matchingGrade Int?          @default(0)
-  offerStatus   OfferStatus?  @default(PENDING)
-  request       Request?      @relation(fields: [requestId], references: [id], onDelete: Cascade)
-  requestId     String
-  profile       JobProfile
-  subProfile    JobSubProfile
-  seniority     Seniority
-  validUntil    DateTime
-  creationDate  DateTime
-  startDate     DateTime
-  cv            String
+  id           String        @id
+  userId       String
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  offerStatus  OfferStatus?  @default(PENDING)
+  request      Request       @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  requestId    String
+  profile      JobProfile
+  subProfile   JobSubProfile
+  seniority    Seniority
+  validUntil   DateTime
+  creationDate DateTime
+  startDate    DateTime
+  cv           String
+  offerGrade   OfferGrade    @relation(fields: [offerGradeId], references: [id], onDelete: Cascade)
+  offerGradeId String        @unique
+}
+
+model OfferGrade {
+  id              String @id @default(cuid())
+  n_technologyFit Int    @default(0)
+  n_seniorityFit  Int    @default(0)
+  n_rateFit       Int    @default(0)
+  n_logistics     Int    @default(0)
+  n_vendorScore   Int    @default(0)
+  offer           Offer?
 }
 
 enum ProjectStage {

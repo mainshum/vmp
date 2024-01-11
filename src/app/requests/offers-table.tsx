@@ -2,8 +2,8 @@
 
 import { DataTable } from "@/components/data-table";
 import { ColumnDef } from "@tanstack/react-table";
-import React, { useContext } from "react";
-import { cn } from "@/lib/utils";
+import React, { useContext, useState } from "react";
+import { cn, reduceSum } from "@/lib/utils";
 import { Nullalble } from "@/types/shared";
 import { FileText, Loader2, MoreHorizontal, StarIcon } from "lucide-react";
 import { createDate } from "./shared";
@@ -18,35 +18,69 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
+import { OfferGrade } from "@prisma/client";
 
 type ActionsContext = {
   // eslint-disable-next-line no-unused-vars
   handleOfferRemoval?: (offerId: string) => void;
+  toggleRatingDetails: (offerId: string) => void;
   enableEditing: boolean;
+  starsIdOpened: Nullalble<string>;
 };
 
 const ctx = React.createContext<ActionsContext>({} as ActionsContext);
 
-function Stars({ matchingStars }: { matchingStars: Nullalble<number> }) {
-  const orangeStars = !matchingStars ? 0 : matchingStars;
+const Stars = ({ stars }: { stars: number }) => (
+  <span className="flex">
+    {Array(5)
+      .fill(null)
+      .map((_, ind) => {
+        const starNo = ind + 1;
+        return (
+          <StarIcon
+            key={ind}
+            className={cn("h-4 w-4", starNo <= stars && "fill-orange-200")}
+          />
+        );
+      })}
+  </span>
+);
+
+function OfferRatings({
+  offerGrade: offerGrade,
+  offerId,
+}: {
+  offerGrade: OfferGrade;
+  offerId: string;
+}) {
+  const { starsIdOpened } = useContext(ctx);
+  const [ref] = useAutoAnimate();
 
   return (
-    <span className="flex">
-      {Array(5)
-        .fill(null)
-        .map((_, ind) => {
-          const starNo = ind + 1;
-          return (
-            <StarIcon
-              key={ind}
-              className={cn(
-                "h-4 w-4",
-                starNo <= orangeStars && "fill-orange-200",
-              )}
-            />
-          );
-        })}
-    </span>
+    <section ref={ref} className="flex flex-col gap-4">
+      {starsIdOpened && (
+        <>
+          <span>Logistics fit</span>
+          <Stars stars={offerGrade.n_logistics} />
+          <span>Rate fit</span>
+          <Stars stars={offerGrade.n_rateFit} />
+        </>
+      )}
+      {!starsIdOpened &&
+        (() => {
+          const stars = [
+            offerGrade.n_logistics,
+            offerGrade.n_rateFit,
+            offerGrade.n_seniorityFit,
+            offerGrade.n_technologyFit,
+            offerGrade.n_vendorScore,
+          ];
+
+          const avgGrade = stars.reduce(reduceSum) / stars.length;
+
+          return <Stars stars={avgGrade} />;
+        })()}
+    </section>
   );
 }
 
@@ -67,7 +101,11 @@ const PDFFile = ({ offerId, cv }: { offerId: string; cv: string }) => {
 };
 
 function Actions({ offerId }: { offerId: string }) {
-  const { enableEditing, handleOfferRemoval } = useContext(ctx);
+  const {
+    enableEditing,
+    handleOfferRemoval,
+    toggleRatingDetails: showRatingDetails,
+  } = useContext(ctx);
 
   return (
     <DropdownMenu>
@@ -78,6 +116,9 @@ function Actions({ offerId }: { offerId: string }) {
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">
+        <DropdownMenuItem onClick={() => showRatingDetails(offerId)}>
+          Toggle rating details
+        </DropdownMenuItem>
         {handleOfferRemoval && (
           <DropdownMenuItem onClick={() => handleOfferRemoval(offerId)}>
             Remove offer
@@ -103,9 +144,14 @@ const offersColumns: ColumnDef<OfferSchema>[] = [
   },
   {
     header: "Grade",
-    accessorKey: "matchingGrade",
+    accessorKey: "offerGrade",
     cell: ({ row }) => {
-      return <Stars matchingStars={row.getValue("matchingGrade")} />;
+      return (
+        <OfferRatings
+          offerGrade={row.getValue("offerGrade") as OfferGrade}
+          offerId={row.getValue("id")}
+        />
+      );
     },
   },
   {
@@ -142,12 +188,18 @@ export function OffersTable({
 }: {
   opportunityId: string;
 }) {
+  const [starsIdOpened, setStarsIdOpened] = useState<Nullalble<string>>(null);
   const { data } = trpc.CLIENT.offers.useQuery(opId);
 
   const [divRef] = useAutoAnimate();
 
+  const toggleRatingDetails = (offerId: string) =>
+    setStarsIdOpened((cur) => (cur === null ? offerId : null));
+
   return (
-    <ctx.Provider value={{ enableEditing: true }}>
+    <ctx.Provider
+      value={{ enableEditing: true, toggleRatingDetails, starsIdOpened }}
+    >
       <div ref={divRef}>
         {data ? (
           <DataTable columns={offersColumns} data={data} />
