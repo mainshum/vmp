@@ -4,7 +4,7 @@ import { cn } from "@/lib/utils";
 import { Button } from "./ui/button";
 import Icons from "./icons";
 import { signIn } from "next-auth/react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useToast } from "../hooks/use-toast";
 import { Input } from "./ui/input";
 import { useForm } from "react-hook-form";
@@ -22,12 +22,16 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { stringMin3 } from "@/lib/validation";
 import { MyInput } from "./forms";
+import { useSearchParams } from "next/navigation";
+import { SEARCH_PARAMS } from "@/lib/const";
 
 export interface Props extends React.HTMLAttributes<HTMLDivElement> {}
 
 function SignUpForm({ className, ...rest }: Props) {
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const { toast } = useToast();
+
+  const params = useSearchParams();
 
   const loginWith = async (params: Parameters<typeof signIn>) => {
     setIsLoading(true);
@@ -47,13 +51,26 @@ function SignUpForm({ className, ...rest }: Props) {
   const form = useForm<{ email: string }>({
     resolver: zodResolver(
       z.object({
-        email: stringMin3,
+        email: stringMin3.refine((s) => s.includes("@"), {
+          message: "Email needs to contain @",
+        }),
       }),
     ),
     defaultValues: {
       email: "",
     },
   });
+
+  const invalidMail = params.get(SEARCH_PARAMS.invalidMail);
+
+  useEffect(() => {
+    if (!invalidMail) return;
+
+    form.setError("email", {
+      type: "disabled",
+      message: `Unknown user: ${invalidMail}. Register as customer or vendor first.`,
+    });
+  }, [invalidMail]);
 
   return (
     <div className={cn("flex w-72 flex-col gap-4 pb-4", className)} {...rest}>
@@ -64,7 +81,6 @@ function SignUpForm({ className, ...rest }: Props) {
           onSubmit={form.handleSubmit(({ email }) =>
             signIn("email", { email }),
           )}
-          className="space-y-4"
         >
           <FormField
             control={form.control}
@@ -75,10 +91,11 @@ function SignUpForm({ className, ...rest }: Props) {
                   <Input
                     {...field}
                     placeholder="example@mail.com"
+                    type="email"
                     value={field.value}
                   />
                 </FormControl>
-                <FormMessage />
+                <FormMessage className="pb-3 pt-2" />
               </FormItem>
             )}
           />

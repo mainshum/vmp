@@ -1,4 +1,4 @@
-'use client';
+"use client";
 
 import Link from "next/link";
 import Icons from "./icons";
@@ -10,14 +10,13 @@ import { User } from "./navbar-user";
 import { usePathname } from "next/navigation";
 
 function Navbar({ session }: { session: NextSession }) {
-
   const pathname = usePathname();
 
   return (
     <header className="fixed inset-x-0 top-0 z-[10] flex h-[56px] justify-center border-b bg-black py-2">
       <nav className="flex w-full items-center justify-between px-6">
         <Link href="/" className="flex items-center gap-3">
-          <Icons.logo />
+          <Icons.logo fill="white" />
           <p className="hidden text-2xl font-bold tracking-widest text-white md:block">
             VMP
           </p>

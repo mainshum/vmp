@@ -2,8 +2,14 @@ export const MOCK_STATE_HEADER = "X-MOCK-STATE";
 
 type SuccessType = "customer_registered";
 
+export const SEARCH_PARAMS = {
+  invalidMail: "invalid_mail",
+};
+
 export const ROUTES = {
   SIGIN: "/sign-in",
+  SIGIN_NOT_EXISTS: (emai: string) =>
+    `/sign-in?${SEARCH_PARAMS.invalidMail}=${emai}`,
   ROLE_SELECT: "/role-select",
   OFFERS: {
     LIST: "/offers",

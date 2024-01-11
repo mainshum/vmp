@@ -3,6 +3,7 @@ import { NextAuthOptions, Session, getServerSession } from "next-auth";
 import { PrismaAdapter } from "@auth/prisma-adapter";
 import { db } from "@/lib/db";
 import { cookies } from "next/headers";
+import { ROUTES } from "./const";
 
 export const nextAuthOptions: NextAuthOptions = {
   adapter: PrismaAdapter(db) as any,
@@ -65,6 +66,15 @@ export const nextAuthOptions: NextAuthOptions = {
       session.user.id = user.id;
 
       return session;
+    },
+    async signIn({ user }) {
+      const exists = await db.user.findFirst({
+        where: {
+          email: user.email,
+        },
+      });
+
+      return exists ? true : ROUTES.SIGIN_NOT_EXISTS(user.email || "");
     },
     redirect() {
       return "/";

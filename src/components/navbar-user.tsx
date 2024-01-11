@@ -24,7 +24,7 @@ export const User = ({ session }: { session: Exclude<NextSession, null> }) => {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <UserCircle className="h-8 w-8 text-white cursor-pointer" />
+        <UserCircle className="h-8 w-8 cursor-pointer text-white" />
       </DropdownMenuTrigger>
       <DropdownMenuContent
         className="[&>[role='menuitem']]:cursor-pointer"
@@ -51,7 +51,12 @@ export const User = ({ session }: { session: Exclude<NextSession, null> }) => {
           <Settings className="mr-2 h-4 w-4" />
           <span>Settings</span>
         </DropdownMenuItem>
-        <DropdownMenuItem onClick={() => signOut()}>
+        <DropdownMenuItem
+          onClick={() => {
+            console.log("sign out");
+            signOut({ callbackUrl: ROUTES.SIGIN });
+          }}
+        >
           <LogOutIcon className="mr-2 h-4 w-4" />
           <span>Sign out</span>
         </DropdownMenuItem>
