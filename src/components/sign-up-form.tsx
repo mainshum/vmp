@@ -24,6 +24,7 @@ import { stringMin3 } from "@/lib/validation";
 import { MyInput } from "./forms";
 import { useSearchParams } from "next/navigation";
 import { SEARCH_PARAMS } from "@/lib/const";
+import Link from "next/link";
 
 export interface Props extends React.HTMLAttributes<HTMLDivElement> {}
 
@@ -70,7 +71,7 @@ function SignUpForm({ className, ...rest }: Props) {
       type: "disabled",
       message: `Unknown user: ${invalidMail}. Register as customer or vendor first.`,
     });
-  }, [invalidMail]);
+  }, [invalidMail, form]);
 
   return (
     <div className={cn("flex w-72 flex-col gap-4 pb-4", className)} {...rest}>
@@ -120,6 +121,11 @@ function SignUpForm({ className, ...rest }: Props) {
         <Icons.linkedin />
         <span>Google</span>
       </Button>
+      <section className="flex flex-col items-center pt-3">
+        <h4 className="pb-1">Not a user yet?</h4>
+        <Link href="">Register as Customer</Link>
+        <Link href="">Register as Vendor</Link>
+      </section>
     </div>
   );
 }

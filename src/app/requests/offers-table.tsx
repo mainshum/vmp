@@ -1,9 +1,10 @@
 "use client";
 
+import { produce } from "immer";
 import { DataTable } from "@/components/data-table";
 import { ColumnDef } from "@tanstack/react-table";
-import React, { useContext } from "react";
-import { cn } from "@/lib/utils";
+import React, { useContext, useState } from "react";
+import { cn, reduceSum } from "@/lib/utils";
 import { Nullalble } from "@/types/shared";
 import { FileText, Loader2, MoreHorizontal, StarIcon } from "lucide-react";
 import { createDate } from "./shared";
@@ -18,39 +19,176 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
+import { OfferGrade } from "@prisma/client";
+import { useToast } from "@/hooks/use-toast";
 
 type ActionsContext = {
   // eslint-disable-next-line no-unused-vars
   handleOfferRemoval?: (offerId: string) => void;
+  // eslint-disable-next-line no-unused-vars
+  toggleRatingDetails: (offerId: string) => void;
   enableEditing: boolean;
+  // eslint-disable-next-line no-unused-vars
+  starsIdOpened: Nullalble<string>;
 };
 
 const ctx = React.createContext<ActionsContext>({} as ActionsContext);
 
-function Stars({ matchingStars }: { matchingStars: Nullalble<number> }) {
-  const orangeStars = !matchingStars ? 0 : matchingStars;
+// eslint-disable-next-line no-unused-vars
+const Stars = ({
+  stars,
+  onStarsToggle,
+}: {
+  stars: number;
+  // eslint-disable-next-line no-unused-vars
+  onStarsToggle?: (stars: number) => void;
+}) => (
+  <span className="flex">
+    {Array(5)
+      .fill(null)
+      .map((_, ind) => {
+        const starNo = ind + 1;
+        return (
+          <StarIcon
+            key={ind}
+            onClick={() => onStarsToggle?.(starNo)}
+            className={cn(
+              "h-4 w-4",
+              starNo <= stars && "fill-orange-200",
+              onStarsToggle && [
+                "cursor-pointer",
+                "hover:fill-orange-400",
+                "has-[~:hover]:fill-orange-400",
+              ],
+            )}
+          />
+        );
+      })}
+  </span>
+);
+
+const OfferRatings = ({
+  offerGrade,
+  offerId,
+}: {
+  offerGrade: OfferGrade;
+  offerId: string;
+}) => {
+  const { starsIdOpened } = useContext(ctx);
+
+  const offerGradeId = offerGrade.id;
+  const utils = trpc.useUtils();
+
+  const { data } = trpc.offer.offerGrade.useQuery(offerGradeId, {
+    initialData: offerGrade,
+    staleTime: 1000,
+  });
+
+  const { toast } = useToast();
+
+  const { mutate: onStarsToggled } = trpc.offer.setStars.useMutation({
+    onMutate({ starType, stars }) {
+      utils.offer.offerGrade.setData(
+        offerGradeId,
+        produce((draft) => {
+          if (!draft) return;
+          draft[starType] = stars;
+        }),
+      );
+
+      return offerGrade;
+    },
+    onError(error, vars, ctx) {
+      toast({ title: "Unexpected error occured" });
+      utils.offer.offerGrade.setData(offerGradeId, () => ctx);
+    },
+    onSettled() {
+      utils.offer.offerGrade.invalidate(offerGradeId);
+    },
+  });
+
+  if (!data) return null;
 
   return (
-    <span className="flex">
-      {Array(5)
-        .fill(null)
-        .map((_, ind) => {
-          const starNo = ind + 1;
-          return (
-            <StarIcon
-              key={ind}
-              className={cn(
-                "h-4 w-4",
-                starNo <= orangeStars && "fill-orange-200",
-              )}
-            />
-          );
-        })}
-    </span>
-  );
-}
+    <section className="flex flex-col gap-4">
+      {starsIdOpened === offerId ? (
+        <>
+          <span>Logistics fit</span>
+          <Stars
+            onStarsToggle={(s) =>
+              onStarsToggled({
+                offerGradeId,
+                stars: s,
+                starType: "n_logistics",
+              })
+            }
+            stars={data.n_logistics}
+          />
+          <span>Rate fit</span>
+          <Stars
+            onStarsToggle={(s) =>
+              onStarsToggled({
+                offerGradeId,
+                stars: s,
+                starType: "n_rateFit",
+              })
+            }
+            stars={data.n_rateFit}
+          />
+          <span>Seniority fit</span>
+          <Stars
+            onStarsToggle={(s) =>
+              onStarsToggled({
+                offerGradeId,
+                stars: s,
+                starType: "n_seniorityFit",
+              })
+            }
+            stars={data.n_seniorityFit}
+          />
+          <span>Technology fit</span>
+          <Stars
+            onStarsToggle={(s) =>
+              onStarsToggled({
+                offerGradeId,
+                stars: s,
+                starType: "n_technologyFit",
+              })
+            }
+            stars={data.n_technologyFit}
+          />
+          <span>Vendor score</span>
+          <Stars
+            onStarsToggle={(s) =>
+              onStarsToggled({
+                offerGradeId,
+                stars: s,
+                starType: "n_vendorScore",
+              })
+            }
+            stars={data.n_vendorScore}
+          />
+        </>
+      ) : (
+        (() => {
+          const stars = [
+            data.n_logistics,
+            data.n_rateFit,
+            data.n_seniorityFit,
+            data.n_technologyFit,
+            data.n_vendorScore,
+          ];
 
-type OfferSchema = RouterOutputs["CLIENT"]["offers"][0];
+          const avgGrade = stars.reduce(reduceSum) / stars.length;
+
+          return <Stars stars={avgGrade} />;
+        })()
+      )}
+    </section>
+  );
+};
+
+type OfferSchema = RouterOutputs["offer"]["offers"][0];
 
 const PDFFile = ({ offerId, cv }: { offerId: string; cv: string }) => {
   const downloadCV = () => {
@@ -67,7 +205,8 @@ const PDFFile = ({ offerId, cv }: { offerId: string; cv: string }) => {
 };
 
 function Actions({ offerId }: { offerId: string }) {
-  const { enableEditing, handleOfferRemoval } = useContext(ctx);
+  const { enableEditing, handleOfferRemoval, toggleRatingDetails } =
+    useContext(ctx);
 
   return (
     <DropdownMenu>
@@ -78,6 +217,9 @@ function Actions({ offerId }: { offerId: string }) {
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">
+        <DropdownMenuItem onClick={() => toggleRatingDetails(offerId)}>
+          Toggle rating details
+        </DropdownMenuItem>
         {handleOfferRemoval && (
           <DropdownMenuItem onClick={() => handleOfferRemoval(offerId)}>
             Remove offer
@@ -103,9 +245,14 @@ const offersColumns: ColumnDef<OfferSchema>[] = [
   },
   {
     header: "Grade",
-    accessorKey: "matchingGrade",
+    accessorKey: "offerGrade",
     cell: ({ row }) => {
-      return <Stars matchingStars={row.getValue("matchingGrade")} />;
+      return (
+        <OfferRatings
+          offerId={row.getValue("id")}
+          offerGrade={row.getValue("offerGrade") as OfferGrade}
+        />
+      );
     },
   },
   {
@@ -142,12 +289,40 @@ export function OffersTable({
 }: {
   opportunityId: string;
 }) {
-  const { data } = trpc.CLIENT.offers.useQuery(opId);
+  const [starsIdOpened, setStarsIdOpened] = useState<Nullalble<string>>(null);
+  const { data } = trpc.offer.offers.useQuery(opId);
+
+  const utils = trpc.useUtils();
 
   const [divRef] = useAutoAnimate();
 
+  const toggleRatingDetails = (offerId: string) =>
+    setStarsIdOpened((currentlyToggled) => {
+      if (currentlyToggled === offerId) return null;
+
+      return offerId;
+    });
+
+  // const { mutate: setStars } = trpc.offer.setStars.useMutation({
+  //   onSettled(data) {
+  //     utils.offer.offers.setData(
+  //       opId,
+  //       produce((draft) => {
+  //         if (!data?.offer) return;
+  //         draft!.find((o) => o.id === data.offer!.id)!.offerGrade = data;
+  //       }),
+  //     );
+  //   },
+  // });
+
   return (
-    <ctx.Provider value={{ enableEditing: true }}>
+    <ctx.Provider
+      value={{
+        enableEditing: true,
+        toggleRatingDetails,
+        starsIdOpened,
+      }}
+    >
       <div ref={divRef}>
         {data ? (
           <DataTable columns={offersColumns} data={data} />
