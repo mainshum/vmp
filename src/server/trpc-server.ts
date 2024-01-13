@@ -5,10 +5,11 @@ import {
   OfferInput,
   RequestInput,
   nanoidGenerated,
-  requestId,
+  cuid,
+  SetStarsInput,
 } from "@/lib/validation";
 import { z } from "zod";
-import { RequestStatus, VMPRole } from "@prisma/client";
+import { RequestStatus, VMPRole, OfferGrade } from "@prisma/client";
 import superjson from "superjson";
 import { NextSession, getVMPSession } from "@/lib/auth";
 import { adminOr } from "@/lib/utils";
@@ -53,19 +54,13 @@ const customerRouter = t.router({
       group by req.id
   `;
   }),
-  request: t.procedure.input(requestId).query(({ input }) => {
+  request: t.procedure.input(cuid).query(({ input }) => {
     return db.request.findFirst({ where: { id: input } });
   }),
   requestDelete: t.procedure.input(z.string()).mutation(({ input: id }) => {
     return db.request.delete({ where: { id } });
   }),
-  offers: t.procedure.input(requestId).query(({ input }) => {
-    return db.offer.findMany({
-      where: { requestId: input },
-      orderBy: { id: "asc" },
-      include: { offerGrade: true },
-    });
-  }),
+
   upsertRequest: roleProtected(["ADMIN", "CLIENT"])
     .input(
       z.object({ requestPostModel: RequestInput, id: z.string().optional() }),
@@ -122,10 +117,33 @@ const vendorRouter = t.router({
 });
 
 const offerRouter = t.router({
+  offers: t.procedure.input(cuid).query(({ input }) => {
+    return db.offer.findMany({
+      where: { requestId: input },
+      orderBy: { id: "asc" },
+      include: { offerGrade: true },
+    });
+  }),
   offerId: roleProtected(["ADMIN"])
     .input(z.string())
     .query(({ input }) => {
+      return db.offer.findFirst({
+        where: { id: input },
+        include: { offerGrade: true },
+      });
+    }),
+  offerGrade: roleProtected(["ADMIN"])
+    .input(z.string())
+    .query(({ input }) => {
       return db.offer.findFirst({ where: { id: input } });
+    }),
+  setStars: roleProtected(["ADMIN"])
+    .input(SetStarsInput)
+    .mutation(({ input }) => {
+      return db.offerGrade.update({
+        where: { id: input.offerGradeId },
+        data: { [input.starType]: input.stars },
+      });
     }),
 });
 
@@ -161,7 +179,7 @@ const requestRouter = t.router({
       .exhaustive();
   }),
   byId: roleProtected(["CLIENT", "ADMIN"])
-    .input(requestId)
+    .input(cuid)
     .query(({ input, ctx: { user } }) => {
       return match(user.role)
         .with("ADMIN", () => db.request.findFirst({ where: { id: input } }))
@@ -171,7 +189,7 @@ const requestRouter = t.router({
         .exhaustive();
     }),
   updateStatus: roleProtected(["ADMIN"])
-    .input(z.object({ id: requestId, newStatus: z.nativeEnum(RequestStatus) }))
+    .input(z.object({ id: cuid, newStatus: z.nativeEnum(RequestStatus) }))
     .mutation(({ input }) => {
       return db.request.update({
         where: { id: input.id },

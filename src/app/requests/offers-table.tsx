@@ -8,7 +8,7 @@ import { Nullalble } from "@/types/shared";
 import { FileText, Loader2, MoreHorizontal, StarIcon } from "lucide-react";
 import { createDate } from "./shared";
 import { useAutoAnimate } from "@formkit/auto-animate/react";
-import { RouterOutputs, trpc } from "@/lib/trpc";
+import { RouterInputs, RouterOutputs, trpc } from "@/lib/trpc";
 import { ROUTES } from "@/lib/const";
 import {
   DropdownMenu,
@@ -19,18 +19,31 @@ import {
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { OfferGrade } from "@prisma/client";
+import { SetStarsInput } from "@/lib/validation";
+import { getQueryKey } from "@trpc/react-query";
 
 type ActionsContext = {
   // eslint-disable-next-line no-unused-vars
   handleOfferRemoval?: (offerId: string) => void;
+  // eslint-disable-next-line no-unused-vars
   toggleRatingDetails: (offerId: string) => void;
   enableEditing: boolean;
+  // eslint-disable-next-line no-unused-vars
+  onStarsToggled: (payload: SetStarsInput) => void;
   starsIdOpened: Nullalble<string>;
 };
 
 const ctx = React.createContext<ActionsContext>({} as ActionsContext);
 
-const Stars = ({ stars }: { stars: number }) => (
+// eslint-disable-next-line no-unused-vars
+const Stars = ({
+  stars,
+  onStarsToggle,
+}: {
+  stars: number;
+  // eslint-disable-next-line no-unused-vars
+  onStarsToggle?: (stars: number) => void;
+}) => (
   <span className="flex">
     {Array(5)
       .fill(null)
@@ -39,7 +52,16 @@ const Stars = ({ stars }: { stars: number }) => (
         return (
           <StarIcon
             key={ind}
-            className={cn("h-4 w-4", starNo <= stars && "fill-orange-200")}
+            onClick={() => onStarsToggle?.(starNo)}
+            className={cn(
+              "h-4 w-4",
+              starNo <= stars && "fill-orange-200",
+              onStarsToggle && [
+                "cursor-pointer",
+                "hover:fill-orange-400",
+                "has-[~:hover]:fill-orange-400",
+              ],
+            )}
           />
         );
       })}
@@ -47,26 +69,78 @@ const Stars = ({ stars }: { stars: number }) => (
 );
 
 function OfferRatings({
-  offerGrade: offerGrade,
+  offerGrade,
   offerId,
 }: {
   offerGrade: OfferGrade;
   offerId: string;
 }) {
-  const { starsIdOpened } = useContext(ctx);
+  const { starsIdOpened, onStarsToggled } = useContext(ctx);
   const [ref] = useAutoAnimate();
+
+  const offerGradeId = offerGrade.id;
 
   return (
     <section ref={ref} className="flex flex-col gap-4">
-      {starsIdOpened && (
+      {starsIdOpened === offerId ? (
         <>
           <span>Logistics fit</span>
-          <Stars stars={offerGrade.n_logistics} />
+          <Stars
+            onStarsToggle={(s) =>
+              onStarsToggled({
+                offerGradeId,
+                stars: s,
+                starType: "n_logistics",
+              })
+            }
+            stars={offerGrade.n_logistics}
+          />
           <span>Rate fit</span>
-          <Stars stars={offerGrade.n_rateFit} />
+          <Stars
+            onStarsToggle={(s) =>
+              onStarsToggled({
+                offerGradeId,
+                stars: s,
+                starType: "n_rateFit",
+              })
+            }
+            stars={offerGrade.n_rateFit}
+          />
+          <span>Seniority fit</span>
+          <Stars
+            onStarsToggle={(s) =>
+              onStarsToggled({
+                offerGradeId,
+                stars: s,
+                starType: "n_seniorityFit",
+              })
+            }
+            stars={offerGrade.n_seniorityFit}
+          />
+          <span>Technology fit</span>
+          <Stars
+            onStarsToggle={(s) =>
+              onStarsToggled({
+                offerGradeId,
+                stars: s,
+                starType: "n_technologyFit",
+              })
+            }
+            stars={offerGrade.n_technologyFit}
+          />
+          <span>Vendor score</span>
+          <Stars
+            onStarsToggle={(s) =>
+              onStarsToggled({
+                offerGradeId,
+                stars: s,
+                starType: "n_vendorScore",
+              })
+            }
+            stars={offerGrade.n_vendorScore}
+          />
         </>
-      )}
-      {!starsIdOpened &&
+      ) : (
         (() => {
           const stars = [
             offerGrade.n_logistics,
@@ -79,7 +153,8 @@ function OfferRatings({
           const avgGrade = stars.reduce(reduceSum) / stars.length;
 
           return <Stars stars={avgGrade} />;
-        })()}
+        })()
+      )}
     </section>
   );
 }
@@ -101,11 +176,8 @@ const PDFFile = ({ offerId, cv }: { offerId: string; cv: string }) => {
 };
 
 function Actions({ offerId }: { offerId: string }) {
-  const {
-    enableEditing,
-    handleOfferRemoval,
-    toggleRatingDetails: showRatingDetails,
-  } = useContext(ctx);
+  const { enableEditing, handleOfferRemoval, toggleRatingDetails } =
+    useContext(ctx);
 
   return (
     <DropdownMenu>
@@ -116,7 +188,7 @@ function Actions({ offerId }: { offerId: string }) {
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">
-        <DropdownMenuItem onClick={() => showRatingDetails(offerId)}>
+        <DropdownMenuItem onClick={() => toggleRatingDetails(offerId)}>
           Toggle rating details
         </DropdownMenuItem>
         {handleOfferRemoval && (
@@ -148,8 +220,8 @@ const offersColumns: ColumnDef<OfferSchema>[] = [
     cell: ({ row }) => {
       return (
         <OfferRatings
-          offerGrade={row.getValue("offerGrade") as OfferGrade}
           offerId={row.getValue("id")}
+          offerGrade={row.getValue("offerGrade") as OfferGrade}
         />
       );
     },
@@ -189,16 +261,33 @@ export function OffersTable({
   opportunityId: string;
 }) {
   const [starsIdOpened, setStarsIdOpened] = useState<Nullalble<string>>(null);
-  const { data } = trpc.CLIENT.offers.useQuery(opId);
+  const { data } = trpc.offer.offers.useQuery(opId);
+
+  const utils = trpc.useUtils();
 
   const [divRef] = useAutoAnimate();
 
   const toggleRatingDetails = (offerId: string) =>
-    setStarsIdOpened((cur) => (cur === null ? offerId : null));
+    setStarsIdOpened((currentlyToggled) => {
+      if (currentlyToggled === offerId) return null;
+
+      return offerId;
+    });
+
+  const { mutate: setStars } = trpc.offer.setStars.useMutation({
+    onSettled(data) {
+      console.log(getQueryKey(trpc.offer.offers, undefined, "query"));
+    },
+  });
 
   return (
     <ctx.Provider
-      value={{ enableEditing: true, toggleRatingDetails, starsIdOpened }}
+      value={{
+        enableEditing: true,
+        toggleRatingDetails,
+        starsIdOpened,
+        onStarsToggled: setStars,
+      }}
     >
       <div ref={divRef}>
         {data ? (

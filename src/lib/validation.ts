@@ -7,6 +7,7 @@ import {
   JobProfile,
   JobSubProfile,
   Seniority,
+  OfferGrade,
 } from "@prisma/client";
 import { z } from "zod";
 
@@ -21,7 +22,7 @@ export const positiveInteger15 = positiveInteger
 
 export const availabilitySlider = z.number({ coerce: true });
 
-export const requestId = z.string().cuid();
+export const cuid = z.string().cuid();
 export const nanoidGenerated = z.string().regex(/^[a-zA-Z0-9_-]{21}$/);
 
 export const stringMin3 = z
@@ -104,8 +105,22 @@ export type RequestInput = z.infer<typeof RequestInput>;
 
 export const OfferInput = RequestOfferShared.extend({
   id: nanoidGenerated,
-  requestId: requestId,
+  requestId: cuid,
   cv: z.string().min(1, { message: "Choose CV file" }),
 });
+
+export const SetStarsInput = z.object({
+  offerGradeId: cuid,
+  stars: z.number().min(0).max(5),
+  starType: z.union([
+    z.literal("n_technologyFit"),
+    z.literal("n_seniorityFit"),
+    z.literal("n_rateFit"),
+    z.literal("n_logistics"),
+    z.literal("n_vendorScore"),
+  ]) satisfies z.ZodType<keyof OfferGrade>,
+});
+
+export type SetStarsInput = z.infer<typeof SetStarsInput>;
 
 export type OfferInput = z.infer<typeof OfferInput>;
