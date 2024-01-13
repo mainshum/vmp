@@ -3,13 +3,13 @@
 import { produce } from "immer";
 import { DataTable } from "@/components/data-table";
 import { ColumnDef } from "@tanstack/react-table";
-import React, { useCallback, useContext, useState } from "react";
+import React, { useContext, useState } from "react";
 import { cn, reduceSum } from "@/lib/utils";
 import { Nullalble } from "@/types/shared";
 import { FileText, Loader2, MoreHorizontal, StarIcon } from "lucide-react";
 import { createDate } from "./shared";
 import { useAutoAnimate } from "@formkit/auto-animate/react";
-import { RouterInputs, RouterOutputs, trpc } from "@/lib/trpc";
+import { RouterOutputs, trpc } from "@/lib/trpc";
 import { ROUTES } from "@/lib/const";
 import {
   DropdownMenu,
@@ -20,8 +20,6 @@ import {
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { OfferGrade } from "@prisma/client";
-import { SetStarsInput } from "@/lib/validation";
-import { getQueryKey } from "@trpc/react-query";
 import { useToast } from "@/hooks/use-toast";
 
 type ActionsContext = {
@@ -69,13 +67,13 @@ const Stars = ({
   </span>
 );
 
-function OfferRatings({
+const OfferRatings = ({
   offerGrade,
   offerId,
 }: {
   offerGrade: OfferGrade;
   offerId: string;
-}) {
+}) => {
   const { starsIdOpened } = useContext(ctx);
 
   const offerGradeId = offerGrade.id;
@@ -109,7 +107,7 @@ function OfferRatings({
     },
   });
 
-  if (!data) return;
+  if (!data) return null;
 
   return (
     <section className="flex flex-col gap-4">
@@ -188,7 +186,7 @@ function OfferRatings({
       )}
     </section>
   );
-}
+};
 
 type OfferSchema = RouterOutputs["offer"]["offers"][0];
 
