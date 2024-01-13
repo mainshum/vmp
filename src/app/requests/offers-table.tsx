@@ -1,8 +1,9 @@
 "use client";
 
+import { produce } from "immer";
 import { DataTable } from "@/components/data-table";
 import { ColumnDef } from "@tanstack/react-table";
-import React, { useContext, useState } from "react";
+import React, { useCallback, useContext, useState } from "react";
 import { cn, reduceSum } from "@/lib/utils";
 import { Nullalble } from "@/types/shared";
 import { FileText, Loader2, MoreHorizontal, StarIcon } from "lucide-react";
@@ -21,6 +22,7 @@ import Link from "next/link";
 import { OfferGrade } from "@prisma/client";
 import { SetStarsInput } from "@/lib/validation";
 import { getQueryKey } from "@trpc/react-query";
+import { useToast } from "@/hooks/use-toast";
 
 type ActionsContext = {
   // eslint-disable-next-line no-unused-vars
@@ -29,7 +31,6 @@ type ActionsContext = {
   toggleRatingDetails: (offerId: string) => void;
   enableEditing: boolean;
   // eslint-disable-next-line no-unused-vars
-  onStarsToggled: (payload: SetStarsInput) => void;
   starsIdOpened: Nullalble<string>;
 };
 
@@ -75,13 +76,43 @@ function OfferRatings({
   offerGrade: OfferGrade;
   offerId: string;
 }) {
-  const { starsIdOpened, onStarsToggled } = useContext(ctx);
-  const [ref] = useAutoAnimate();
+  const { starsIdOpened } = useContext(ctx);
 
   const offerGradeId = offerGrade.id;
+  const utils = trpc.useUtils();
+
+  const { data } = trpc.offer.offerGrade.useQuery(offerGradeId, {
+    initialData: offerGrade,
+    staleTime: 1000,
+  });
+
+  const { toast } = useToast();
+
+  const { mutate: onStarsToggled } = trpc.offer.setStars.useMutation({
+    onMutate({ starType, stars }) {
+      utils.offer.offerGrade.setData(
+        offerGradeId,
+        produce((draft) => {
+          if (!draft) return;
+          draft[starType] = stars;
+        }),
+      );
+
+      return offerGrade;
+    },
+    onError(error, vars, ctx) {
+      toast({ title: "Unexpected error occured" });
+      utils.offer.offerGrade.setData(offerGradeId, () => ctx);
+    },
+    onSettled() {
+      utils.offer.offerGrade.invalidate(offerGradeId);
+    },
+  });
+
+  if (!data) return;
 
   return (
-    <section ref={ref} className="flex flex-col gap-4">
+    <section className="flex flex-col gap-4">
       {starsIdOpened === offerId ? (
         <>
           <span>Logistics fit</span>
@@ -93,7 +124,7 @@ function OfferRatings({
                 starType: "n_logistics",
               })
             }
-            stars={offerGrade.n_logistics}
+            stars={data.n_logistics}
           />
           <span>Rate fit</span>
           <Stars
@@ -104,7 +135,7 @@ function OfferRatings({
                 starType: "n_rateFit",
               })
             }
-            stars={offerGrade.n_rateFit}
+            stars={data.n_rateFit}
           />
           <span>Seniority fit</span>
           <Stars
@@ -115,7 +146,7 @@ function OfferRatings({
                 starType: "n_seniorityFit",
               })
             }
-            stars={offerGrade.n_seniorityFit}
+            stars={data.n_seniorityFit}
           />
           <span>Technology fit</span>
           <Stars
@@ -126,7 +157,7 @@ function OfferRatings({
                 starType: "n_technologyFit",
               })
             }
-            stars={offerGrade.n_technologyFit}
+            stars={data.n_technologyFit}
           />
           <span>Vendor score</span>
           <Stars
@@ -137,17 +168,17 @@ function OfferRatings({
                 starType: "n_vendorScore",
               })
             }
-            stars={offerGrade.n_vendorScore}
+            stars={data.n_vendorScore}
           />
         </>
       ) : (
         (() => {
           const stars = [
-            offerGrade.n_logistics,
-            offerGrade.n_rateFit,
-            offerGrade.n_seniorityFit,
-            offerGrade.n_technologyFit,
-            offerGrade.n_vendorScore,
+            data.n_logistics,
+            data.n_rateFit,
+            data.n_seniorityFit,
+            data.n_technologyFit,
+            data.n_vendorScore,
           ];
 
           const avgGrade = stars.reduce(reduceSum) / stars.length;
@@ -159,7 +190,7 @@ function OfferRatings({
   );
 }
 
-type OfferSchema = RouterOutputs["CLIENT"]["offers"][0];
+type OfferSchema = RouterOutputs["offer"]["offers"][0];
 
 const PDFFile = ({ offerId, cv }: { offerId: string; cv: string }) => {
   const downloadCV = () => {
@@ -274,11 +305,17 @@ export function OffersTable({
       return offerId;
     });
 
-  const { mutate: setStars } = trpc.offer.setStars.useMutation({
-    onSettled(data) {
-      console.log(getQueryKey(trpc.offer.offers, undefined, "query"));
-    },
-  });
+  // const { mutate: setStars } = trpc.offer.setStars.useMutation({
+  //   onSettled(data) {
+  //     utils.offer.offers.setData(
+  //       opId,
+  //       produce((draft) => {
+  //         if (!data?.offer) return;
+  //         draft!.find((o) => o.id === data.offer!.id)!.offerGrade = data;
+  //       }),
+  //     );
+  //   },
+  // });
 
   return (
     <ctx.Provider
@@ -286,7 +323,6 @@ export function OffersTable({
         enableEditing: true,
         toggleRatingDetails,
         starsIdOpened,
-        onStarsToggled: setStars,
       }}
     >
       <div ref={divRef}>

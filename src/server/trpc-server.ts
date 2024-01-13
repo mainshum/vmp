@@ -12,7 +12,7 @@ import { z } from "zod";
 import { RequestStatus, VMPRole, OfferGrade } from "@prisma/client";
 import superjson from "superjson";
 import { NextSession, getVMPSession } from "@/lib/auth";
-import { adminOr } from "@/lib/utils";
+import { adminOr, delay } from "@/lib/utils";
 import { revalidatePath } from "next/cache";
 import { match } from "ts-pattern";
 
@@ -135,14 +135,15 @@ const offerRouter = t.router({
   offerGrade: roleProtected(["ADMIN"])
     .input(z.string())
     .query(({ input }) => {
-      return db.offer.findFirst({ where: { id: input } });
+      return db.offerGrade.findFirst({ where: { id: input } });
     }),
   setStars: roleProtected(["ADMIN"])
     .input(SetStarsInput)
-    .mutation(({ input }) => {
+    .mutation(async ({ input }) => {
       return db.offerGrade.update({
         where: { id: input.offerGradeId },
         data: { [input.starType]: input.stars },
+        include: { offer: { select: { id: true } } },
       });
     }),
 });

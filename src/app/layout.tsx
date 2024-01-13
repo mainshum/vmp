@@ -1,5 +1,6 @@
 import Navbar from "@/components/navbar";
 import { Toaster } from "@/components/ui/toaster";
+import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
 import { getVMPSession } from "@/lib/auth";
 import { cn } from "@/lib/utils";
 import "@/styles/globals.css";
@@ -31,6 +32,7 @@ export default async function RootLayout({
         )}
       >
         <body className="min-h-screen antialiased">
+          <ReactQueryDevtools />
           <NextAuthProvider>
             <Navbar session={session} />
             <main className="pt-[56px]">{children}</main>
