@@ -7,10 +7,15 @@ export const SEARCH_PARAMS = {
 };
 
 export const ROUTES = {
+  ROOT: "/",
   SIGIN: "/sign-in",
   SIGIN_NOT_EXISTS: (emai: string) =>
     `/sign-in?${SEARCH_PARAMS.invalidMail}=${emai}`,
   ROLE_SELECT: "/role-select",
+  REGISTER: {
+    CUSTOMER: "/register/customer",
+    VENDOR: "/register/vendor",
+  },
   OFFERS: {
     LIST: "/offers",
     CREATE: (requestId: string) =>

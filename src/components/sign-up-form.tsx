@@ -23,7 +23,7 @@ import { z } from "zod";
 import { stringMin3 } from "@/lib/validation";
 import { MyInput } from "./forms";
 import { useSearchParams } from "next/navigation";
-import { SEARCH_PARAMS } from "@/lib/const";
+import { ROUTES, SEARCH_PARAMS } from "@/lib/const";
 import Link from "next/link";
 
 export interface Props extends React.HTMLAttributes<HTMLDivElement> {}
@@ -123,8 +123,8 @@ function SignUpForm({ className, ...rest }: Props) {
       </Button>
       <section className="flex flex-col items-center pt-3">
         <h4 className="pb-1">Not a user yet?</h4>
-        <Link href="">Register as Customer</Link>
-        <Link href="">Register as Vendor</Link>
+        <Link href={ROUTES.REGISTER.CUSTOMER}>Register as Customer</Link>
+        <Link href={ROUTES.REGISTER.VENDOR}>Register as Vendor</Link>
       </section>
     </div>
   );
