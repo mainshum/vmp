@@ -8,6 +8,7 @@ import {
   JobSubProfile,
   Seniority,
   OfferGrade,
+  VMPRole,
 } from "@prisma/client";
 import { z } from "zod";
 
@@ -28,6 +29,10 @@ export const nanoidGenerated = z.string().regex(/^[a-zA-Z0-9_-]{21}$/);
 export const stringMin3 = z
   .string()
   .min(3, { message: "Minimum length of 3 characters" });
+
+export const emailValidator = stringMin3.refine((s) => s.includes("@"), {
+  message: "Email needs to contain @ and be at least 3 characters long",
+});
 
 export const emptyStringLiteral = z.literal("");
 
@@ -124,3 +129,9 @@ export const SetStarsInput = z.object({
 export type SetStarsInput = z.infer<typeof SetStarsInput>;
 
 export type OfferInput = z.infer<typeof OfferInput>;
+
+export const CreateCustomer = z.object({
+  email: emailValidator,
+  name: stringMin3,
+  role: z.union([z.literal(VMPRole.CLIENT), z.literal(VMPRole.VENDOR)]),
+});
