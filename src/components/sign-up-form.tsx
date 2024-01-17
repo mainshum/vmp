@@ -34,7 +34,7 @@ function SignUpForm({ className, ...rest }: Props) {
 
   const params = useSearchParams();
 
-  const loginWith = async (params: Parameters<typeof signIn>) => {
+  const loginWith = async (...params: Parameters<typeof signIn>) => {
     setIsLoading(true);
 
     try {
@@ -80,7 +80,7 @@ function SignUpForm({ className, ...rest }: Props) {
         <form
           noValidate
           onSubmit={form.handleSubmit(({ email }) =>
-            signIn("email", { email }),
+            loginWith("email", { email }),
           )}
         >
           <FormField
@@ -90,6 +90,7 @@ function SignUpForm({ className, ...rest }: Props) {
               <FormItem>
                 <FormControl>
                   <Input
+                    disabled={isLoading}
                     {...field}
                     placeholder="example@mail.com"
                     type="email"
@@ -112,7 +113,7 @@ function SignUpForm({ className, ...rest }: Props) {
         </form>
       </Form>
       <Button
-        onClick={() => loginWith(["google"])}
+        onClick={() => loginWith("google")}
         disabled={isLoading}
         size="sm"
         variant="outline"
