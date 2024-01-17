@@ -113,7 +113,7 @@ function SignUpForm({ className, ...rest }: Props) {
         </form>
       </Form>
       <Button
-        onClick={() => loginWith(["google"])}
+        onClick={() => loginWith("google")}
         disabled={isLoading}
         size="sm"
         variant="outline"
