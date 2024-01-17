@@ -9,6 +9,7 @@ import {
   Seniority,
   OfferGrade,
   VMPRole,
+  CompanySize,
 } from "@prisma/client";
 import { z } from "zod";
 
@@ -130,8 +131,34 @@ export type SetStarsInput = z.infer<typeof SetStarsInput>;
 
 export type OfferInput = z.infer<typeof OfferInput>;
 
-export const CreateCustomer = z.object({
+const isIntOfLen = (x: string, len: number) => {
+  const parsed = Number.parseInt(x);
+  if (Number.isNaN(parsed)) return false;
+
+  return parsed.toString(10).length === len;
+};
+
+export const CreateUser = z.object({
   email: emailValidator,
+  companyName: stringMin3,
+  addressLine1: stringMin3,
+  addressLine2: stringMin3,
+  postCode: stringMin3,
+  city: stringMin3,
+  nip: z
+    .string()
+    .length(10)
+    .refine((no) => isIntOfLen(no, 10), {
+      message: "Provide 10 digits number",
+    }),
+  regon: z
+    .string()
+    .length(9)
+    .refine((no) => isIntOfLen(no, 9), {
+      message: "Provide 9 digits number",
+    }),
   name: stringMin3,
+  devsForMyOwnCompany: z.boolean(),
+  companySize: z.nativeEnum(CompanySize),
   role: z.union([z.literal(VMPRole.CLIENT), z.literal(VMPRole.VENDOR)]),
 });

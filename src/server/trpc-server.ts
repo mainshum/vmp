@@ -9,7 +9,7 @@ import {
   SetStarsInput,
   emailValidator,
   stringMin3,
-  CreateCustomer,
+  CreateUser,
 } from "@/lib/validation";
 import { z } from "zod";
 import { RequestStatus, VMPRole, OfferGrade } from "@prisma/client";
@@ -152,19 +152,17 @@ const offerRouter = t.router({
 });
 
 const usersRouter = t.router({
-  createCustomer: t.procedure
-    .input(CreateCustomer)
-    .mutation(async ({ input }) => {
-      const user = await db.user.findFirst({ where: { email: input.email } });
-      if (user)
-        throw new TRPCError({
-          code: "UNPROCESSABLE_CONTENT",
-          cause: "EMAIL",
-        });
-      return db.user.create({
-        data: input,
+  createCustomer: t.procedure.input(CreateUser).mutation(async ({ input }) => {
+    const user = await db.user.findFirst({ where: { email: input.email } });
+    if (user)
+      throw new TRPCError({
+        code: "UNPROCESSABLE_CONTENT",
+        cause: "EMAIL",
       });
-    }),
+    return db.user.create({
+      data: input,
+    });
+  }),
 });
 
 const requestRouter = t.router({

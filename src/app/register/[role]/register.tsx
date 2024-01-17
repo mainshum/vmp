@@ -7,16 +7,21 @@ import { trpc } from "@/lib/trpc";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Form } from "@/components/ui/form";
 import { useToast } from "@/hooks/use-toast";
-import { CreateCustomer } from "@/lib/validation";
+import { CreateUser } from "@/lib/validation";
 import { VMPRole } from "@prisma/client";
 import { ROUTES } from "@/lib/const";
 import { useRouter } from "next/navigation";
+import { z } from "zod";
 
 const Client = ({ role }: { role: "CLIENT" | "VENDOR" }) => {
-  const form = useForm({
-    resolver: zodResolver(CreateCustomer),
+  const form = useForm<z.infer<typeof CreateUser>>({
+    resolver: zodResolver(CreateUser),
     defaultValues: {
       email: "",
+      addressLine1: "",
+      addressLine2: "",
+      postCode: "",
+      city: "",
       name: "",
       role: role,
     },
@@ -51,10 +56,25 @@ const Client = ({ role }: { role: "CLIENT" | "VENDOR" }) => {
           name="email"
           placeholder="example@mail.com"
         />
+        <h3>Address</h3>
         <MyInput
           control={form.control}
-          label="Name and surname"
-          name="name"
+          label="Address line 1"
+          name="addressLine1"
+          placeholder=""
+        />
+        <MyInput
+          control={form.control}
+          label="Address line 2"
+          name="addressLine2"
+          placeholder=""
+        />
+        <h3>Tax ID</h3>
+        <MyInput control={form.control} label="NIP" name="nip" placeholder="" />
+        <MyInput
+          control={form.control}
+          label="REGON"
+          name="regon"
           placeholder=""
         />
         <Button type="submit">Save user</Button>
